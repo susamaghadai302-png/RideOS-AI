@@ -1,0 +1,4 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
+#include "Generated.xcconfig"
+// Include local secrets — create GoogleMapsApiKey.xcconfig with your API key (gitignored)
+#include? "GoogleMapsApiKey.xcconfig"

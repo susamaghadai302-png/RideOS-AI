@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "RideOS Mobile (Android Emulator)",
+      "cwd": "apps/mobile",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "emulator-5554",
+      "program": "apps/mobile/lib/main.dart"
+    },
+    {
+      "name": "RideOS Mobile (Auto-Detect Device)",
+      "cwd": "apps/mobile",
+      "request": "launch",
+      "type": "dart",
+      "program": "apps/mobile/lib/main.dart"
+    }
+  ]
+}

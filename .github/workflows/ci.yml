@@ -1,0 +1,65 @@
+name: RoadOS AI — Production CI Quality Gate
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  mobile-quality-gate:
+    name: Flutter Mobile Static Analysis & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter Engine
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Mobile Dependencies
+        run: |
+          cd apps/mobile
+          flutter pub get
+
+      - name: Static Analysis
+        run: |
+          cd apps/mobile
+          flutter analyze --no-fatal-infos
+
+      - name: Run Mobile Test Suite
+        run: |
+          cd apps/mobile
+          flutter test
+
+      - name: Build Web Release
+        run: |
+          cd apps/mobile
+          flutter build web --release
+
+  backend-quality-gate:
+    name: NestJS Backend Build & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'apps/backend/package-lock.json'
+
+      - name: Install Backend Dependencies
+        run: |
+          cd apps/backend
+          npm ci
+
+      - name: Build NestJS API
+        run: |
+          cd apps/backend
+          npm run build

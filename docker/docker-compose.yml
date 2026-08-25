@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: rideos-mongodb
+    restart: always
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_DATABASE: rideos
+    volumes:
+      - mongodb_data:/data/db
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: rideos-redis
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: rideos-timescaledb
+    restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: rideos_telemetry
+      POSTGRES_USER: rideos_admin
+      POSTGRES_PASSWORD: rideos_secure_password
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+
+volumes:
+  mongodb_data:
+  redis_data:
+  timescaledb_data:

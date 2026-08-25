@@ -1,0 +1,80 @@
+name: RideOS AI Enterprise Production CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, release/* ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend_ci:
+    name: Backend API - Lint, Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8.15.0
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Backend Unit Tests
+        run: pnpm --filter backend run test
+
+      - name: Build Backend Bundle
+        run: pnpm --filter backend run build
+
+  mobile_ci:
+    name: Mobile App - Analyze, Test & Release Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter Dependencies
+        run: |
+          cd apps/mobile
+          flutter pub get
+
+      - name: Analyze Flutter Code
+        run: |
+          cd apps/mobile
+          flutter analyze
+
+      - name: Run Flutter Unit & Integration Tests
+        run: |
+          cd apps/mobile
+          flutter test
+
+      - name: Build Android Release APK
+        run: |
+          cd apps/mobile
+          flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk

@@ -1,0 +1,10 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+allowBuilds:
+  bcrypt: true
+  puppeteer: set this to true or false
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - bcrypt
+  - esbuild

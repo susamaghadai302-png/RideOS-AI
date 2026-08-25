@@ -1,0 +1,19 @@
+{
+  "name": "@rideos/offline",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@rideos/core": "workspace:*",
+    "@rideos/maps": "workspace:*",
+    "@rideos/shared": "workspace:*",
+    "@rideos/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

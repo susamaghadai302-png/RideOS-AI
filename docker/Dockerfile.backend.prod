@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# RideOS-AI — Production NestJS Backend Dockerfile (Multi-Stage)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Stage 1: Build & Package Compilation
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install pnpm globally
+RUN npm install -g pnpm@9
+
+# Copy workspace package manifests
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
+COPY packages ./packages
+COPY apps/backend ./apps/backend
+
+# Install all dependencies including devDependencies for compilation
+RUN pnpm install --frozen-lockfile
+
+# Build internal monorepo packages first, then compile NestJS backend
+RUN pnpm --recursive run build
+
+# Stage 2: Production Runtime
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Install pnpm for isolated production dependency installation
+RUN npm install -g pnpm@9
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Copy workspace config and package definitions
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages ./packages
+COPY apps/backend/package.json ./apps/backend/
+
+# Install only production dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy compiled JavaScript output from builder stage
+COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder /app/packages ./packages
+
+# Expose backend port
+EXPOSE 3000
+
+# Run as non-root node user for container security
+USER node
+
+# Container Healthcheck probe against NestJS health module
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/v1/health/liveness', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"
+
+# Start the NestJS backend
+CMD ["node", "apps/backend/dist/apps/backend/src/main.js"]

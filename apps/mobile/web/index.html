@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="RideOS Pro - Ultra-Luxury Motorcycle Intelligence OS">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="RideOS Pro">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>RideOS Pro - Motorcycle Intelligence</title>
+  <link rel="manifest" href="manifest.json">
+  <!-- RideOS Web Bluetooth Bridge (macOS Chrome/Edge Web Bluetooth) -->
+  <script src="web_bluetooth_bridge.js"></script>
+  <!-- Three.js WebGL 3D Showroom Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <!-- Google Maps Configuration Injection -->
+  <script>window.__RIDEOS_GOOGLE_MAPS_API_KEY__ = "AIzaSyDr4U2-3KPMoGKtzs3TSKUHsSyTPQZsY0g";</script>
+  <!-- Google Maps JS API (Dynamic loader for RideOS Web) -->
+  <script>
+    (function() {
+      function loadMapsScript(key) {
+        if (window.__gmaps_loaded__) return;
+        window.__gmaps_loaded__ = true;
+        var script = document.createElement('script');
+        if (key && key !== 'YOUR_ACTUAL_GOOGLE_MAPS_API_KEY_HERE' && key !== 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+          script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places,geometry';
+        } else {
+          script.src = 'https://maps.googleapis.com/maps/api/js?libraries=places,geometry';
+        }
+        script.async = false;
+        document.head.appendChild(script);
+      }
+
+      var urlParams = new URLSearchParams(window.location.search);
+      var apiKey = window.__RIDEOS_GOOGLE_MAPS_API_KEY__ || 
+                   urlParams.get('maps_key') || 
+                   localStorage.getItem('RIDEOS_GOOGLE_MAPS_API_KEY') || 
+                   '';
+
+      if (apiKey && apiKey !== 'YOUR_ACTUAL_GOOGLE_MAPS_API_KEY_HERE' && apiKey !== 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+        loadMapsScript(apiKey);
+      } else {
+        // Fetch client key from RideOS backend API dynamically
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'http://localhost:3000/api/v1/maps/client-key', false); // synchronous check
+        try {
+          xhr.send();
+          if (xhr.status === 200) {
+            var data = JSON.parse(xhr.responseText);
+            if (data && data.apiKey) {
+              window.__RIDEOS_GOOGLE_MAPS_API_KEY__ = data.apiKey;
+              loadMapsScript(data.apiKey);
+              return;
+            }
+          }
+        } catch (e) {}
+        loadMapsScript('');
+      }
+    })();
+  </script>
+  <!-- Google Model-Viewer WebGL 3D Engine -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <!-- RideOS Global 3D Showroom Engine -->
+  <script type="module" src="engine/main.js"></script>
+  <style>
+    body {
+      background-color: #03050a;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    flt-glass-pane {
+      background: transparent !important;
+      position: absolute;
+      z-index: 10;
+    }
+    flutter-view {
+      background: transparent !important;
+    }
+  </style>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
+

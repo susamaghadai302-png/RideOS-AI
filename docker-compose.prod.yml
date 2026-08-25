@@ -1,0 +1,138 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# RideOS-AI — Production Orchestration Deployment Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # 1. Reverse Proxy & Flutter Web Frontend
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web.prod
+    container_name: rideos_web_prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - rideos_network
+
+  # 2. NestJS Core API Backend
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend.prod
+    container_name: rideos_backend_prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGO_URI=${MONGO_URI_PROD:-mongodb://mongodb:27017/rideos}
+      - REDIS_HOST=${REDIS_HOST_PROD:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - TIMESCALE_HOST=${TIMESCALE_HOST_PROD:-timescaledb}
+      - TIMESCALE_PORT=${TIMESCALE_PORT:-5432}
+      - TIMESCALE_USER=${TIMESCALE_USER:-rideos_admin}
+      - TIMESCALE_PASSWORD=${TIMESCALE_PASSWORD:-rideos_secure_password}
+      - TIMESCALE_DB=${TIMESCALE_DB:-rideos_telemetry}
+      - JWT_SECRET=${JWT_SECRET:-super_secret_rideos_jwt_key_2026}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-7d}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-super_secret_rideos_refresh_key_2026}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_FROM_PHONE=${TWILIO_FROM_PHONE}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_SERVER_KEY=${FIREBASE_SERVER_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - APPLE_CLIENT_ID=${APPLE_CLIENT_ID}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/v1/health/liveness', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - rideos_network
+
+  # 3. Document Database (MongoDB)
+  mongodb:
+    image: mongo:7.0-jammy
+    container_name: rideos_mongo_prod
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - rideos_network
+
+  # 4. Telemetry Time-Series Database (TimescaleDB / PostgreSQL)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: rideos_timescale_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${TIMESCALE_USER:-rideos_admin}
+      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-rideos_secure_password}
+      POSTGRES_DB: ${TIMESCALE_DB:-rideos_telemetry}
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TIMESCALE_USER:-rideos_admin} -d ${TIMESCALE_DB:-rideos_telemetry}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - rideos_network
+
+  # 5. High-Speed Cache & Message Broker (Redis)
+  redis:
+    image: redis:7-alpine
+    container_name: rideos_redis_prod
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - rideos_network
+
+volumes:
+  mongo_data:
+    driver: local
+  timescale_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  rideos_network:
+    driver: bridge

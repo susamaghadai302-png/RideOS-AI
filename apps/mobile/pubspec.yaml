@@ -1,0 +1,43 @@
+name: rideos_mobile
+description: "RideOS Pro — Connected Vehicle & Motorcycle Telematics Platform"
+publish_to: 'none'
+version: 2.4.0+2400
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.4.9
+  go_router: ^13.1.0
+  flutter_bloc: ^8.1.3
+  equatable: ^2.0.5
+  dio: ^5.4.0
+  geolocator: ^10.1.0
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+  google_fonts: ^6.1.0
+  google_maps_flutter: ^2.5.3
+  get_it: ^7.6.0
+  cupertino_icons: ^1.0.6
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^6.1.1
+  local_auth: ^2.2.0
+  latlong2: ^0.9.0
+  flutter_blue_plus: ^2.3.12
+  permission_handler: ^13.0.1
+  http: ^1.2.0
+  model_viewer_plus: ^1.10.0
+  flutter_markdown: ^0.7.7+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/garage/
+    - assets/models/

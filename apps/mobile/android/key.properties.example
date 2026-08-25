@@ -1,0 +1,11 @@
+# ==============================================================================
+# RideOS-AI — Android Production Release Keystore Configuration Template
+# ==============================================================================
+# Copy this file to key.properties and configure with your production keystore.
+# NEVER commit key.properties or *.keystore / *.jks files to Git!
+# ==============================================================================
+
+storePassword=replace_with_keystore_password
+keyPassword=replace_with_key_password
+keyAlias=rideos_release_key
+storeFile=/path/to/rideos_release.keystore
