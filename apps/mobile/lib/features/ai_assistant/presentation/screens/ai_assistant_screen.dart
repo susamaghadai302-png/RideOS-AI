@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/ai_assistant_bloc.dart';
 import '../bloc/ai_assistant_event.dart';
 import '../bloc/ai_assistant_state.dart';
+import '../widgets/ai_assistant_widgets.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/contracts/text_to_speech_gateway.dart';
 import '../../../voice_assistant/presentation/bloc/voice_bloc.dart';
@@ -54,7 +55,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
 
   void _clearChatHistory() {
     LuxAudioHapticsService.selectionClick();
-    // In a real app we'd dispatch a ClearChatEvent. For now, it's a mock action.
   }
 
   @override
@@ -73,11 +73,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
         BlocListener<AiAssistantBloc, AiAssistantState>(
           listenWhen: (previous, current) => previous != current && current is AiAssistantLoadedState,
           listener: (context, state) {
-            if (_isTtsActive && state is AiAssistantLoadedState) {
+            if (_isTtsActive && state is AiAssistantLoadedState && state.messages.isNotEmpty) {
               final lastMsg = state.messages.last;
-              if (!lastMsg.isUser) {
-                _ttsGateway.speak(lastMsg.text);
-              }
+              if (!lastMsg.isUser) _ttsGateway.speak(lastMsg.text);
             }
           },
         ),
@@ -90,7 +88,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
             top: false,
             child: Column(
               children: [
-                // TabBar Header attached directly below TopBar
                 Container(
                   color: const Color(0x990A0F1E),
                   child: TabBar(
@@ -110,28 +107,15 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
                     ],
                   ),
                 ),
-
-                // TabBarView Content Pages
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      // Tab 1: ChatGPT-Class Voice AI & Conversation
                       _buildConversationalVoiceTab(),
-
-                      // Tab 2: Predictive Maintenance
                       _buildMaintenanceTab(),
-
-                      // Tab 3: Ride Analytics & Intelligence
                       _buildRideAnalyticsTab(),
-
-                      // Tab 4: Smart Trip Planner
                       _buildTripPlannerTab(),
-
-                      // Tab 5: AI Notifications
                       _buildNotificationsTab(),
-
-                      // Tab 6: Rider Profile & Leaderboard
                       _buildLeaderboardTab(),
                     ],
                   ),
@@ -144,14 +128,11 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
     );
   }
 
-  /// ChatGPT-Class Conversational Voice AI View
   Widget _buildConversationalVoiceTab() {
     return LuxResponsiveContainer(
       child: Column(
         children: [
           const SizedBox(height: 8),
-
-          // Action Bar: Clear History & Voice Engine State Status
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -163,52 +144,28 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
                     final isListening = state.inputState == VoiceInputState.listening;
                     return Row(
                       children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: isProcessing ? RoadOSColors.hyperOrange : RoadOSColors.apexEmerald,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+                        Container(width: 6, height: 6, decoration: BoxDecoration(color: isProcessing ? RoadOSColors.hyperOrange : RoadOSColors.apexEmerald, shape: BoxShape.circle)),
                         const SizedBox(width: 6),
-                        Text(
-                          isProcessing ? 'JARVIS REASONING...' : (isListening ? 'LISTENING...' : 'HEY ROADOS ENGINE ONLINE'),
-                          style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: RoadOSColors.textMuted, letterSpacing: 0.5),
-                        ),
+                        Text(isProcessing ? 'JARVIS REASONING...' : (isListening ? 'LISTENING...' : 'HEY ROADOS ENGINE ONLINE'), style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: RoadOSColors.textMuted, letterSpacing: 0.5)),
                       ],
                     );
                   },
                 ),
-                TextButton.icon(
-                  onPressed: _clearChatHistory,
-                  icon: const Icon(Icons.delete_outline_rounded, size: 14, color: RoadOSColors.textMuted),
-                  label: const Text('Clear Chat', style: TextStyle(fontSize: 10, color: RoadOSColors.textMuted, fontWeight: FontWeight.w600)),
-                ),
+                TextButton.icon(onPressed: _clearChatHistory, icon: const Icon(Icons.delete_outline_rounded, size: 14, color: RoadOSColors.textMuted), label: const Text('Clear Chat', style: TextStyle(fontSize: 10, color: RoadOSColors.textMuted, fontWeight: FontWeight.w600))),
               ],
             ),
           ),
-
-          // Neural Orb Audio Visualizer
           BlocBuilder<VoiceBloc, VoiceState>(
             builder: (context, state) {
               final isListening = state.inputState == VoiceInputState.listening;
               return NeuralVoiceOrbWidget(
                 isListening: isListening,
                 wakeWordStatus: isListening ? 'Listening for command...' : 'Tap to speak...',
-                onTap: () {
-                  if (isListening) {
-                    context.read<VoiceBloc>().add(StopVoiceListening());
-                  } else {
-                    context.read<VoiceBloc>().add(StartVoiceListening());
-                  }
-                },
+                onTap: () => isListening ? context.read<VoiceBloc>().add(StopVoiceListening()) : context.read<VoiceBloc>().add(StartVoiceListening()),
               );
             },
           ),
           const SizedBox(height: 10),
-
-          // Quick Command Action Chips
           SizedBox(
             height: 30,
             child: ListView(
@@ -226,30 +183,15 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
             ),
           ),
           const SizedBox(height: 8),
-
-          // Multi-Turn Chat Feed
           Expanded(
             child: BlocBuilder<AiAssistantBloc, AiAssistantState>(
               builder: (context, state) {
-                if (state is AiAssistantInitialState) {
-                  return const Center(
-                    child: Text('How can I assist your ride today?', style: TextStyle(color: RoadOSColors.textMuted)),
-                  );
-                }
-
+                if (state is AiAssistantInitialState) return const Center(child: Text('How can I assist your ride today?', style: TextStyle(color: RoadOSColors.textMuted)));
                 List<AiUiMessage> messages = [];
                 bool isLoading = false;
-                if (state is AiAssistantLoadingState) {
-                  messages = state.messages;
-                  isLoading = true;
-                } else if (state is AiAssistantLoadedState) {
-                  messages = state.messages;
-                } else if (state is AiAssistantErrorState) {
-                  return Center(
-                    child: Text('Error: ${state.errorMessage}', style: const TextStyle(color: RoadOSColors.hyperOrange)),
-                  );
-                }
-
+                if (state is AiAssistantLoadingState) { messages = state.messages; isLoading = true; }
+                else if (state is AiAssistantLoadedState) messages = state.messages;
+                else if (state is AiAssistantErrorState) return Center(child: Text('Error: ${state.errorMessage}', style: const TextStyle(color: RoadOSColors.hyperOrange)));
                 final reversed = messages.reversed.toList();
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -257,114 +199,28 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
                   reverse: true,
                   itemCount: reversed.length + (isLoading ? 1 : 0),
                   itemBuilder: (context, index) {
-                    if (isLoading && index == 0) {
-                      return const Padding(
-                        padding: EdgeInsets.only(bottom: 16),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: CircularProgressIndicator(color: RoadOSColors.cyberCyan, strokeWidth: 2),
-                        ),
-                      );
-                    }
-                    
+                    if (isLoading && index == 0) return const Padding(padding: EdgeInsets.only(bottom: 16), child: Align(alignment: Alignment.centerLeft, child: CircularProgressIndicator(color: RoadOSColors.cyberCyan, strokeWidth: 2)));
                     final msg = reversed[isLoading ? index - 1 : index];
-                    
-                    if (!msg.isUser) {
-                      return MarkdownAiMessageWidget(
-                        text: msg.text,
-                        isAnimated: false,
-                        onComplete: () {},
-                      );
-                    } else {
-                      return MarkdownUserMessageWidget(
-                        text: msg.text,
-                      );
-                    }
+                    return msg.isUser
+                        ? MarkdownUserMessageWidget(text: msg.text)
+                        : MarkdownAiMessageWidget(text: msg.text, isAnimated: false, onComplete: () {});
                   },
                 );
               },
             ),
           ),
-
-          // Text Chat Input & Control Bar
           Container(
             padding: const EdgeInsets.only(left: 12, right: 12, bottom: 16, top: 10),
-            color: Colors.transparent, // Floating over the background
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0E1426).withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFF334155).withValues(alpha: 0.5)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4, left: 4),
-                        child: IconButton(
-                          icon: Icon(
-                            _isTtsActive ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                            color: _isTtsActive ? const Color(0xFF8B5CF6) : RoadOSColors.textMuted,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            LuxAudioHapticsService.selectionClick();
-                            setState(() {
-                              _isTtsActive = !_isTtsActive;
-                              if (!_isTtsActive) {
-                                _ttsGateway.stop();
-                              }
-                            });
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: TextField(
-                            controller: _textController,
-                            minLines: 1,
-                            maxLines: 5,
-                            keyboardType: TextInputType.multiline,
-                            style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
-                            decoration: InputDecoration(
-                              hintText: 'Message Rideo AI...',
-                              hintStyle: TextStyle(color: RoadOSColors.textMuted.withValues(alpha: 0.6), fontSize: 13),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4, right: 4),
-                        child: BlocBuilder<AiAssistantBloc, AiAssistantState>(
-                          builder: (context, aiState) {
-                            final isProcessing = aiState is AiAssistantLoadingState;
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: isProcessing ? Colors.transparent : const Color(0xFF8B5CF6),
-                                shape: BoxShape.circle,
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  isProcessing ? Icons.more_horiz_rounded : Icons.arrow_upward_rounded,
-                                  color: isProcessing ? RoadOSColors.textMuted : Colors.white,
-                                  size: 20,
-                                ),
-                                onPressed: isProcessing ? null : () => _handleUserPrompt(_textController.text),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            child: Container(
+              decoration: BoxDecoration(color: const Color(0xFF0E1426).withValues(alpha: 0.8), borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFF334155).withValues(alpha: 0.5))),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Padding(padding: const EdgeInsets.only(bottom: 4, left: 4), child: IconButton(icon: Icon(_isTtsActive ? Icons.volume_up_rounded : Icons.volume_off_rounded, color: _isTtsActive ? const Color(0xFF8B5CF6) : RoadOSColors.textMuted, size: 20), onPressed: () { LuxAudioHapticsService.selectionClick(); setState(() { _isTtsActive = !_isTtsActive; if (!_isTtsActive) _ttsGateway.stop(); }); })),
+                  Expanded(child: Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: TextField(controller: _textController, minLines: 1, maxLines: 5, keyboardType: TextInputType.multiline, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4), decoration: InputDecoration(hintText: 'Message Rideo AI...', hintStyle: TextStyle(color: RoadOSColors.textMuted.withValues(alpha: 0.6), fontSize: 13), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(vertical: 12))))),
+                  Padding(padding: const EdgeInsets.only(bottom: 4, right: 4), child: BlocBuilder<AiAssistantBloc, AiAssistantState>(builder: (context, aiState) { final isProcessing = aiState is AiAssistantLoadingState; return Container(decoration: BoxDecoration(color: isProcessing ? Colors.transparent : const Color(0xFF8B5CF6), shape: BoxShape.circle), child: IconButton(icon: Icon(isProcessing ? Icons.more_horiz_rounded : Icons.arrow_upward_rounded, color: isProcessing ? RoadOSColors.textMuted : Colors.white, size: 20), onPressed: isProcessing ? null : () => _handleUserPrompt(_textController.text))); })),
+                ],
+              ),
             ),
           ),
         ],
@@ -373,62 +229,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
   }
 
   Widget _buildCommandChip(String label) {
-    return GestureDetector(
-      onTap: () => _handleUserPrompt(label),
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.55), width: 1.2),
-          boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.12), blurRadius: 8, spreadRadius: -2)],
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF8B5CF6)),
-        ),
-      ),
-    );
+    return GestureDetector(onTap: () => _handleUserPrompt(label), child: Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.55), width: 1.2)), child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF8B5CF6))));
   }
 
-  Widget _buildMaintenanceTab() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      child: PredictiveMaintenanceGridWidget(),
-    );
-  }
-
-  Widget _buildRideAnalyticsTab() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      child: RideIntelligenceRadarWidget(),
-    );
-  }
-
-  Widget _buildTripPlannerTab() {
-    return const SingleChildScrollView(
-      physics: BouncingScrollPhysics(),
-      padding: EdgeInsets.all(16),
-      child: SmartTripPlannerWidget(),
-    );
-  }
-
-  Widget _buildNotificationsTab() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      child: AiNotificationsDrawerWidget(),
-    );
-  }
-
-  Widget _buildLeaderboardTab() {
-    return const SingleChildScrollView(
-      physics: BouncingScrollPhysics(),
-      padding: EdgeInsets.all(16),
-      child: RiderProfileLeaderboardWidget(),
-    );
-  }
+  Widget _buildMaintenanceTab() => SingleChildScrollView(physics: const BouncingScrollPhysics(), padding: const EdgeInsets.all(16), child: PredictiveMaintenanceGridWidget());
+  Widget _buildRideAnalyticsTab() => SingleChildScrollView(physics: const BouncingScrollPhysics(), padding: const EdgeInsets.all(16), child: RideIntelligenceRadarWidget());
+  Widget _buildTripPlannerTab() => const SingleChildScrollView(physics: BouncingScrollPhysics(), padding: EdgeInsets.all(16), child: SmartTripPlannerWidget());
+  Widget _buildNotificationsTab() => SingleChildScrollView(physics: const BouncingScrollPhysics(), padding: const EdgeInsets.all(16), child: AiNotificationsDrawerWidget());
+  Widget _buildLeaderboardTab() => const SingleChildScrollView(physics: BouncingScrollPhysics(), padding: EdgeInsets.all(16), child: RiderProfileLeaderboardWidget());
 }
