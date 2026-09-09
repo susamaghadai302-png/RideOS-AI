@@ -1,7 +1,4 @@
-import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'roados_tokens.dart';
 
 /// Single active liquid water ripple instance
 class _WaterRippleWave {
@@ -47,7 +44,7 @@ class _LiquidWaterRippleState extends State<LiquidWaterRipple>
   late AnimationController _ticker;
   final List<_WaterRippleWave> _ripples = [];
   Offset? _hoverPosition;
-  bool _isHovering = false;
+  final bool _isHovering = false;
   static const Duration _rippleLifetime = Duration(milliseconds: 480);
 
   @override

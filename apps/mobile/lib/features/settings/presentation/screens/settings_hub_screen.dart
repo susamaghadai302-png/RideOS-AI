@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/settings/models/app_settings_model.dart';

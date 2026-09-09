@@ -16,7 +16,7 @@ class RouteWeatherRadarEngine {
     final rainProb = simulatedRainPct.round().clamp(0, 100);
     final windSpeed = simulatedWindKmh.clamp(0.0, 150.0);
     final windGust = windSpeed * 1.35;
-    final ambientTemp = 21.0;
+    const ambientTemp = 21.0;
 
     RoadSurfaceGrip roadGrip = RoadSurfaceGrip.dryOptimal;
     WeatherSeverityLevel severity = WeatherSeverityLevel.clear;

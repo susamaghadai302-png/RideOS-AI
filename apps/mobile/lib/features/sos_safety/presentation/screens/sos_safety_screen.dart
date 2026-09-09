@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../crash_detection/core/services/crash_detection_engine.dart';
 import '../../../obd_tpms/presentation/widgets/connected_platform_widgets.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 class SosSafetyScreen extends StatefulWidget {
   const SosSafetyScreen({super.key});
@@ -127,9 +126,9 @@ class _SosSafetyScreenState extends State<SosSafetyScreen> {
                       ),
                       const SizedBox(height: 12),
                       _buildMedicalRow('RIDER NAME', 'Hitanshu G.'),
-                      const Divider(color: const Color(0xFF334155), height: 12),
+                      const Divider(color: Color(0xFF334155), height: 12),
                       _buildMedicalRow('ALLERGIES', 'Penicillin (Severe)'),
-                      const Divider(color: const Color(0xFF334155), height: 12),
+                      const Divider(color: Color(0xFF334155), height: 12),
                       _buildMedicalRow('PRIMARY ICE CONTACT', 'Sarah G. (Spouse) | +1 (555) 019-2834'),
                     ],
                   ),

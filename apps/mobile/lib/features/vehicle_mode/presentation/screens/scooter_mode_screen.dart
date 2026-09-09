@@ -257,7 +257,7 @@ class _ScooterModeScreenState extends ConsumerState<ScooterModeScreen> {
                   border: Border.all(color: RoadOSColors.textMuted.withValues(alpha: 0.2)),
                 ),
                 child: Column(children: [
-                  Icon(Icons.electric_scooter_rounded, color: RoadOSColors.textSecondary, size: 20),
+                  const Icon(Icons.electric_scooter_rounded, color: RoadOSColors.textSecondary, size: 20),
                   const SizedBox(height: 2),
                   Text('NO PROFILE', style: GoogleFonts.outfit(color: RoadOSColors.textSecondary, fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                 ]),

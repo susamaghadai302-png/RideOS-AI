@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/roados_tokens.dart';
@@ -83,9 +83,9 @@ class _HardwareFieldTestDashboardScreenState extends State<HardwareFieldTestDash
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Icon(Icons.assignment_turned_in_rounded, color: RoadOSColors.electricBlue, size: 20),
             SizedBox(width: 8),
             Text(
@@ -121,8 +121,8 @@ class _HardwareFieldTestDashboardScreenState extends State<HardwareFieldTestDash
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
       ),
-      child: Row(
-        children: const [
+      child: const Row(
+        children: [
           Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 20),
           SizedBox(width: 12),
           Expanded(

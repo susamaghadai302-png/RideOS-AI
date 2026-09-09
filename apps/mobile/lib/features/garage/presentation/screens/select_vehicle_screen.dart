@@ -25,15 +25,15 @@ class SelectVehicleScreen extends ConsumerWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.orange.withOpacity(0.1),
-            child: Row(
+            color: Colors.orange.withValues(alpha: 0.1),
+            child: const Row(
               children: [
-                const Icon(Icons.warning_amber, color: Colors.orange),
-                const SizedBox(width: 12),
+                Icon(Icons.warning_amber, color: Colors.orange),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Device connected, but vehicle identity is unavailable. Please select which vehicle this device belongs to.',
-                    style: const TextStyle(color: Colors.orange, fontSize: 12),
+                    style: TextStyle(color: Colors.orange, fontSize: 12),
                   ),
                 ),
               ],

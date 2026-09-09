@@ -79,8 +79,8 @@ class HardwareReadinessValidator {
         protocolStatusLabel: 'Verified Yamaha Y-Connect Protocol',
         verificationStatus: isSimulated ? HardwareBenchVerificationStatus.benchVerified : HardwareBenchVerificationStatus.partiallyVerified,
         sourceClassification: sourceMode,
-        availableCapabilities: ['Wheel Speed', 'Engine RPM', 'Fuel Level', 'Battery Voltage', 'Turn-by-Turn HUD Mirror'],
-        unsupportedCapabilities: ['Remote Ignition Kill', 'ECU Flash'],
+        availableCapabilities: const ['Wheel Speed', 'Engine RPM', 'Fuel Level', 'Battery Voltage', 'Turn-by-Turn HUD Mirror'],
+        unsupportedCapabilities: const ['Remote Ignition Kill', 'ECU Flash'],
       );
     }
 
@@ -104,8 +104,8 @@ class HardwareReadinessValidator {
         protocolStatusLabel: 'Verified RE Tripper GATT Protocol',
         verificationStatus: isSimulated ? HardwareBenchVerificationStatus.benchVerified : HardwareBenchVerificationStatus.partiallyVerified,
         sourceClassification: sourceMode,
-        availableCapabilities: ['Wheel Speed', 'Gear Position', 'Turn-by-Turn HUD Mirror'],
-        unsupportedCapabilities: ['ECU Diagnostic Trouble Codes'],
+        availableCapabilities: const ['Wheel Speed', 'Gear Position', 'Turn-by-Turn HUD Mirror'],
+        unsupportedCapabilities: const ['ECU Diagnostic Trouble Codes'],
       );
     }
 
@@ -127,8 +127,8 @@ class HardwareReadinessValidator {
       protocolStatusLabel: 'Detected — Protocol Not Verified',
       verificationStatus: HardwareBenchVerificationStatus.unverified,
       sourceClassification: sourceMode,
-      availableCapabilities: ['Standard ISO 15765-4 Telemetry (with OBD-II Adapter)'],
-      unsupportedCapabilities: ['Smart Display Mirroring', 'OEM Proprietary Telemetry'],
+      availableCapabilities: const ['Standard ISO 15765-4 Telemetry (with OBD-II Adapter)'],
+      unsupportedCapabilities: const ['Smart Display Mirroring', 'OEM Proprietary Telemetry'],
     );
   }
 }

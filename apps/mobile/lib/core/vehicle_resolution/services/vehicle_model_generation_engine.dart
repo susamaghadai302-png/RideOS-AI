@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import '../models/vehicle_identity.dart';
@@ -192,7 +191,7 @@ class VehicleModelGenerationEngine {
     final hashInput = utf8.encode('${identity.canonicalKey}_${request.requestId}_${meshStats.polygonCount}');
     final checksum = 'sha256:${sha256.convert(hashInput)}';
     final generatedGlbPath = 'assets/3d/scans/${request.requestId}.glb';
-    final generatedThumbPath = 'assets/garage/generic_bike.png';
+    const generatedThumbPath = 'assets/garage/generic_bike.png';
 
     // Persist to local storage
     await _persistentStorage.saveValidatedModel(

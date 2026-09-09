@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../models/ai_ride_assistant_models.dart';
 
 abstract class AIRideProvider {

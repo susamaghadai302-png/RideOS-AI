@@ -261,7 +261,7 @@ class NavigationRepositoryGatewayAdapter implements NavigationGateway {
       // Use the current route's last waypoint as destination
       final destination = currentRoute.waypoints.isNotEmpty
           ? currentRoute.waypoints.last
-          : MapCoordinates(latitude: 0, longitude: 0);
+          : const MapCoordinates(latitude: 0, longitude: 0);
 
       final newRoute = await _repository.calculateRoute(
         origin: currentLocation,

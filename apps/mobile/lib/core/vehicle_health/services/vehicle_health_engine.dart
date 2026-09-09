@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../bluetooth/bluetooth_engine.dart';
 import '../../vehicle_protocols/models/normalized_telemetry.dart';
 import '../models/vehicle_health_state.dart';
-import '../models/diagnostic_item.dart';
 import '../models/vehicle_alert_model.dart';
 import 'diagnostic_manager.dart';
 import 'maintenance_manager.dart';

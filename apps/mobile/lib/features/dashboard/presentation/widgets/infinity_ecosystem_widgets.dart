@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 
@@ -276,12 +275,12 @@ class SmartServicesValuationWidget extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.calculate_rounded, color: const Color(0xFF8B5CF6), size: 20),
+                  Icon(Icons.calculate_rounded, color: Color(0xFF8B5CF6), size: 20),
                   SizedBox(width: 8),
                   Text('BIKE RESALE VALUATION & LOAN EMI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: RoadOSColors.platinumWhite)),
                 ],
               ),
-              Text('Est: \$24,500', style: TextStyle(fontSize: 10, color: const Color(0xFF8B5CF6), fontWeight: FontWeight.bold)),
+              Text('Est: \$24,500', style: TextStyle(fontSize: 10, color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold)),
             ],
           ),
           SizedBox(height: 8),

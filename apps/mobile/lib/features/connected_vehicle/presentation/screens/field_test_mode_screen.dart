@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/premium_navigation.dart';
@@ -54,9 +54,9 @@ class _FieldTestModeScreenState extends State<FieldTestModeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Icon(Icons.satellite_alt_rounded, color: RoadOSColors.electricBlue, size: 20),
             SizedBox(width: 8),
             Text(
@@ -101,8 +101,8 @@ class _FieldTestModeScreenState extends State<FieldTestModeScreen> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
       ),
-      child: Row(
-        children: const [
+      child: const Row(
+        children: [
           Icon(Icons.info_outline_rounded, color: Colors.amber, size: 20),
           SizedBox(width: 12),
           Expanded(

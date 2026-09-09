@@ -1,5 +1,5 @@
 import 'dart:io' show Platform;
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -12,7 +12,6 @@ import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/premium_login_animations.dart';
 import '../../../../core/design_system/premium_navigation.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/utils/constants.dart';
 import '../bloc/auth_bloc.dart';
@@ -831,9 +830,9 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Text('·', style: TextStyle(color: const Color(0xFF374151))),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Text('·', style: TextStyle(color: Color(0xFF374151))),
         ),
         GestureDetector(
           onTap: () => _showLegalInfoDialog('Terms of Service', 'By signing into RideOS-AI, you acknowledge that all AI telemetry, lean angle guidance, and safety insights are advisory assistive tools.'),
@@ -864,7 +863,7 @@ class _LoginScreenState extends State<LoginScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('CLOSE', style: TextStyle(color: RoadOSColors.cyberCyan, fontWeight: FontWeight.bold)),
+            child: const Text('CLOSE', style: TextStyle(color: RoadOSColors.cyberCyan, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

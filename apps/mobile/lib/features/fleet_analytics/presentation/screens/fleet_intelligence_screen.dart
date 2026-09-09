@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/design_tokens.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../domain/models/multi_vehicle_fleet_models.dart';
 import '../../services/multi_vehicle_fleet_engine.dart';
 import '../../../../core/widgets/cinematic_background.dart';
@@ -300,7 +298,7 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
                   const SizedBox(height: 2),
                   Text(
                     'Due in ${p.remainingKm} km (at ${p.dueKm} km)',
-                    style: TextStyle(color: RoadOSColors.textMuted, fontSize: 9),
+                    style: const TextStyle(color: RoadOSColors.textMuted, fontSize: 9),
                   ),
                 ],
               ),

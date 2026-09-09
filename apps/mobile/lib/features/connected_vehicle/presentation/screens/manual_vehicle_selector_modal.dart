@@ -1,17 +1,14 @@
-import 'dart:ui';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/vehicle_resolution/models/vehicle_profile.dart';
 import '../../../../core/vehicle_resolution/providers/my_vehicles_provider.dart';
 import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
 import '../../../../core/vehicle_connectivity/services/universal_vehicle_database.dart';
-import '../../../../core/vehicle_connectivity/models/vehicle_variant_taxonomy.dart';
 
 /// Full-featured, offline-resilient Manual Vehicle Selector Sheet for RideOS-AI.
 /// Allows selecting from all 21 manufacturers and 150+ models, with category filtering,

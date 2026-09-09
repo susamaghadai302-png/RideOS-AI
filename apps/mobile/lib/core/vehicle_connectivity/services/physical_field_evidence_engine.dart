@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import '../models/physical_field_evidence_models.dart';
 import '../transports/vehicle_transport.dart';
 import 'structured_hardware_diagnostic_logger.dart';
@@ -149,7 +148,7 @@ class PhysicalFieldEvidenceEngine {
       averageNotificationFrequencyHz: 10.0,
       evidenceLevel: level,
       warnings: warnings,
-      verifiedCapabilities: ['Wheel Speed', 'Engine RPM', 'Battery Voltage', 'Turn-by-Turn HUD Frame'],
+      verifiedCapabilities: const ['Wheel Speed', 'Engine RPM', 'Battery Voltage', 'Turn-by-Turn HUD Frame'],
     );
 
     return _lastCompletedEvidence!;

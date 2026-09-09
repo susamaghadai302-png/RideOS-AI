@@ -56,6 +56,7 @@ void aaosHeadlessEntrypoint() async {
     voiceGuidanceService: getIt(),
   );
 
+  // Listen to Navigation state changes and broadcast to Kotlin Native Session
   navBloc.stream.listen((state) {
     if (state is ActiveTurnByTurnState) {
       final fix = state.currentFix;
@@ -65,10 +66,11 @@ void aaosHeadlessEntrypoint() async {
         'stepDistanceMeters': step.distanceMeters,
         'etaMinutes': state.durationRemainingMins,
         'totalDistanceKm': state.distanceRemainingKm,
-        'currentLat': fix?.coordinates.latitude,
-        'currentLng': fix?.coordinates.longitude,
+        'destinationTitle': 'Destination',
+        'currentLat': fix?.coordinates.latitude ?? 0.0,
+        'currentLng': fix?.coordinates.longitude ?? 0.0,
       });
-    } else if (state is NavigationEndedState) {
+    } else if (state is NavigationInitialState || state is NavigationEndedState) {
       _aaosChannel.invokeMethod('onNavigationIdle');
     }
   });

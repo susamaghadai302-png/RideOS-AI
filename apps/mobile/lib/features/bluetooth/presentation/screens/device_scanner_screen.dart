@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
-import '../../../../core/design_system/design_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../../../../core/bluetooth/bluetooth_engine.dart';
@@ -76,7 +74,7 @@ class _DeviceScannerScreenState extends ConsumerState<DeviceScannerScreen> {
           if (connectionState != AppState.BluetoothConnectionState.idle && connectionState != AppState.BluetoothConnectionState.disconnected)
             Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.cyan.withOpacity(0.1),
+              color: Colors.cyan.withValues(alpha: 0.1),
               child: Row(
                 children: [
                   const Icon(Icons.info, color: Colors.cyan),

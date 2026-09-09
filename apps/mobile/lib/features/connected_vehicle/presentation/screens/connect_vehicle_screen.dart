@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
 
 import 'dart:math' as math;
 import 'dart:ui';
@@ -9,7 +8,6 @@ import '../../../../core/widgets/cinematic_background.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/theme_engine.dart';
 import '../../../../core/design_system/premium_navigation.dart';
@@ -35,7 +33,6 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'connection_diagnostics_screen.dart';
 import 'vehicle_compatibility_details_modal.dart';
 import 'vehicle_catalog_browser_screen.dart';
-import 'universal_vehicle_selector_sheet.dart';
 import 'live_vehicle_dashboard_modal.dart';
 import 'add_vehicle_modal.dart';
 import 'manual_vehicle_selector_modal.dart';
@@ -882,7 +879,7 @@ class _ConnectVehicleScreenState extends ConsumerState<ConnectVehicleScreen>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: const Color(0xFF00F2FE).withOpacity(scanning ? 0.4 - (i * 0.1) : 0.1),
+                                color: const Color(0xFF00F2FE).withValues(alpha: scanning ? 0.4 - (i * 0.1) : 0.1),
                                 width: 1.5,
                               ),
                             ),
@@ -900,16 +897,16 @@ class _ConnectVehicleScreenState extends ConsumerState<ConnectVehicleScreen>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: RadialGradient(colors: [
-                              const Color(0xFF00F2FE).withOpacity(0.3),
-                              const Color(0xFF00F2FE).withOpacity(0.05),
+                              const Color(0xFF00F2FE).withValues(alpha: 0.3),
+                              const Color(0xFF00F2FE).withValues(alpha: 0.05),
                             ]),
                             border: Border.all(
-                              color: const Color(0xFF00F2FE).withOpacity(scanning ? 0.6 : 0.3),
+                              color: const Color(0xFF00F2FE).withValues(alpha: scanning ? 0.6 : 0.3),
                               width: 2.0,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00F2FE).withOpacity(scanning ? 0.4 : 0.1),
+                                color: const Color(0xFF00F2FE).withValues(alpha: scanning ? 0.4 : 0.1),
                                 blurRadius: 40,
                                 spreadRadius: scanning ? 10 : 0,
                               ),

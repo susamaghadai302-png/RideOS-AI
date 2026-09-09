@@ -33,7 +33,7 @@ class DigitalWalletService {
   DigitalWalletService._internal();
 
   double _currentBalanceUsd = 480.50;
-  double _monthlyBudgetUsd = 600.00;
+  final double _monthlyBudgetUsd = 600.00;
 
   final List<WalletTransaction> _transactions = [
     WalletTransaction(

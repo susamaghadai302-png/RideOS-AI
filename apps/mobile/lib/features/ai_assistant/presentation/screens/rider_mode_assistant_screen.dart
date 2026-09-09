@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import '../../../../core/design_system/premium_navigation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,9 +80,9 @@ class _RiderModeAssistantScreenState extends ConsumerState<RiderModeAssistantScr
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Icon(Icons.mic_rounded, color: RoadOSColors.electricBlue, size: 20),
             SizedBox(width: 8),
             Text(
@@ -373,7 +373,7 @@ class _RiderModeAssistantScreenState extends ConsumerState<RiderModeAssistantScr
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: const Color(0xFF080C1A),
+        color: Color(0xFF080C1A),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Row(

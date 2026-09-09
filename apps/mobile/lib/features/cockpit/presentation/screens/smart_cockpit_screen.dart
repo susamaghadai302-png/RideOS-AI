@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
 
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/telemetry_engine/models/telemetry_metric_entry.dart';
 import '../../../../core/telemetry_engine/services/vehicle_telemetry_engine.dart';
 import '../../../../core/telemetry_engine/services/ride_session_manager.dart';
@@ -11,8 +9,6 @@ import 'package:rideos_mobile/core/vehicle_resolution/providers/active_vehicle_c
 import 'package:rideos_mobile/features/ai_assistant/presentation/screens/rider_mode_assistant_screen.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/design_tokens.dart';
-import '../../../../core/design_system/premium_overlays.dart';
 import '../../../../core/widgets/apex_components.dart';
 import '../../../../core/widgets/cinematic_background.dart';
 
@@ -127,8 +123,8 @@ class _SmartCockpitScreenState extends ConsumerState<SmartCockpitScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
         color: Colors.amber.withValues(alpha: 0.2),
-        child: Row(
-          children: const [
+        child: const Row(
+          children: [
             Icon(Icons.cloud_off_rounded, size: 14, color: Colors.amber),
             SizedBox(width: 8),
             Text(
@@ -144,8 +140,8 @@ class _SmartCockpitScreenState extends ConsumerState<SmartCockpitScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
         color: Colors.redAccent.withValues(alpha: 0.2),
-        child: Row(
-          children: const [
+        child: const Row(
+          children: [
             Icon(Icons.history_toggle_off_rounded, size: 14, color: Colors.redAccent),
             SizedBox(width: 8),
             Text(
@@ -344,10 +340,10 @@ class _SmartCockpitScreenState extends ConsumerState<SmartCockpitScreen> {
             child: const Icon(Icons.auto_awesome_rounded, color: RoadOSColors.neonViolet, size: 18),
           ),
           const SizedBox(width: 12),
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   'AI RIDE INSIGHT',
                   style: TextStyle(color: RoadOSColors.neonViolet, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2),

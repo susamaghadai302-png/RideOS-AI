@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rideos_mobile/core/contracts/voice_gateway.dart';
 import 'package:rideos_mobile/core/contracts/voice_models.dart';
 import '../fakes/fake_voice_input_adapter.dart';
 

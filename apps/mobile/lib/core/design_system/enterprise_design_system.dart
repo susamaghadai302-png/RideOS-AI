@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'design_tokens.dart';
 import 'roados_components.dart';
 
 class ApexSpacing {
@@ -19,10 +18,10 @@ class EnterpriseDesignSystem {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: const Color(0xFF0F172A),
       fontFamily: 'Inter',
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: RoadOSColors.hyperOrange,
         secondary: RoadOSColors.cyberCyan,
-        surface: const Color(0xFF0F172A),
+        surface: Color(0xFF0F172A),
         error: RoadOSColors.errorCrimson,
       ),
       appBarTheme: const AppBarTheme(

@@ -149,15 +149,15 @@ class RideOS3DModelViewer extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.6), width: 1),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.verified_rounded, color: const Color(0xFF00E676), size: 12),
-                      const SizedBox(width: 4),
+                      Icon(Icons.verified_rounded, color: Color(0xFF00E676), size: 12),
+                      SizedBox(width: 4),
                       Text(
                         'OFFICIAL VEHICLE 3D MODEL',
                         style: TextStyle(
-                          color: const Color(0xFF00E676),
+                          color: Color(0xFF00E676),
                           fontSize: 9,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.5,

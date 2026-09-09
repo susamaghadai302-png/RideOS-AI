@@ -1,6 +1,5 @@
 import '../../domain/models/advanced_dashboard_models.dart';
 import '../../../../core/device_providers/services/fleet_telematics_engine.dart';
-import '../../../../core/device_providers/models/normalized_telemetry_models.dart';
 
 class RealtimeDashboardTelemetryEngine {
   static final RealtimeDashboardTelemetryEngine _instance = RealtimeDashboardTelemetryEngine._internal();

@@ -5,7 +5,7 @@ import '../../services/predictive_health_engine.dart';
 import 'dart:async';
 
 class PredictiveHealthDashboardScreen extends StatefulWidget {
-  const PredictiveHealthDashboardScreen({Key? key}) : super(key: key);
+  const PredictiveHealthDashboardScreen({super.key});
 
   @override
   State<PredictiveHealthDashboardScreen> createState() => _PredictiveHealthDashboardScreenState();
@@ -57,8 +57,8 @@ class _PredictiveHealthDashboardScreenState extends State<PredictiveHealthDashbo
         title: const Text('Vehicle Health'),
         actions: [
           if (_activeAlerts.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            const Padding(
+              padding: EdgeInsets.all(16.0),
               child: Icon(Icons.warning_amber_rounded, color: Colors.orange),
             )
         ],
@@ -122,7 +122,7 @@ class _PredictiveHealthDashboardScreenState extends State<PredictiveHealthDashbo
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${_currentScore.overallScore.toStringAsFixed(1)}',
+                      _currentScore.overallScore.toStringAsFixed(1),
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: color),
                     ),
                     Text(
@@ -198,7 +198,7 @@ class _PredictiveHealthDashboardScreenState extends State<PredictiveHealthDashbo
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: severityColor.withOpacity(0.1),
+                color: severityColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

@@ -1,7 +1,6 @@
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../../vehicle_protocols/protocol_detector.dart';
 import '../../vehicle_protocols/protocol_adapter_manager.dart';
-import '../../vehicle_protocols/protocol_adapter.dart';
 import '../models/vehicle_profile.dart';
 import 'vehicle_registry.dart';
 import 'vehicle_model_registry.dart';

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/roados_tokens.dart';
-import '../../../../core/device_providers/interfaces/device_provider.dart';
 import '../../../../core/device_providers/models/normalized_telemetry_models.dart';
 import '../../../../core/device_providers/services/fleet_telematics_engine.dart';
 import '../../../../core/widgets/cinematic_background.dart';
@@ -234,25 +233,25 @@ class _DeviceCenterScreenState extends State<DeviceCenterScreen> with SingleTick
           children: [
             Row(
               children: [
-                Expanded(child: _buildMetricTile('SPEED', '${data.vehicleSpeedKmh.formattedValue}', 'KM/H', RoadOSColors.electricBlue)),
+                Expanded(child: _buildMetricTile('SPEED', data.vehicleSpeedKmh.formattedValue, 'KM/H', RoadOSColors.electricBlue)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildMetricTile('ENGINE RPM', '${data.engineRpm.formattedValue}', 'RPM', RoadOSColors.hyperOrange)),
+                Expanded(child: _buildMetricTile('ENGINE RPM', data.engineRpm.formattedValue, 'RPM', RoadOSColors.hyperOrange)),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildMetricTile('COOLANT', '${data.coolantTempC.formattedValue}', ' degC', RoadOSColors.cyberCyan)),
+                Expanded(child: _buildMetricTile('COOLANT', data.coolantTempC.formattedValue, ' degC', RoadOSColors.cyberCyan)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildMetricTile('BATTERY', '${data.batteryVoltage.formattedValue}', 'V', RoadOSColors.apexEmerald)),
+                Expanded(child: _buildMetricTile('BATTERY', data.batteryVoltage.formattedValue, 'V', RoadOSColors.apexEmerald)),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildMetricTile('THROTTLE', '${data.throttlePositionPct.formattedValue}', '%', RoadOSColors.neonMagenta)),
+                Expanded(child: _buildMetricTile('THROTTLE', data.throttlePositionPct.formattedValue, '%', RoadOSColors.neonMagenta)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildMetricTile('LEAN ANGLE', '${data.leanAngleDeg.formattedValue}', ' deg', RoadOSColors.warningAmber)),
+                Expanded(child: _buildMetricTile('LEAN ANGLE', data.leanAngleDeg.formattedValue, ' deg', RoadOSColors.warningAmber)),
               ],
             ),
           ],
@@ -299,14 +298,14 @@ class _DeviceCenterScreenState extends State<DeviceCenterScreen> with SingleTick
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFF1A2035)),
           ),
-          child: Row(
+          child: const Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: RoadOSColors.apexEmerald, size: 32),
-              const SizedBox(width: 14),
+              Icon(Icons.check_circle_rounded, color: RoadOSColors.apexEmerald, size: 32),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text('ECU & SENSORS HEALTHY', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                     Text('0 Active Diagnostic Trouble Codes (DTC)', style: TextStyle(color: RoadOSColors.textMuted, fontSize: 11)),
                   ],

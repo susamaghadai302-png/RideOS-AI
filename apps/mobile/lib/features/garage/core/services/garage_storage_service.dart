@@ -137,8 +137,8 @@ class GarageStorageService {
         'riderId': _currentRiderId,
         'vehicleId': vehicleId,
         'configuration': {
-          'paintColor': '#${state.bodyColor.value.toRadixString(16).substring(2)}',
-          'wheels': '#${state.wheelColor.value.toRadixString(16).substring(2)}',
+          'paintColor': '#${state.bodyColor.toARGB32().toRadixString(16).substring(2)}',
+          'wheels': '#${state.wheelColor.toARGB32().toRadixString(16).substring(2)}',
           // Maps other properties as needed
         }
       });

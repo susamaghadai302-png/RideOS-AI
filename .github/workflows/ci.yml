@@ -65,3 +65,6 @@ jobs:
 
       - name: Build NestJS API
         run: pnpm --filter backend run build
+
+      - name: Test NestJS API
+        run: pnpm --filter backend run test

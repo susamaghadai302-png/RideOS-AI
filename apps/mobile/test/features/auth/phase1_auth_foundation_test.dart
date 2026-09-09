@@ -187,7 +187,7 @@ void main() {
     });
 
     test('Login success emits AuthenticatedState with valid rider', () async {
-      authBloc.add(LoginSubmittedEvent(email: 'rider@rideos.ai', password: 'password123'));
+      authBloc.add(const LoginSubmittedEvent(email: 'rider@rideos.ai', password: 'password123'));
 
       await expectLater(
         authBloc.stream,
@@ -200,7 +200,7 @@ void main() {
 
     test('Login failure emits AuthFailureState with proper error message', () async {
       mockRepo.shouldThrowError = true;
-      authBloc.add(LoginSubmittedEvent(email: 'wrong@rideos.ai', password: 'wrong'));
+      authBloc.add(const LoginSubmittedEvent(email: 'wrong@rideos.ai', password: 'wrong'));
 
       await expectLater(
         authBloc.stream,
@@ -212,7 +212,7 @@ void main() {
     });
 
     test('Register success emits AuthenticatedState', () async {
-      authBloc.add(RegisterSubmittedEvent(
+      authBloc.add(const RegisterSubmittedEvent(
         email: 'newuser@rideos.ai',
         password: 'securePassword123',
         fullName: 'Alex Vance',
@@ -229,7 +229,7 @@ void main() {
     });
 
     test('Google OAuth with credentials emits AuthenticatedState', () async {
-      authBloc.add(GoogleSignInWithCredentialEvent(
+      authBloc.add(const GoogleSignInWithCredentialEvent(
         email: 'alex.oauth@gmail.com',
         fullName: 'Alex OAuth',
         idToken: 'valid_google_token_123',
@@ -246,7 +246,7 @@ void main() {
 
     test('Logout clears authenticated session and emits UnauthenticatedState', () async {
       // First login
-      authBloc.add(LoginSubmittedEvent(email: 'rider@rideos.ai', password: 'password123'));
+      authBloc.add(const LoginSubmittedEvent(email: 'rider@rideos.ai', password: 'password123'));
       await expectLater(
         authBloc.stream,
         emitsThrough(isA<AuthenticatedState>()),

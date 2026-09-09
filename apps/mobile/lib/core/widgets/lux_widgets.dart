@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../theme/lux_theme.dart';
 import 'package:rideos_mobile/core/design_system/roados_components.dart';
 
 class RoadOSCard extends StatelessWidget {

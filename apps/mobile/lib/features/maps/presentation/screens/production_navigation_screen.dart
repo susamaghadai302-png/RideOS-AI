@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../core/map_provider.dart';
-import '../../core/local_graph_map_provider.dart';
 import '../../core/map_provider_factory.dart';
 import '../../domain/models/navigation_models.dart';
 import '../../services/turn_by_turn_navigation_engine.dart';
@@ -310,9 +307,9 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: const Color(0xFF1A2035)),
           ),
-          child: Row(
+          child: const Row(
             mainAxisSize: MainAxisSize.min,
-            children: const [
+            children: [
               Icon(Icons.traffic_rounded, color: Color(0xFFFFD600), size: 12),
               SizedBox(width: 4),
               Text(

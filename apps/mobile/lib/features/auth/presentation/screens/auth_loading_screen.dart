@@ -126,8 +126,8 @@ class _AuthLoadingScreenState extends State<AuthLoadingScreen>
                             // Outer spinning arc
                             Transform.rotate(
                               angle: _rotateController.value * 2 * math.pi,
-                              child: CustomPaint(
-                                size: const Size(120, 120),
+                              child: const CustomPaint(
+                                size: Size(120, 120),
                                 painter: _ArcRingPainter(
                                   color: RoadOSColors.cyberCyan,
                                   sweepFraction: 0.72,
@@ -139,8 +139,8 @@ class _AuthLoadingScreenState extends State<AuthLoadingScreen>
                             Transform.rotate(
                               angle:
                                   -_rotateController.value * 2 * math.pi * 0.6,
-                              child: CustomPaint(
-                                size: const Size(90, 90),
+                              child: const CustomPaint(
+                                size: Size(90, 90),
                                 painter: _ArcRingPainter(
                                   color: RoadOSColors.hyperOrange,
                                   sweepFraction: 0.45,

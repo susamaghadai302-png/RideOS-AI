@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../core/design_system/design_tokens.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 import '../../../../core/design_system/roados_components.dart';
+import '../widgets/ai_assistant_widgets.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/widgets/roados_visual_environment.dart';
-import '../../../garage/presentation/screens/luxury_garage_showroom_screen.dart';
-import '../../../navigation/presentation/screens/three_d_navigation_screen.dart';
-import '../../../obd_tpms/presentation/screens/obd_diagnostics_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/ai_assistant_bloc.dart';
 import '../bloc/ai_assistant_event.dart';
@@ -229,7 +226,23 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
   }
 
   Widget _buildCommandChip(String label) {
-    return GestureDetector(onTap: () => _handleUserPrompt(label), child: Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.55), width: 1.2)), child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF8B5CF6)))));
+    return GestureDetector(
+      onTap: () => _handleUserPrompt(label),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.55), width: 1.2),
+          boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.12), blurRadius: 8, spreadRadius: -2)],
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF8B5CF6)),
+        ),
+      ),
+    );
   }
 
   Widget _buildMaintenanceTab() => SingleChildScrollView(physics: const BouncingScrollPhysics(), padding: const EdgeInsets.all(16), child: PredictiveMaintenanceGridWidget());

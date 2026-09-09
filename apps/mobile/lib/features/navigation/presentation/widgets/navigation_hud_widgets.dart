@@ -99,7 +99,7 @@ class NavigationHudCardWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(color: const Color(0xFF334155), height: 1),
+          const Divider(color: Color(0xFF334155), height: 1),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

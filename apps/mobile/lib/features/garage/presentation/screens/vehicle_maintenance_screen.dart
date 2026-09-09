@@ -1,14 +1,11 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/cinematic_background.dart';
 import '../../../../core/widgets/rideos_3d_model_viewer.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/vehicle_resolution/models/vehicle_profile.dart';
 import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
-import '../../../../core/vehicle_health/models/maintenance_record_model.dart';
 import '../../../../core/vehicle_health/services/maintenance_manager.dart';
 import '../../../../core/graphics/global_3d_state_bridge.dart';
 
@@ -131,7 +128,7 @@ class _VehicleMaintenanceScreenState
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
-                  value: selectedType,
+                  initialValue: selectedType,
                   dropdownColor: const Color(0xFF080D22),
                   style: const TextStyle(
                     color: Colors.white,
@@ -510,7 +507,7 @@ class _VehicleMaintenanceScreenState
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: RoadOSGradients.primaryViolet,
             ),

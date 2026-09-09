@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/vehicle_display_capability.dart';
-import '../models/active_vehicle_context.dart';
-import '../models/vehicle_profile.dart';
 
 class VehicleConnectionState {
   final VehicleDisplayCapability displayCapability;

@@ -2,8 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/widgets/cinematic_background.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
-import '../../../../core/design_system/design_tokens.dart';
+import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_catalog/models/vehicle_catalog_models.dart';
@@ -112,8 +111,8 @@ class _VehicleConnectionLabScreenState extends State<VehicleConnectionLabScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.biotech_rounded, color: RoadOSColors.electricBlue, size: 20),
               SizedBox(width: 8),
               Text(
@@ -136,8 +135,8 @@ class _VehicleConnectionLabScreenState extends State<VehicleConnectionLabScreen>
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
               ),
-              child: Row(
-                children: const [
+              child: const Row(
+                children: [
                   Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 16),
                   SizedBox(width: 8),
                   Expanded(
@@ -175,7 +174,7 @@ class _VehicleConnectionLabScreenState extends State<VehicleConnectionLabScreen>
           const SizedBox(height: 8),
           DropdownButtonFormField<UniversalVehicleProfile>(
             dropdownColor: RoadOSColors.cardSurface,
-            value: _selectedProfile,
+            initialValue: _selectedProfile,
             style: const TextStyle(color: RoadOSColors.textPrimary, fontSize: 13),
             decoration: InputDecoration(
               filled: true,
@@ -233,8 +232,8 @@ class _VehicleConnectionLabScreenState extends State<VehicleConnectionLabScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.precision_manufacturing_rounded, color: RoadOSColors.neonViolet, size: 20),
               SizedBox(width: 10),
               Column(
@@ -248,7 +247,7 @@ class _VehicleConnectionLabScreenState extends State<VehicleConnectionLabScreen>
           ),
           Switch(
             value: _isSimulatedBenchMode,
-            activeColor: RoadOSColors.neonViolet,
+            activeThumbColor: RoadOSColors.neonViolet,
             onChanged: (val) => setState(() => _isSimulatedBenchMode = val),
           ),
         ],
@@ -274,8 +273,8 @@ class _VehicleConnectionLabScreenState extends State<VehicleConnectionLabScreen>
   }
 
   Widget _buildTestingIndicator() {
-    return Column(
-      children: const [
+    return const Column(
+      children: [
         CircularProgressIndicator(color: RoadOSColors.electricBlue),
         SizedBox(height: 16),
         Text('Scanning GATT Services & Measuring Round-Trip Latency...', style: TextStyle(color: RoadOSColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),

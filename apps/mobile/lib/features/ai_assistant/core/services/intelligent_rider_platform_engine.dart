@@ -117,7 +117,7 @@ class IntelligentRiderPlatformEngine {
   /// Computes prioritized smart maintenance milestones
   List<SmartMaintenanceMilestone> getMaintenanceMilestones({int currentOdometerKm = 4600}) {
     return [
-      SmartMaintenanceMilestone(
+      const SmartMaintenanceMilestone(
         taskType: 'CHAIN_LUBE',
         priority: MaintenancePriority.normal,
         performedAtKm: 4600,
@@ -126,7 +126,7 @@ class IntelligentRiderPlatformEngine {
         explanation: 'Regular 500km chain lubrication & tension check maintains driveline efficiency.',
         recommendedAction: 'Apply synthetic chain lube and verify 25-30mm slack.',
       ),
-      SmartMaintenanceMilestone(
+      const SmartMaintenanceMilestone(
         taskType: 'OIL_CHANGE',
         priority: MaintenancePriority.medium,
         performedAtKm: 4000,
@@ -135,7 +135,7 @@ class IntelligentRiderPlatformEngine {
         explanation: 'Full synthetic 10W-40 oil & OEM filter replacement interval.',
         recommendedAction: 'Inspect oil sight glass level before high-speed track or highway tour.',
       ),
-      SmartMaintenanceMilestone(
+      const SmartMaintenanceMilestone(
         taskType: 'BRAKE_PADS',
         priority: MaintenancePriority.normal,
         performedAtKm: 0,

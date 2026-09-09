@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/contracts/vehicle_data_gateway.dart';
-import 'package:rideos_mobile/core/contracts/navigation_gateway.dart';
-import 'package:rideos_mobile/core/contracts/ai_provider_gateway.dart';
 import 'package:rideos_mobile/core/contracts/ai_models.dart';
 import 'package:rideos_mobile/core/contracts/auth_fail_stream.dart';
 import 'package:rideos_mobile/core/contracts/command_event_contracts.dart';
@@ -25,12 +23,12 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<RiderEntity> getProfile() async {
-    return RiderEntity(
+    return const RiderEntity(
       id: 'rider_test',
       email: 'test@rideos.ai',
       fullName: 'Contract Test Rider',
       phone: '+1234567890',
-      garage: const [],
+      garage: [],
     );
   }
 
@@ -142,7 +140,7 @@ void main() {
       final cmd = _TestCommand(
         commandId: 'cmd_nav_start_123',
         commandName: 'START_NAVIGATION',
-        payload: {'destination': 'Canyon Road'},
+        payload: const {'destination': 'Canyon Road'},
         createdAt: now,
       );
 
@@ -153,7 +151,7 @@ void main() {
       final event = _TestEvent(
         eventId: 'evt_telemetry_tick_456',
         eventName: 'TELEMETRY_SAMPLE_INGESTED',
-        payload: {'speedKmh': 55.0},
+        payload: const {'speedKmh': 55.0},
         occurredAt: now,
       );
 

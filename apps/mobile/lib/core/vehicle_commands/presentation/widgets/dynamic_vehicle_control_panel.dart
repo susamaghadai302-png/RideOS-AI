@@ -244,7 +244,7 @@ class _DynamicVehicleControlPanelState extends ConsumerState<DynamicVehicleContr
               Text(
                 '${controlCards.length} CONTROLS DISCOVERED',
                 style: const TextStyle(
-                  color: const Color(0xFF00E676),
+                  color: Color(0xFF00E676),
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),

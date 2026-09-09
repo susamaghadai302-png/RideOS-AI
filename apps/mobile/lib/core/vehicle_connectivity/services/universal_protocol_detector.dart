@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../models/packet_capture_models.dart';
 import '../../vehicle_capabilities/models/universal_protocol_detection_models.dart';
 

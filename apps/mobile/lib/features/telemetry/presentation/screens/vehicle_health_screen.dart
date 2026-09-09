@@ -56,12 +56,12 @@ class VehicleHealthScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF14192A),
-            const Color(0xFF080C1A),
+            Color(0xFF14192A),
+            Color(0xFF080C1A),
           ],
         ),
         borderRadius: BorderRadius.circular(16),

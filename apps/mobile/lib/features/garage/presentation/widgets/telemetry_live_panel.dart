@@ -34,7 +34,7 @@ class _TelemetryLivePanelState extends State<TelemetryLivePanel> {
   double _liveBatteryVolts = 12.6;
   double _liveCoolantTemp = 88.0;
   bool _isLiveCanBusMode = false;
-  int _currentGear = 0; // 0 = Neutral, 1-6 // ignore: prefer_final_fields
+  final int _currentGear = 0; // 0 = Neutral, 1-6 // ignore: prefer_final_fields
 
   bool _isDynoMode = false;
 

@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import '../../../../core/vehicle_resolution/models/digital_twin_model.dart';
-import '../../../../core/vehicle_resolution/models/vehicle_profile.dart';
 import '../../../../core/vehicle_resolution/services/digital_twin_storage_service.dart';
 import 'scan_coverage_evaluator.dart';
 import 'model_quality_validator.dart';

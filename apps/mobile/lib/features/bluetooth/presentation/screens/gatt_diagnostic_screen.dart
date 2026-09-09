@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/bluetooth/bluetooth_engine.dart';
-import '../../../../core/bluetooth/gatt_manager.dart';
 
 class GattDiagnosticScreen extends StatelessWidget {
   const GattDiagnosticScreen({super.key});
@@ -48,8 +47,8 @@ class GattDiagnosticScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: active ? activeColor.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
-        border: Border.all(color: active ? activeColor : Colors.grey.withOpacity(0.3)),
+        color: active ? activeColor.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.1),
+        border: Border.all(color: active ? activeColor : Colors.grey.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

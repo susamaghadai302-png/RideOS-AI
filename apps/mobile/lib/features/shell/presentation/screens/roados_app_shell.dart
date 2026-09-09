@@ -75,12 +75,12 @@ class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTick
     final driveIcon = _driveIconForMode(vehicleMode);
 
     return [
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.home_rounded,
         label: 'Home',
         category: 'MAIN',
         accentColor: RoadOSColors.electricBlue,
-        screen: const HomeScreen(),
+        screen: HomeScreen(),
       ),
       RoadOSShellNavItem(
         icon: driveIcon,
@@ -89,96 +89,96 @@ class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTick
         accentColor: driveColor,
         screen: driveScreen,
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.navigation_rounded,
         label: 'Navigation',
         category: 'MAIN',
         accentColor: RoadOSColors.cyberCyan,
-        screen: const ThreeDNavigationScreen(),
+        screen: ThreeDNavigationScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.two_wheeler_rounded,
         label: 'My Vehicles',
         category: 'VEHICLE',
         accentColor: RoadOSColors.neonViolet,
-        screen: const MyVehiclesScreen(),
+        screen: MyVehiclesScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.bluetooth_searching_rounded,
         label: 'Connect',
         category: 'VEHICLE',
         accentColor: RoadOSColors.electricBlue,
-        screen: const ConnectVehicleScreen(),
+        screen: ConnectVehicleScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.view_in_ar_rounded,
         label: '3D Garage',
         category: 'VEHICLE',
         accentColor: RoadOSColors.cyberCyan,
-        screen: const LuxuryGarageShowroomScreen(),
+        screen: LuxuryGarageShowroomScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.speed_rounded,
         label: 'Dashboard',
         category: 'VEHICLE',
         accentColor: RoadOSColors.neonViolet,
-        screen: const AdvancedRealtimeDashboardScreen(),
+        screen: AdvancedRealtimeDashboardScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.hub_rounded,
         label: 'Connection Center',
         category: 'VEHICLE',
         accentColor: RoadOSColors.cyberCyan,
-        screen: const ConnectionCenterScreen(),
+        screen: ConnectionCenterScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.analytics_rounded,
         label: 'Trips',
         category: 'TELEMETRY',
         accentColor: RoadOSColors.apexEmerald,
-        screen: const RideHistoryScreen(),
+        screen: RideHistoryScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.health_and_safety_rounded,
         label: 'Health',
         category: 'DIAGNOSTICS',
         accentColor: RoadOSColors.apexEmerald,
-        screen: const VehicleHealthDashboardScreen(),
+        screen: VehicleHealthDashboardScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.build_rounded,
         label: 'Maintenance',
         category: 'DIAGNOSTICS',
         accentColor: RoadOSColors.hyperOrange,
-        screen: const VehicleMaintenanceScreen(),
+        screen: VehicleMaintenanceScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.shield_rounded,
         label: 'Safety',
         category: 'SYSTEM',
-        accentColor: const Color(0xFFFF4444),
-        screen: const RiderSafetyCenterScreen(),
+        accentColor: Color(0xFFFF4444),
+        screen: RiderSafetyCenterScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.videocam_rounded,
         label: 'Dashcam',
         category: 'SYSTEM',
         accentColor: RoadOSColors.neonViolet,
-        screen: const AiVisionDashcamScreen(),
+        screen: AiVisionDashcamScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.description_rounded,
         label: 'Documents',
         category: 'SYSTEM',
         accentColor: RoadOSColors.cyberCyan,
-        screen: const VehicleDocumentsScreen(),
+        screen: VehicleDocumentsScreen(),
       ),
-      RoadOSShellNavItem(
+      const RoadOSShellNavItem(
         icon: Icons.settings_rounded,
         label: 'Settings',
         category: 'SYSTEM',
         accentColor: RoadOSColors.textSecondary,
-        screen: const ProfileSettingsScreen(),
+        screen: ProfileSettingsScreen(),
       ),
     ];
   }
@@ -283,7 +283,7 @@ class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTick
           ref.read(vehicleModeProvider.notifier).setMode(newMode);
           
           // Phase 12: Capability Layer Update
-          final capability = VehicleDisplayCapability(
+          const capability = VehicleDisplayCapability(
             protocol: ConnectionProtocol.ble, // Default base protocol for profile resolution
             status: ConnectionStatus.ready,
             hasAudio: true,

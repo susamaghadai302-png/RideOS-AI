@@ -19,7 +19,7 @@ void main() {
 
   group('MotionSafetyInterlock — Core Fail-Closed Policy', () {
     test('ALLOW: speed=0 + forbiddenWhileMoving command', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 0.0,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -31,7 +31,7 @@ void main() {
     });
 
     test('BLOCK: speed>0 + forbiddenWhileMoving command', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 45.0,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -43,7 +43,7 @@ void main() {
     });
 
     test('BLOCK: speed>0 + safetySensitive command', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 10.0,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -54,7 +54,7 @@ void main() {
     });
 
     test('ALLOW: speed>0 + safeWhileMoving command', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 120.0,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -65,7 +65,7 @@ void main() {
     });
 
     test('ALLOW: speed>0 + conditionallySafe command', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 80.0,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -82,7 +82,7 @@ void main() {
 
   group('MotionSafetyInterlock — Fail-Closed Telemetry Provenance', () {
     test('BLOCK: speed unavailable (null) for forbiddenWhileMoving', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: null,
         speedTrust: SpeedTrustLevel.unavailable,
         isVehicleConnected: true,
@@ -94,7 +94,7 @@ void main() {
     });
 
     test('BLOCK: speed stale for forbiddenWhileMoving', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 0.0,
         speedTrust: SpeedTrustLevel.stale,
         isVehicleConnected: true,
@@ -107,7 +107,7 @@ void main() {
     });
 
     test('BLOCK: speed NaN for forbiddenWhileMoving', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: double.nan,
         speedTrust: SpeedTrustLevel.invalid,
         isVehicleConnected: true,
@@ -119,7 +119,7 @@ void main() {
     });
 
     test('BLOCK: speed negative for safetySensitive', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: -5.0,
         speedTrust: SpeedTrustLevel.trusted, // Even if trust says trusted, value validation catches it
         isVehicleConnected: true,
@@ -130,7 +130,7 @@ void main() {
     });
 
     test('BLOCK: speed impossibly high (>500 km/h)', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 600.0,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -141,7 +141,7 @@ void main() {
     });
 
     test('BLOCK: speed infinite for forbiddenWhileMoving', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: double.infinity,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -175,7 +175,7 @@ void main() {
 
   group('MotionSafetyInterlock — Boundary Conditions', () {
     test('ALLOW: speed exactly 0.0 for forbiddenWhileMoving', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 0.0,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -186,7 +186,7 @@ void main() {
     });
 
     test('BLOCK: speed 0.000001 (just above zero) for forbiddenWhileMoving', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 0.000001,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -197,7 +197,7 @@ void main() {
     });
 
     test('ALLOW: speed exactly at max valid boundary (500.0) for safeWhileMoving', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 500.0,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -208,7 +208,7 @@ void main() {
     });
 
     test('BLOCK: speed at 500.01 (just above max) for forbiddenWhileMoving', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 500.01,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,
@@ -228,7 +228,7 @@ void main() {
     // VehicleSafetyContext. This test verifies that the exact same context
     // produces the same decision regardless of how it was constructed.
     test('same context from any origin produces identical decision', () {
-      final context = VehicleSafetyContext(
+      const context = VehicleSafetyContext(
         speedKmh: 30.0,
         speedTrust: SpeedTrustLevel.trusted,
         isVehicleConnected: true,

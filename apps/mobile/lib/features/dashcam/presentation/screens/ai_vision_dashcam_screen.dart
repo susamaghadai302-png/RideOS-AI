@@ -1,8 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
-import '../../../../core/design_system/premium_navigation.dart';
-import '../../../../core/design_system/design_tokens.dart';
+import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/widgets/roados_visual_environment.dart';
@@ -22,8 +20,8 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
   bool _sentryMode = false;
 
   // Live telemetry values (simulated)
-  double _speed = 62.0;
-  int _threatCount = 3;
+  final double _speed = 62.0;
+  final int _threatCount = 3;
 
   @override
   void initState() {
@@ -405,7 +403,7 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
             child: Column(
               children: [
                 Text(s.$1,
-                    style: TextStyle(
+                    style: const TextStyle(
                         color: RoadOSColors.textMuted,
                         fontSize: 9,
                         letterSpacing: 1.1,
@@ -465,11 +463,11 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(
+        const Expanded(
           child: RoadOSCard(
             borderColor: RoadOSColors.cyberCyan,
-            padding: const EdgeInsets.all(14),
-            child: const Column(
+            padding: EdgeInsets.all(14),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.memory_rounded,
@@ -626,7 +624,7 @@ class _BoundingBoxPainter extends CustomPainter {
 
     // Corner brackets only
     for (final corner in [
-      [Offset(0, arm), Offset.zero, Offset(arm, 0)],           // TL
+      [const Offset(0, arm), Offset.zero, const Offset(arm, 0)],           // TL
       [Offset(w - arm, 0), Offset(w, 0), Offset(w, arm)],      // TR
       [Offset(0, h - arm), Offset(0, h), Offset(arm, h)],      // BL
       [Offset(w - arm, h), Offset(w, h), Offset(w, h - arm)],  // BR
@@ -674,7 +672,7 @@ class _FrameBracketPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     for (final corner in [
-      [Offset(margin, margin + arm), Offset(margin, margin), Offset(margin + arm, margin)],
+      [const Offset(margin, margin + arm), const Offset(margin, margin), const Offset(margin + arm, margin)],
       [Offset(w - margin - arm, margin), Offset(w - margin, margin), Offset(w - margin, margin + arm)],
       [Offset(margin, h - margin - arm), Offset(margin, h - margin), Offset(margin + arm, h - margin)],
       [Offset(w - margin - arm, h - margin), Offset(w - margin, h - margin), Offset(w - margin, h - margin - arm)],
@@ -867,10 +865,10 @@ class DashcamRoadPainter extends CustomPainter {
     canvas.drawPath(
       roadPath,
       Paint()
-        ..shader = LinearGradient(
+        ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [const Color(0xFF0E1520), const Color(0xFF060A10)],
+          colors: [Color(0xFF0E1520), Color(0xFF060A10)],
         ).createShader(Rect.fromLTWH(0, horizonY, w, h - horizonY)),
     );
 

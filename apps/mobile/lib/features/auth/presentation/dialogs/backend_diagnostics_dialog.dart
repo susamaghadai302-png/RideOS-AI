@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/roados_tokens.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 import '../../../../core/network/api_config.dart';
 
 class BackendDiagnosticsDialog extends StatefulWidget {

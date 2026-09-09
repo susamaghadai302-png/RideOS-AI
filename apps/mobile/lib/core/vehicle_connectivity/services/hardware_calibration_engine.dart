@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../models/hardware_calibration_models.dart';
 import '../transports/vehicle_transport.dart';
 

@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
 import '../../../../core/vehicle_resolution/models/vehicle_identity_confidence.dart';
 import '../screens/vehicle_scanner_screen.dart';
-import '../../../../core/design_system/premium_navigation.dart';
 
 class VehicleIdentityConfirmationDialog extends StatelessWidget {
   final VehicleIdentityResult identity;
@@ -122,7 +120,7 @@ class VehicleIdentityConfirmationDialog extends StatelessWidget {
 
             // Buttons
             ElevatedButton.icon(
-              icon: Icon(Icons.check_circle_rounded, size: 18),
+              icon: const Icon(Icons.check_circle_rounded, size: 18),
               label: const Text('CONFIRM THIS IS MY VEHICLE', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: RoadOSColors.neonViolet,

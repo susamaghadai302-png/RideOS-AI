@@ -17,7 +17,7 @@ class MockAIProviderGateway implements AIProviderGateway {
     if (shouldThrow) {
       throw Exception('Network Error');
     }
-    return AIResponse(
+    return const AIResponse(
       text: 'Mock Response',
       intent: AIIntent.informational,
       timestamp: '2026-09-06T10:00:00.000Z',

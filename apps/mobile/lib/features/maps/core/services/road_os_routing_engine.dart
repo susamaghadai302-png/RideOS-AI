@@ -5,7 +5,6 @@ import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../../core/design_system/design_tokens.dart';
 
 enum RouteOptionType {
   fastestHighway('Fastest Highway', 'Highway Express', 'Normal Traffic', RoadOSColors.cyberCyan),

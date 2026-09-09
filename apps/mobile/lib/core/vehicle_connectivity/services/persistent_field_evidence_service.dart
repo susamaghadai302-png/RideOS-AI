@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import '../models/persistent_field_evidence_models.dart';
 import '../transports/vehicle_transport.dart';
 import 'structured_hardware_diagnostic_logger.dart';

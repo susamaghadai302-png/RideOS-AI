@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../bluetooth/bluetooth_engine.dart';
 import '../../bluetooth/models/bluetooth_connection_state.dart' as BleState;
-import '../../vehicle_resolution/models/vehicle_profile.dart';
 import '../../vehicle_resolution/providers/active_vehicle_context_provider.dart';
 import '../../vehicle_resolution/providers/my_vehicles_provider.dart';
 import '../../vehicle_resolution/services/vehicle_registry.dart';

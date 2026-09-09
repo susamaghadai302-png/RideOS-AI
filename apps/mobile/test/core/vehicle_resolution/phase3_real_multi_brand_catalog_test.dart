@@ -150,18 +150,18 @@ void main() {
 
     test('7. Search and Filtering: Multi-Faceted Query Verification', () {
       // 1. Filter by Brand
-      final ducatiFilter = const CatalogFilterState(selectedBrand: 'Ducati');
+      const ducatiFilter = CatalogFilterState(selectedBrand: 'Ducati');
       final ducatiResults = registry.filter(ducatiFilter);
       expect(ducatiResults.every((v) => v.manufacturer == 'Ducati'), isTrue);
       expect(ducatiResults.length, greaterThanOrEqualTo(9));
 
       // 2. Filter by Category
-      final scooterFilter = const CatalogFilterState(selectedCategory: VehicleTypeCategory.scooter);
+      const scooterFilter = CatalogFilterState(selectedCategory: VehicleTypeCategory.scooter);
       final scooterResults = registry.filter(scooterFilter);
       expect(scooterResults.every((v) => v.isScooter), isTrue);
 
       // 3. Filter by 3D Ready
-      final ready3DFilter = const CatalogFilterState(only3DReady: true);
+      const ready3DFilter = CatalogFilterState(only3DReady: true);
       final ready3DResults = registry.filter(ready3DFilter);
       expect(ready3DResults.length, equals(2)); // Ducati Panigale V4 S and BMW M 1000 RR only
       expect(ready3DResults.map((v) => v.id), containsAll(['v_ducati_v4s', 'v_bmw_m1000rr']));

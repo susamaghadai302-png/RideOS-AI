@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS vehicle_variants (
     ecu_profile_id VARCHAR(64) REFERENCES ecu_profiles(id),
     screen_profile_id VARCHAR(64) REFERENCES vehicle_screen_profiles(id),
     maintenance_profile_id VARCHAR(64) REFERENCES maintenance_profiles(id),
-    model_3d_asset_path VARCHAR(256) DEFAULT 'assets/3d/generic_motorcycle.glb',
+    model_3d_asset_path VARCHAR(256),
     is_active BOOLEAN DEFAULT TRUE
 );
 

@@ -1,6 +1,5 @@
 import '../../vehicle_protocols/models/normalized_telemetry.dart';
 import '../models/active_vehicle_context.dart';
-import '../services/data_freshness_policy.dart';
 
 enum TelemetryHealthState {
   healthy,

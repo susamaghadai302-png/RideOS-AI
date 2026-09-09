@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../adapters/vehicle_connectivity_adapter.dart';
 import '../models/vehicle_capabilities.dart';
 import '../models/vehicle_variant_taxonomy.dart';

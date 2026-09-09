@@ -1,9 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/cinematic_background.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/trip_management/models/trip_model.dart';
 import '../../../../core/trip_management/services/trip_manager.dart';
 import '../../../../core/graphics/global_3d_state_bridge.dart';

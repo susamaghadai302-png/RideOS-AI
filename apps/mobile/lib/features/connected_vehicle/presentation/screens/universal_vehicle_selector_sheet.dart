@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/design_system/premium_navigation.dart';
@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_connectivity/services/universal_vehicle_database.dart';
 import '../../../../core/vehicle_connectivity/models/vehicle_capabilities.dart';
-import '../../../../core/vehicle_connectivity/models/vehicle_variant_taxonomy.dart';
 import '../../../../core/vehicle_connectivity/services/generic_vehicle_connectivity_engine.dart';
 import '../../../../core/vehicle_resolution/models/vehicle_profile.dart';
 import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
@@ -55,9 +54,9 @@ class _UniversalVehicleSelectorSheetState extends ConsumerState<UniversalVehicle
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'UNIVERSAL VEHICLE CATALOG',
                     style: TextStyle(
@@ -278,10 +277,10 @@ class _UniversalVehicleSelectorSheetState extends ConsumerState<UniversalVehicle
   Widget _buildSearchResults() {
     final results = _db.search(query: _searchQuery);
     if (results.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.search_off_rounded, color: RoadOSColors.textMuted, size: 48),
             SizedBox(height: 12),
             Text(

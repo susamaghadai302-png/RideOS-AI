@@ -1,7 +1,6 @@
 import '../../../../core/contracts/navigation_models.dart';
 import '../../../../core/contracts/navigation_provider.dart';
 import '../../core/map_abstraction/map_engine_interface.dart';
-import '../../domain/entities/route_entity.dart';
 import '../datasources/navigation_remote_datasource.dart';
 
 /// Backend Navigation Provider adapter (Tier 4).

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
 
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -88,18 +87,18 @@ class LuxThemeEngine extends ChangeNotifier {
       useMaterial3: true,
       scaffoldBackgroundColor: const Color(0xFF000000), // true OLED black
       primaryColor: RoadOSColors.hyperOrange,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: RoadOSColors.hyperOrange,
         onPrimary: Colors.white,
         secondary: RoadOSColors.cyberCyan,
         onSecondary: Colors.black,
-        surface: const Color(0xFF0A0D1A),      // near-black surface
+        surface: Color(0xFF0A0D1A),      // near-black surface
         onSurface: RoadOSColors.platinumWhite,
-        surfaceContainerHighest: const Color(0xFF0D1226),
+        surfaceContainerHighest: Color(0xFF0D1226),
         error: RoadOSColors.errorCrimson,
         onError: Colors.white,
-        outline: const Color(0xFF2B3654),
-        outlineVariant: const Color(0xFF1A2240),
+        outline: Color(0xFF2B3654),
+        outlineVariant: Color(0xFF1A2240),
         shadow: Colors.black,
         scrim: Colors.black87,
       ),
@@ -172,20 +171,20 @@ class LuxThemeEngine extends ChangeNotifier {
       useMaterial3: true,
       scaffoldBackgroundColor: const Color(0xFFF4F6FA),
       primaryColor: RoadOSColors.hyperOrange,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: RoadOSColors.hyperOrange,
         onPrimary: Colors.white,
-        secondary: const Color(0xFF005FCC),       // deep navy blue
+        secondary: Color(0xFF005FCC),       // deep navy blue
         onSecondary: Colors.white,
         surface: Colors.white,
-        onSurface: const Color(0xFF0F172A),        // near-black text
-        surfaceContainerHighest: const Color(0xFFECF0F9),
+        onSurface: Color(0xFF0F172A),        // near-black text
+        surfaceContainerHighest: Color(0xFFECF0F9),
         error: RoadOSColors.errorCrimson,
         onError: Colors.white,
-        outline: const Color(0xFFCBD5E1),
-        outlineVariant: const Color(0xFFE2E8F0),
-        shadow: const Color(0xFF000000),
-        scrim: const Color(0x80000000),
+        outline: Color(0xFFCBD5E1),
+        outlineVariant: Color(0xFFE2E8F0),
+        shadow: Color(0xFF000000),
+        scrim: Color(0x80000000),
       ),
       textTheme: _lightTextTheme,
       cardTheme: CardThemeData(

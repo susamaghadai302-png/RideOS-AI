@@ -8,16 +8,15 @@ if [ -f "$ROOT_DIR/.env" ]; then
   GOOGLE_MAPS_KEY=$(grep -v '^#' "$ROOT_DIR/.env" | grep 'GOOGLE_MAPS_API_KEY' | cut -d '=' -f2- | tr -d '"' | tr -d "'" | xargs 2>/dev/null) || true
 fi
 
-DART_DEFINES=""
 if [ -n "$GOOGLE_MAPS_KEY" ] && [ "$GOOGLE_MAPS_KEY" != "YOUR_ACTUAL_GOOGLE_MAPS_API_KEY_HERE" ] && [ "$GOOGLE_MAPS_KEY" != "YOUR_GOOGLE_MAPS_API_KEY_HERE" ]; then
   echo "🗺️  Injecting GOOGLE_MAPS_API_KEY into Flutter Web release build..."
-  DART_DEFINES="--dart-define=GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_KEY"
+  cd "$ROOT_DIR/apps/mobile"
+  flutter build web --release --dart-define=GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_KEY"
 else
   echo "ℹ️  Building Flutter Web with local fallback routing configuration..."
+  cd "$ROOT_DIR/apps/mobile"
+  flutter build web --release
 fi
-
-cd "$ROOT_DIR/apps/mobile"
-flutter build web --release $DART_DEFINES
 
 if [ -d "$ROOT_DIR/apps/mobile/assets" ]; then
   cp -rn "$ROOT_DIR/apps/mobile/assets/"* "$ROOT_DIR/apps/mobile/build/web/assets/" 2>/dev/null || true

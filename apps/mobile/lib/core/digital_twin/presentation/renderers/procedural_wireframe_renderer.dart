@@ -37,9 +37,9 @@ class ProceduralWireframeRenderer extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.withOpacity(0.5)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,7 +75,7 @@ class _WireframePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.blueAccent.withOpacity(0.6)
+      ..color = Colors.blueAccent.withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
@@ -97,7 +97,7 @@ class _WireframePainter extends CustomPainter {
     // Add some motion effects if speed is available and > 0
     if (speed != null && speed! > 0) {
       final motionPaint = Paint()
-        ..color = Colors.cyanAccent.withOpacity(0.3)
+        ..color = Colors.cyanAccent.withValues(alpha: 0.3)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0;
       

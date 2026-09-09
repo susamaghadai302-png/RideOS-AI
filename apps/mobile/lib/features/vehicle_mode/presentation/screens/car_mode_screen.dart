@@ -453,10 +453,10 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
           border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Row(children: [
-          Icon(Icons.search_rounded, color: RoadOSColors.textSecondary, size: 20),
+          const Icon(Icons.search_rounded, color: RoadOSColors.textSecondary, size: 20),
           const SizedBox(width: 12),
           Expanded(child: Text('Search destination...', style: GoogleFonts.inter(color: RoadOSColors.textSecondary, fontSize: 14))),
-          Icon(Icons.keyboard_arrow_up_rounded, color: RoadOSColors.textSecondary, size: 20),
+          const Icon(Icons.keyboard_arrow_up_rounded, color: RoadOSColors.textSecondary, size: 20),
         ]),
       ),
     );

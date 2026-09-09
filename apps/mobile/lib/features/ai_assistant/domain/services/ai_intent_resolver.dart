@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../../../core/contracts/ai_models.dart';
 import '../../../../core/contracts/navigation_gateway.dart';
-import '../../../../core/contracts/navigation_models.dart';
 
 class AiIntentResolver {
   final NavigationGateway navigationGateway;

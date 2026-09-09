@@ -1,12 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/design_tokens.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
 import '../../../../core/graphics/liquid_glass_engine.dart';
 import '../../../../core/widgets/cinematic_background.dart';
 import '../../../../core/widgets/rideos_3d_model_viewer.dart';
@@ -126,7 +122,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
               child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
             ),
           ),
-          Text(
+          const Text(
             '3D SHOWROOM',
             style: TextStyle(
               color: Colors.white,
@@ -148,7 +144,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: isActive ? RoadOSColors.cyberCyan.withOpacity(0.3) : Colors.transparent,
+            color: isActive ? RoadOSColors.cyberCyan.withValues(alpha: 0.3) : Colors.transparent,
             blurRadius: 40,
             spreadRadius: 10,
           ),
@@ -160,10 +156,10 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 colors: [
-                  const Color(0x40101A38),
-                  const Color(0x2004060C),
+                  Color(0x40101A38),
+                  Color(0x2004060C),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -204,7 +200,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          Colors.black.withOpacity(0.9),
+                          Colors.black.withValues(alpha: 0.9),
                           Colors.transparent,
                         ],
                       ),
@@ -215,7 +211,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                       children: [
                         Text(
                           vehicle.manufacturer.toUpperCase(),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: RoadOSColors.cyberCyan,
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
@@ -224,7 +220,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                         ),
                         Text(
                           vehicle.model.toUpperCase(),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 32,
                             fontWeight: FontWeight.w900,

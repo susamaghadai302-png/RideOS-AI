@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/lux_components.dart'
-    hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+    hide RoadOSButton, RoadOSCard;
 import '../../../../core/security/input_sanitizer.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../bloc/auth_bloc.dart';

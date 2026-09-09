@@ -1,10 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/lux_haptics_audio_service.dart';
-import 'rideo_logo.dart';
 import 'roados_tokens.dart';
 import 'liquid_glass_components.dart';
-import 'liquid_water_ripple.dart';
 import '../graphics/liquid_glass_engine.dart';
 export 'rideo_logo.dart';
 export 'roados_tokens.dart';
@@ -323,7 +321,7 @@ class LiveTelemetryCapsule extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 label.toUpperCase(),
-                style: TextStyle(
+                style: const TextStyle(
                   color: RoadOSColors.textMuted,
                   fontSize: 9,
                   fontWeight: FontWeight.w700,

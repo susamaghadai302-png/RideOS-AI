@@ -1,15 +1,13 @@
 import 'dart:async';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../navigation/data/datasources/navigation_remote_datasource.dart';
 import '../../../navigation/domain/entities/place_search_entity.dart';
 import '../../../navigation/presentation/screens/three_d_navigation_screen.dart';
-import '../../../../core/design_system/premium_navigation.dart';
 
 class SmartSearchScreen extends StatefulWidget {
   const SmartSearchScreen({super.key});

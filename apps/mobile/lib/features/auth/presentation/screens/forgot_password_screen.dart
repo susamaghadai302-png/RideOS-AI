@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/lux_components.dart'
-    hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+    hide RoadOSButton, RoadOSCard;
 import '../../../../core/security/input_sanitizer.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../bloc/auth_bloc.dart';
@@ -472,18 +472,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 ),
               ),
               padding: const EdgeInsets.all(24),
-              child: Column(
+              child: const Column(
                 children: [
                   _InfoRow(
                     icon: Icons.timer_outlined,
                     text: 'Link expires in 15 minutes',
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _InfoRow(
                     icon: Icons.security_rounded,
                     text: 'Link is single-use and encrypted',
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _InfoRow(
                     icon: Icons.folder_outlined,
                     text: 'Check spam if not in inbox',

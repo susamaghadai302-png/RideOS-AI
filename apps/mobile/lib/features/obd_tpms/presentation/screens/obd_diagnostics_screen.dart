@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/widgets/roados_visual_environment.dart';
 import '../../core/services/obd_full_telemetry_service.dart';
 import '../widgets/connected_platform_widgets.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 class ObdDiagnosticsScreen extends StatefulWidget {
   const ObdDiagnosticsScreen({super.key});

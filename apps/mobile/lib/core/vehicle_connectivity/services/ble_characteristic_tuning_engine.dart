@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/hardware_calibration_models.dart';
-import '../models/packet_capture_models.dart';
 import '../services/structured_hardware_diagnostic_logger.dart';
 
 enum BleStreamScenario {

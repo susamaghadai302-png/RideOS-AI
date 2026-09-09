@@ -49,7 +49,7 @@ class ConnectionMonitorScreen extends ConsumerWidget {
                                   child: CircularProgressIndicator(
                                     value: available ? q / 100.0 : 0.0,
                                     strokeWidth: 12,
-                                    backgroundColor: Colors.white.withOpacity(0.05),
+                                    backgroundColor: Colors.white.withValues(alpha: 0.05),
                                     color: _getSignalColor(q),
                                   ),
                                 ),
@@ -87,9 +87,9 @@ class ConnectionMonitorScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: Colors.white.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isConnected ? Colors.cyan.withOpacity(0.3) : Colors.red.withOpacity(0.3)),
+        border: Border.all(color: isConnected ? Colors.cyan.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [

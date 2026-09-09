@@ -26,7 +26,7 @@ class VehicleCompatibilityDetailsModal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
-        color: const Color(0xFF080C1A),
+        color: Color(0xFF080C1A),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(

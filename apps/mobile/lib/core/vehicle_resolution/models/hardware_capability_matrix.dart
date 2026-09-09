@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'vehicle_display_capability.dart';
 
 enum MatrixStatus {

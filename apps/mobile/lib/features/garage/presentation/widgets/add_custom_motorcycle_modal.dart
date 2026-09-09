@@ -23,7 +23,7 @@ class _AddCustomMotorcycleModalState extends State<AddCustomMotorcycleModal> {
   final _hpCtrl = TextEditingController(text: '217');
   final _topSpeedCtrl = TextEditingController(text: '305 km/h');
   final _weightCtrl = TextEditingController(text: '199.0');
-  String _category = 'Superbike';
+  final String _category = 'Superbike';
   Color _selectedColor = const Color(0xFFFF3D00);
   bool _isSaving = false;
 

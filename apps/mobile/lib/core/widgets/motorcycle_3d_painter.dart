@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../design_system/roados_components.dart';
-import '../theme/lux_theme.dart';
 import '../services/lux_haptics_audio_service.dart';
 
 enum SuperbikeModelType {
@@ -294,7 +293,7 @@ class RealisticMotorcycle3DPainter extends CustomPainter {
     // -------------------------------------------------------------
     final floorCenter = Offset(center.dx, height * 0.84);
     final floorRadiusX = width * 0.44;
-    final floorRadiusY = 32.0;
+    const floorRadiusY = 32.0;
 
     final floorReflectPaint = Paint()
       ..shader = RadialGradient(

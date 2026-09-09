@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import '../models/packet_capture_models.dart';
 import '../transports/vehicle_transport.dart';
 
@@ -49,7 +48,7 @@ class PacketCaptureEngine {
       discoveredCharacteristics: characteristics,
       sourceClassification: sourceClassification,
       verificationStatus: verificationStatus,
-      frames: [],
+      frames: const [],
     );
     _emitSession();
 

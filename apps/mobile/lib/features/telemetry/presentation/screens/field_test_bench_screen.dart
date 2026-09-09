@@ -89,9 +89,9 @@ class _FieldTestBenchScreenState extends State<FieldTestBenchScreen> {
                   // Health Matrix
                   Row(
                     children: [
-                      Expanded(child: _buildHealthTile('PACKET RATE', '${health?.packetRateHz.toStringAsFixed(1) ?? '10.0'}', 'Hz', RoadOSColors.cyberCyan)),
+                      Expanded(child: _buildHealthTile('PACKET RATE', health?.packetRateHz.toStringAsFixed(1) ?? '10.0', 'Hz', RoadOSColors.cyberCyan)),
                       const SizedBox(width: 10),
-                      Expanded(child: _buildHealthTile('PACKET LOSS', '${health?.packetLossPercentage.toStringAsFixed(1) ?? '0.0'}', '%', RoadOSColors.warningAmber)),
+                      Expanded(child: _buildHealthTile('PACKET LOSS', health?.packetLossPercentage.toStringAsFixed(1) ?? '0.0', '%', RoadOSColors.warningAmber)),
                     ],
                   ),
                   const SizedBox(height: 10),

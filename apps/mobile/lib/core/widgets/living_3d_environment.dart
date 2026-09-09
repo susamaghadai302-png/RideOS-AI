@@ -451,10 +451,10 @@ class FogPainter extends CustomPainter {
     ];
 
     for (final layer in layers) {
-      final baseY = layer[0] as double;
-      final opacity = layer[1] as double;
-      final amplitude = layer[2] as double;
-      final speed = layer[3] as double;
+      final baseY = layer[0];
+      final opacity = layer[1];
+      final amplitude = layer[2];
+      final speed = layer[3];
 
       final path = Path();
       path.moveTo(0, h * baseY);

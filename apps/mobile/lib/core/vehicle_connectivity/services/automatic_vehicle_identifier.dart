@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../models/vehicle_capabilities.dart';
-import '../models/vehicle_variant_taxonomy.dart';
 import 'universal_vehicle_database.dart';
 import '../../vehicle_resolution/models/vehicle_identity.dart';
 
@@ -69,7 +67,7 @@ class IdentificationResult {
       modelYear: modelYear ?? 2024,
       protocolAdapterId: protocolAdapterId,
       confidence: conf,
-      fieldProvenance: {
+      fieldProvenance: const {
         'make': IdentityFieldProvenance.advertisedName,
         'model': IdentityFieldProvenance.gattDiscovery,
       },

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_connectivity/services/ble_characteristic_tuning_engine.dart';
 import '../../../../core/widgets/cinematic_background.dart';
@@ -31,9 +30,9 @@ class _BleTuningDashboardScreenState extends State<BleTuningDashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Icon(Icons.bluetooth_audio_rounded, color: RoadOSColors.electricBlue, size: 20),
             SizedBox(width: 8),
             Text(
@@ -103,7 +102,7 @@ class _BleTuningDashboardScreenState extends State<BleTuningDashboardScreen> {
           const Text('SIMULATED BLE STREAM SCENARIO', style: TextStyle(color: RoadOSColors.textMuted, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           DropdownButtonFormField<BleStreamScenario>(
-            value: _selectedScenario,
+            initialValue: _selectedScenario,
             dropdownColor: Colors.black,
             style: const TextStyle(color: RoadOSColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
             decoration: InputDecoration(

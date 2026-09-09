@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../bluetooth/bluetooth_engine.dart';
 import '../bluetooth/models/bluetooth_connection_state.dart' as ble;
 
 // ─────────────────────────────────────────────────────────────────────────────

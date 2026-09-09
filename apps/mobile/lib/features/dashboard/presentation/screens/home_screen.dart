@@ -1,9 +1,6 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/graphics/liquid_glass_engine.dart';
 import '../../../../core/widgets/cinematic_background.dart';
@@ -23,8 +20,6 @@ import '../../../garage/presentation/screens/luxury_garage_showroom_screen.dart'
 import '../../../navigation/presentation/screens/three_d_navigation_screen.dart';
 import '../../../diagnostics/presentation/screens/vehicle_health_dashboard_screen.dart';
 import '../../../connected_vehicle/presentation/screens/connect_vehicle_screen.dart';
-import '../../../vehicle_manager/presentation/screens/my_vehicles_screen.dart';
-import '../../../safety/presentation/screens/rider_safety_center_screen.dart';
 import '../../../obd_tpms/core/services/obd_full_telemetry_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -202,8 +197,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     radius: 0.8,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.6),
-                      Colors.black.withOpacity(0.95),
+                      Colors.black.withValues(alpha: 0.6),
+                      Colors.black.withValues(alpha: 0.95),
                     ],
                     stops: const [0.3, 0.7, 1.0],
                   ),
@@ -370,12 +365,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: _isSimulatorMode
-                  ? RoadOSColors.cyberCyan.withOpacity(0.15)
+                  ? RoadOSColors.cyberCyan.withValues(alpha: 0.15)
                   : const Color(0x20101A38),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isSimulatorMode
-                    ? RoadOSColors.cyberCyan.withOpacity(0.5)
+                    ? RoadOSColors.cyberCyan.withValues(alpha: 0.5)
                     : RoadOSColors.borderSubtle,
               ),
             ),
@@ -403,7 +398,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 const SizedBox(width: 4),
                 Switch(
                   value: _isSimulatorMode,
-                  activeColor: RoadOSColors.cyberCyan,
+                  activeThumbColor: RoadOSColors.cyberCyan,
                   onChanged: _toggleSimulatorMode,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),

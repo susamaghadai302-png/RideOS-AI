@@ -19,9 +19,9 @@ class UniversalCompatibilityReportScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Icon(Icons.verified_user_rounded, color: RoadOSColors.electricBlue, size: 20),
             SizedBox(width: 8),
             Text(

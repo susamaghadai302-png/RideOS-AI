@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_connectivity/models/hardware_calibration_models.dart';
 import '../../../../core/vehicle_connectivity/services/hardware_calibration_engine.dart';
@@ -62,9 +61,9 @@ class _HardwareDiagnosticsScreenState extends State<HardwareDiagnosticsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Icon(Icons.tune_rounded, color: RoadOSColors.electricBlue, size: 20),
             SizedBox(width: 8),
             Text(

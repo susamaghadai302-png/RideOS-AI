@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../models/vehicle_capabilities.dart';
-import '../models/vehicle_variant_taxonomy.dart';
 
 enum SmartDisplayState {
   compatible,

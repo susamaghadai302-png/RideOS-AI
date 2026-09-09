@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../design_system/roados_components.dart';
-import '../theme/lux_theme.dart';
 
 class ApexGlassPanel extends StatelessWidget {
   final Widget child;
@@ -276,11 +275,11 @@ class CockpitPainter extends CustomPainter {
       Rect.fromCircle(center: center, radius: outerR),
       startAngle, totalSweep * clamped, false,
       Paint()
-        ..shader = SweepGradient(
+        ..shader = const SweepGradient(
           startAngle: startAngle,
           endAngle: startAngle + totalSweep,
-          colors: const [Color(0xFF00F2FE), Color(0xFFF59E0B), Color(0xFFFF1744)],
-          stops: const [0.0, 0.68, 1.0],
+          colors: [Color(0xFF00F2FE), Color(0xFFF59E0B), Color(0xFFFF1744)],
+          stops: [0.0, 0.68, 1.0],
         ).createShader(Rect.fromCircle(center: center, radius: outerR))
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round

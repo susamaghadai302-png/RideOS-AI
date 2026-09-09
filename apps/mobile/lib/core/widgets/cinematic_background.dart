@@ -45,7 +45,7 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
   final math.Random _random = math.Random(42);
 
   Offset _mouseParallax = Offset.zero;
-  Offset _targetParallax = Offset.zero;
+  final Offset _targetParallax = Offset.zero;
 
   @override
   void initState() {
@@ -209,8 +209,8 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
                       ? LinearGradient(
                           colors: [
                             Colors.transparent,
-                            Colors.black.withOpacity(0.2),
-                            Colors.black.withOpacity(0.4),
+                            Colors.black.withValues(alpha: 0.2),
+                            Colors.black.withValues(alpha: 0.4),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,

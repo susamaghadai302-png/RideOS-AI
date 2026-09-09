@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/premium_navigation.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../domain/models/advanced_safety_models.dart';
 import '../../core/services/advanced_safety_protection_engine.dart';
 import '../../../../core/widgets/cinematic_background.dart';
@@ -96,9 +94,9 @@ class _AdvancedSafetyCenterScreenState extends State<AdvancedSafetyCenterScreen>
             ),
             child: Column(
               children: [
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
                     SizedBox(width: 8),
                     Text('EMERGENCY SOS PROTECTION', style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
@@ -322,7 +320,7 @@ class _AdvancedSafetyCenterScreenState extends State<AdvancedSafetyCenterScreen>
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: RoadOSColors.cyberCyan.withValues(alpha: 0.35)),
         ),
-        child: Text(prompt, style: TextStyle(color: RoadOSColors.cyberCyan, fontSize: 10, fontWeight: FontWeight.bold)),
+        child: Text(prompt, style: const TextStyle(color: RoadOSColors.cyberCyan, fontSize: 10, fontWeight: FontWeight.bold)),
       ),
     );
   }

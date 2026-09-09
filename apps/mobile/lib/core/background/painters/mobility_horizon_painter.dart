@@ -128,9 +128,9 @@ class MobilityHorizonPainter extends CustomPainter {
     path.moveTo(0, horizonY);
 
     for (final s in specs) {
-      final bx = (s[0] as double) * w;
-      final bh = s[1] as double;
-      final bw = (s[2] as double) * w;
+      final bx = (s[0]) * w;
+      final bh = s[1];
+      final bw = (s[2]) * w;
       final topY = horizonY - bh;
 
       path.lineTo(bx, horizonY);
@@ -265,7 +265,7 @@ class MobilityHorizonPainter extends CustomPainter {
         [w * 0.38, h * 0.90, w * 0.10, 4.5],
       ];
       for (final p in puddles) {
-        final shimmer = 0.6 + 0.4 * math.sin(t * 0.7 + (p[0] as double) / w * 5);
+        final shimmer = 0.6 + 0.4 * math.sin(t * 0.7 + (p[0]) / w * 5);
         final puddlePaint = Paint()
           ..shader = RadialGradient(
             colors: [
@@ -273,15 +273,15 @@ class MobilityHorizonPainter extends CustomPainter {
               Colors.transparent,
             ],
           ).createShader(Rect.fromCenter(
-            center: Offset(p[0] as double, p[1] as double),
-            width: p[2] as double,
-            height: p[3] as double,
+            center: Offset(p[0], p[1]),
+            width: p[2],
+            height: p[3],
           ));
         canvas.drawOval(
           Rect.fromCenter(
-            center: Offset(p[0] as double, p[1] as double),
-            width: p[2] as double,
-            height: p[3] as double,
+            center: Offset(p[0], p[1]),
+            width: p[2],
+            height: p[3],
           ),
           puddlePaint,
         );

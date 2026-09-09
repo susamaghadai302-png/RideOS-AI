@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/widgets/garage_motorcycle_hero.dart';
 import '../../../../core/widgets/roados_visual_environment.dart';
@@ -316,14 +315,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                               // Pulsing live indicator
                               Container(
                                 width: 8, height: 8,
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: RoadOSColors.apexEmerald,
                                   shape: BoxShape.circle,
                                   boxShadow: [BoxShadow(color: RoadOSColors.apexEmerald, blurRadius: 6)],
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Text('LIVE MOBILITY STATUS',
+                              const Text('LIVE MOBILITY STATUS',
                                 style: TextStyle(color: RoadOSColors.apexEmerald, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                               const Spacer(),
                               Container(
@@ -647,7 +646,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ),
         child: Text(
           prompt,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
             color: RoadOSColors.cyberCyan,

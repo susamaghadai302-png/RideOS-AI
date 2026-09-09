@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/cinematic_background.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import 'login_screen.dart';
@@ -176,7 +175,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   const SizedBox(height: 20),
 
                   // Subtitle
-                  Center(
+                  const Center(
                     child: Text(
                       'CONNECTED COCKPIT OS',
                       style: TextStyle(

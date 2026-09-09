@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/reliability/services/system_health_center_service.dart';
 import '../../../../core/reliability/services/observability_logger.dart';
@@ -45,9 +44,9 @@ class _SystemHealthCenterScreenState extends State<SystemHealthCenterScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Icon(Icons.health_and_safety_rounded, color: RoadOSColors.apexEmerald, size: 20),
             SizedBox(width: 8),
             Text(
@@ -200,9 +199,9 @@ class _SystemHealthCenterScreenState extends State<SystemHealthCenterScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text('REDACTED AUDIT LOGS', style: TextStyle(color: RoadOSColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
               Icon(Icons.lock_rounded, color: RoadOSColors.textMuted, size: 14),
             ],

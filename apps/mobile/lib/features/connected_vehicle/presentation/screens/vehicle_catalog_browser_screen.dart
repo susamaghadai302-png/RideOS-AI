@@ -3,12 +3,11 @@ import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/cinematic_background.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_catalog/models/vehicle_catalog_models.dart';
 import '../../../../core/vehicle_catalog/services/universal_vehicle_catalog_service.dart';
 import '../../../../core/vehicle_connectivity/models/vehicle_capabilities.dart';
-import '../../../../core/vehicle_connectivity/models/vehicle_variant_taxonomy.dart';
 import '../../../../core/vehicle_connectivity/services/generic_vehicle_connectivity_engine.dart';
 import '../../../../core/vehicle_resolution/models/vehicle_profile.dart';
 import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
@@ -62,9 +61,9 @@ class _VehicleCatalogBrowserScreenState extends ConsumerState<VehicleCatalogBrow
               color: RoadOSColors.electricBlue.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(
+            child: const Text(
               'v${UniversalVehicleCatalogService.catalogVersion}',
-              style: const TextStyle(color: RoadOSColors.electricBlue, fontSize: 11, fontWeight: FontWeight.bold),
+              style: TextStyle(color: RoadOSColors.electricBlue, fontSize: 11, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -361,10 +360,10 @@ class _VehicleCatalogBrowserScreenState extends ConsumerState<VehicleCatalogBrow
   }
 
   Widget _buildEmptyResults() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
+        children: [
           Icon(Icons.search_off_rounded, color: RoadOSColors.textMuted, size: 52),
           SizedBox(height: 12),
           Text('No vehicle profiles match the filter', style: TextStyle(color: RoadOSColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 14)),

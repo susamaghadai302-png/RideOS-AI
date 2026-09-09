@@ -2,11 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/premium_navigation.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 import '../../../../core/vehicle_resolution/models/digital_twin_model.dart';
-import '../../../../core/vehicle_resolution/models/vehicle_profile.dart';
 import '../../core/services/scan_coverage_evaluator.dart';
 import '../../core/services/vehicle_3d_reconstruction_service.dart';
 import '../dialogs/reconstruction_progress_dialog.dart';
@@ -187,12 +185,12 @@ class _VehicleScannerScreenState extends State<VehicleScannerScreen> with Single
           // 1. Simulated High-Tech Camera Viewfinder Stage
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment.center,
                   radius: 1.2,
                   colors: [
-                    const Color(0xFF070B18),
+                    Color(0xFF070B18),
                     Colors.black,
                   ],
                 ),

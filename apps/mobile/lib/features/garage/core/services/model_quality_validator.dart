@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import '../../../../core/vehicle_resolution/models/digital_twin_model.dart';
 
 class ModelValidationResult {

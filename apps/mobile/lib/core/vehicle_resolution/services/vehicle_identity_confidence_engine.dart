@@ -1,7 +1,4 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import '../models/vehicle_identity_confidence.dart';
-import '../models/vehicle_profile.dart';
 import 'vehicle_registry.dart';
 import 'digital_twin_storage_service.dart';
 

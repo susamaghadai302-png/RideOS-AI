@@ -53,7 +53,7 @@ class VehicleIdentityResolver {
         modelYear: exactProfile.year,
         protocolAdapterId: exactProfile.protocolAdapter,
         confidence: IdentityConfidence.exactMatch, // VERIFIED
-        fieldProvenance: {
+        fieldProvenance: const {
           'model': IdentityFieldProvenance.advertisedName,
           'manufacturer': IdentityFieldProvenance.advertisedName,
           'gattServices': IdentityFieldProvenance.gattDiscovery,
@@ -108,7 +108,7 @@ class VehicleIdentityResolver {
         modelYear: 2024,
         protocolAdapterId: 'generic_obd2',
         confidence: IdentityConfidence.verifiedMatch, // IDENTIFIED
-        fieldProvenance: {
+        fieldProvenance: const {
           'model': IdentityFieldProvenance.advertisedName,
         },
       );
@@ -701,7 +701,7 @@ class VehicleIdentityResolver {
         modelYear: 2024,
         protocolAdapterId: protocol ?? 'generic_ble',
         confidence: IdentityConfidence.verifiedMatch, // IDENTIFIED, but NOT exact match
-        fieldProvenance: {
+        fieldProvenance: const {
           'manufacturer': IdentityFieldProvenance.advertisedName,
         },
       );

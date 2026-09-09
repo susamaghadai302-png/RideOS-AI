@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../domain/models/advanced_notification_models.dart';
 import '../../core/services/advanced_notification_engine.dart';
@@ -80,8 +79,8 @@ class _AdvancedNotificationCenterScreenState extends State<AdvancedNotificationC
             Container(
               padding: const EdgeInsets.all(32),
               alignment: Alignment.center,
-              child: Column(
-                children: const [
+              child: const Column(
+                children: [
                   Icon(Icons.notifications_none_rounded, color: RoadOSColors.textMuted, size: 40),
                   SizedBox(height: 10),
                   Text('Zero Active Alerts', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),

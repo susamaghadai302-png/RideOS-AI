@@ -1,10 +1,8 @@
-import 'dart:math' as math;
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/theme_engine.dart';
@@ -136,12 +134,12 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                                   ),
                                 ),
                                 const SizedBox(height: 2),
-                                Row(
+                                const Row(
                                   children: [
-                                    const Icon(Icons.workspace_premium_rounded,
+                                    Icon(Icons.workspace_premium_rounded,
                                         color: RoadOSColors.hyperOrange, size: 13),
-                                    const SizedBox(width: 4),
-                                    const Text('APEX RIDER  LVL 7',
+                                    SizedBox(width: 4),
+                                    Text('APEX RIDER  LVL 7',
                                       style: TextStyle(
                                         color: RoadOSColors.hyperOrange,
                                         fontSize: 10, fontWeight: FontWeight.w800,
@@ -181,7 +179,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                       ),
                       const SizedBox(height: 16),
                       // Stats achievement grid
-                      Row(
+                      const Row(
                         children: [
                           _ProfileStat(value: '1,284', label: 'RIDES', color: RoadOSColors.hyperOrange),
                           _ProfileStat(value: '42K', label: 'KM RIDDEN', color: RoadOSColors.cyberCyan),
@@ -241,14 +239,14 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                     trailing: const Icon(Icons.record_voice_over_rounded, color: RoadOSColors.cyberCyan),
                     onTap: _showVoiceSelectionModal,
                   ),
-                  const Divider(height: 1, color: const Color(0xFF334155)),
+                  const Divider(height: 1, color: Color(0xFF334155)),
                   ListTile(
                     title: const Text('Assistant Language', style: TextStyle(color: RoadOSColors.platinumWhite, fontSize: 13)),
                     subtitle: Text(_selectedLanguage, style: const TextStyle(color: RoadOSColors.textMuted, fontSize: 11)),
                     trailing: const Icon(Icons.language_rounded, color: RoadOSColors.textMuted),
                     onTap: _showLanguageSelectionModal,
                   ),
-                  const Divider(height: 1, color: const Color(0xFF334155)),
+                  const Divider(height: 1, color: Color(0xFF334155)),
                   SwitchListTile.adaptive(
                     activeTrackColor: const Color(0xFF8B5CF6),
                     title: const Text('Offline AI On-Device Mode', style: TextStyle(color: RoadOSColors.platinumWhite, fontSize: 13)),
@@ -278,7 +276,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                     value: _crashDetectionEnabled,
                     onChanged: (val) => setState(() => _crashDetectionEnabled = val),
                   ),
-                  const Divider(height: 1, color: const Color(0xFF334155)),
+                  const Divider(height: 1, color: Color(0xFF334155)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
@@ -321,7 +319,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                       setState(() => _useMetric = val);
                     },
                   ),
-                  const Divider(height: 1, color: const Color(0xFF334155)),
+                  const Divider(height: 1, color: Color(0xFF334155)),
                   // ── Premium 3-way theme control ───────────────────────────
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -357,7 +355,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                       ],
                     ),
                   ),
-                  const Divider(height: 1, color: const Color(0xFF334155)),
+                  const Divider(height: 1, color: Color(0xFF334155)),
                   SwitchListTile.adaptive(
                     activeTrackColor: RoadOSColors.cyberCyan,
                     title: const Text('Anonymous Telematics Privacy', style: TextStyle(color: RoadOSColors.platinumWhite, fontSize: 13)),

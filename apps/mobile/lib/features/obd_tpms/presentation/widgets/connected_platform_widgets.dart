@@ -1,9 +1,8 @@
 import 'dart:math' as math;
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/premium_navigation.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../crash_detection/core/services/crash_detection_engine.dart';
@@ -283,7 +282,7 @@ class SmartGarageVaultWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Divider(color: const Color(0xFF334155), height: 1),
+          const Divider(color: Color(0xFF334155), height: 1),
           const SizedBox(height: 10),
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -560,7 +559,7 @@ class SmartHelmetConnectivityWidget extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.headset_mic_rounded, color: const Color(0xFF8B5CF6), size: 20),
+                  Icon(Icons.headset_mic_rounded, color: Color(0xFF8B5CF6), size: 20),
                   SizedBox(width: 8),
                   Text('SMART HELMET MESH LINK', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: RoadOSColors.platinumWhite)),
                 ],

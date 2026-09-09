@@ -1,5 +1,4 @@
 import '../../../core/vehicle_resolution/services/vehicle_registry.dart';
-import '../../../core/vehicle_resolution/models/vehicle_profile.dart';
 import '../domain/models/multi_vehicle_fleet_models.dart';
 
 class MultiVehicleFleetEngine {

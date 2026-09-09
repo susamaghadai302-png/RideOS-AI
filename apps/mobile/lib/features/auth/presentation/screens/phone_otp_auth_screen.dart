@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import 'package:flutter/material.dart';
-import '../../../../core/design_system/premium_navigation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
@@ -190,7 +189,7 @@ class _PhoneOtpAuthScreenState extends State<PhoneOtpAuthScreen> {
                                         fillColor: Colors.black45,
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(color: const Color(0xFF334155)),
+                                          borderSide: const BorderSide(color: Color(0xFF334155)),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),

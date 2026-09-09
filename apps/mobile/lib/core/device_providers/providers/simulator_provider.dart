@@ -34,7 +34,7 @@ class SimulatorProvider implements DeviceProvider {
 
   Timer? _generatorTimer;
   double _timeTicks = 0.0;
-  List<DiagnosticTroubleCode> _currentDtcs = [];
+  final List<DiagnosticTroubleCode> _currentDtcs = [];
 
   @override
   Future<bool> initialize() async {

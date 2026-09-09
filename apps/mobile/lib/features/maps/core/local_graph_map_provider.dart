@@ -75,25 +75,25 @@ class LocalGraphMapProvider implements MapProvider {
   Future<List<PlaceSearchResult>> searchPlaces(String query) async {
     final lower = query.toLowerCase();
     final samplePlaces = [
-      PlaceSearchResult(
+      const PlaceSearchResult(
         id: 'place_1',
         name: 'Aero Service Point & Fuel',
         address: 'Sector 4, Main Express Highway',
-        coordinates: const LatLng(12.9716, 77.5946),
+        coordinates: LatLng(12.9716, 77.5946),
         category: 'Fuel & Service',
       ),
-      PlaceSearchResult(
+      const PlaceSearchResult(
         id: 'place_2',
         name: 'Apex Mountain Pass Viewpoint',
         address: 'Hill Range Highway 9',
-        coordinates: const LatLng(12.9850, 77.6050),
+        coordinates: LatLng(12.9850, 77.6050),
         category: 'Scenic Waypoint',
       ),
-      PlaceSearchResult(
+      const PlaceSearchResult(
         id: 'place_3',
         name: 'MotoZone Garage & Tyre Care',
         address: 'Bypass Road, Bay 3',
-        coordinates: const LatLng(12.9600, 77.5800),
+        coordinates: LatLng(12.9600, 77.5800),
         category: 'Workshop',
       ),
     ];

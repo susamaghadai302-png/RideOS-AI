@@ -1,5 +1,4 @@
 import '../domain/models.dart';
-import '../../vehicle_protocols/models/normalized_telemetry.dart';
 import '../../vehicle_resolution/models/active_vehicle_context.dart';
 
 class DigitalTwinStateMapper {

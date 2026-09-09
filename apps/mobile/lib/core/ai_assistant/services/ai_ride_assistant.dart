@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../models/ai_ride_assistant_models.dart';
 import 'ai_ride_provider.dart';
 import '../../telemetry_engine/services/vehicle_telemetry_engine.dart';

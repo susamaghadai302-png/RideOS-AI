@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/roados_tokens.dart';
@@ -24,7 +24,7 @@ class _RealDeviceFieldTestScreenState extends State<RealDeviceFieldTestScreen> {
   String _selectedModel = 'YZF-R15M';
   int _selectedYear = 2024;
   String _selectedVariant = 'Top Premium TFT';
-  VehicleTransportType _selectedTransport = VehicleTransportType.ble;
+  final VehicleTransportType _selectedTransport = VehicleTransportType.ble;
 
   bool _isTesting = false;
   PersistentHardwareEvidenceRecord? _latestRecord;
@@ -122,9 +122,9 @@ class _RealDeviceFieldTestScreenState extends State<RealDeviceFieldTestScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Icon(Icons.directions_bike_rounded, color: RoadOSColors.electricBlue, size: 20),
             SizedBox(width: 8),
             Text(
@@ -162,8 +162,8 @@ class _RealDeviceFieldTestScreenState extends State<RealDeviceFieldTestScreen> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
       ),
-      child: Row(
-        children: const [
+      child: const Row(
+        children: [
           Icon(Icons.security_rounded, color: Colors.amber, size: 20),
           SizedBox(width: 12),
           Expanded(
@@ -225,7 +225,7 @@ class _RealDeviceFieldTestScreenState extends State<RealDeviceFieldTestScreen> {
         Text(label, style: const TextStyle(color: RoadOSColors.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         DropdownButtonFormField<String>(
-          value: items.contains(value) ? value : items.first,
+          initialValue: items.contains(value) ? value : items.first,
           dropdownColor: RoadOSColors.deepSpaceBlack,
           style: const TextStyle(color: RoadOSColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
           decoration: InputDecoration(

@@ -102,7 +102,7 @@ class VehicleIdentity {
       modelYear: DateTime.now().year,
       protocolAdapterId: 'generic_ble',
       confidence: IdentityConfidence.unknown,
-      fieldProvenance: {
+      fieldProvenance: const {
         'model': IdentityFieldProvenance.advertisedName,
       },
     );

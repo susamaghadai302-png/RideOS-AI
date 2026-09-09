@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../design_system/design_tokens.dart';
 import '../design_system/roados_components.dart';
-import '../design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import '../design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 import '../services/lux_haptics_audio_service.dart';
 
 enum BetaFeedbackCategory { bugReport, featureRequest, navigation, aiCopilot, general }
@@ -50,7 +50,7 @@ class _BetaFeedbackModalState extends State<BetaFeedbackModal> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       decoration: const BoxDecoration(
-        color: const Color(0xFF0F172A),
+        color: Color(0xFF0F172A),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         border: Border(top: BorderSide(color: RoadOSColors.cyberCyan, width: 1.5)),
       ),

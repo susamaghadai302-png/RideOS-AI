@@ -6,7 +6,6 @@ import '../../vehicle_catalog/services/universal_vehicle_catalog_service.dart';
 import '../../vehicle_connectivity/models/vehicle_capabilities.dart';
 import '../../vehicle_connectivity/models/vehicle_variant_taxonomy.dart';
 import '../../vehicle_connectivity/services/vehicle_adapter_registry.dart';
-import '../../vehicle_connectivity/adapters/vehicle_connectivity_adapter.dart';
 
 class VehicleConnectionLabService {
   static final VehicleConnectionLabService _instance = VehicleConnectionLabService._internal();

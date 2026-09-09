@@ -39,12 +39,7 @@ class _RideOSErrorBoundaryState extends State<RideOSErrorBoundary> {
       return _buildErrorFallback(context, _caughtError!);
     }
 
-    return ErrorWidget.withDetails(
-      message: 'Feature error in ${widget.featureName}',
-      error: FlutterError('Render error in ${widget.featureName}'),
-    ) == null
-        ? widget.child
-        : _BoundaryWrapper(
+    return _BoundaryWrapper(
             featureName: widget.featureName,
             onError: (error) {
               final appError = AppError.fromException(error);
@@ -76,7 +71,7 @@ class _RideOSErrorBoundaryState extends State<RideOSErrorBoundary> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.12),
+              color: Colors.amber.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.info_outline_rounded, color: Colors.amber, size: 32),
@@ -101,7 +96,7 @@ class _RideOSErrorBoundaryState extends State<RideOSErrorBoundary> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
+              color: Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(

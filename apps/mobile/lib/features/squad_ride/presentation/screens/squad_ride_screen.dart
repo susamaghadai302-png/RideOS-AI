@@ -10,7 +10,7 @@ import '../bloc/squad_bloc.dart';
 import '../bloc/squad_event.dart';
 import '../bloc/squad_state.dart';
 import '../../domain/entities/squad_entity.dart';
-import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 class SquadRideScreen extends StatefulWidget {
   const SquadRideScreen({super.key});
@@ -255,7 +255,7 @@ class _SquadRideScreenState extends State<SquadRideScreen> with SingleTickerProv
 
   Widget _buildRiderTile(SquadMemberEntity rider) {
     // Determine color based on ID to keep the aesthetic alive
-    final colors = [RoadOSColors.cyberCyan, RoadOSColors.hyperOrange, RoadOSColors.apexEmerald, Color(0xFFB388FF)];
+    final colors = [RoadOSColors.cyberCyan, RoadOSColors.hyperOrange, RoadOSColors.apexEmerald, const Color(0xFFB388FF)];
     final color = colors[rider.riderId.hashCode.abs() % colors.length];
 
     return Container(

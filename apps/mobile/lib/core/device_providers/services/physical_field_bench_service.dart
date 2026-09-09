@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import '../models/normalized_telemetry_models.dart';
 import '../models/field_bench_models.dart';
 import 'fleet_telematics_engine.dart';
@@ -14,7 +13,7 @@ class PhysicalFieldBenchService {
 
   int _packetsInCurrentWindow = 0;
   double _currentPacketRateHz = 10.0;
-  double _packetLossPct = 0.0;
+  final double _packetLossPct = 0.0;
   int _reconnectCount = 0;
   DateTime _lastPacketTime = DateTime.now();
 

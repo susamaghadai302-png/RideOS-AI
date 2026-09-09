@@ -1,10 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/services/lux_haptics_audio_service.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../design_system/roados_tokens.dart';
 import '../../design_system/roados_components.dart';
-import '../../design_system/liquid_glass_components.dart';
 import '../models/vehicle_intelligence_models.dart';
 
 void showAiInsightDetailModal(BuildContext context, AiInsight insight, {VoidCallback? onActionTriggered}) {

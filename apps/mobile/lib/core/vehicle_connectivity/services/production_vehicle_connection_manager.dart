@@ -4,7 +4,6 @@ import '../models/vehicle_connection_lifecycle.dart';
 import '../../vehicle_capabilities/models/universal_vehicle_capability_models.dart';
 import '../../vehicle_capabilities/services/scalable_vehicle_capability_engine.dart';
 import '../../telemetry_engine/services/vehicle_telemetry_engine.dart';
-import '../../telemetry_engine/models/telemetry_metric_entry.dart';
 
 class ProductionVehicleConnectionManager {
   static final ProductionVehicleConnectionManager _instance = ProductionVehicleConnectionManager._internal();

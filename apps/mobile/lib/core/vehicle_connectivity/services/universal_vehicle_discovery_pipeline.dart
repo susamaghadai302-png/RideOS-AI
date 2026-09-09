@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../models/universal_discovery_pipeline_models.dart';
-import '../models/packet_capture_models.dart';
 import '../transports/vehicle_transport.dart';
 import 'universal_protocol_detector.dart';
 import 'structured_hardware_diagnostic_logger.dart';

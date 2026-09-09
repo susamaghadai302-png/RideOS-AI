@@ -1,6 +1,7 @@
 /// Provider-independent canonical AI Domain Models.
 ///
 /// Ensures AI consumer boundaries never depend on specific SDK models (e.g., Gemini / Claude).
+library;
 
 /// Categorizes high-level AI intents returned from the provider reasoning engine.
 enum AIIntent {

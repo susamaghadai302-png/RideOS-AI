@@ -325,7 +325,7 @@ class GarageVehicleModel {
 
   static final List<GarageVehicleModel> initialProductionCatalog = [
     // 1. Yamaha YZF-R1M
-    GarageVehicleModel(
+    const GarageVehicleModel(
       id: 'yamaha_r1m_2024',
       make: 'Yamaha',
       model: 'YZF-R1M',
@@ -348,8 +348,8 @@ class GarageVehicleModel {
       isCustomVehicle: false,
       imagePath: 'assets/garage/yamaha_r1m.png',
       glbModelUrl: '',
-      factoryAccentColor: const Color(0xFF1E90FF),
-      customization: const VehicleCustomizationState(
+      factoryAccentColor: Color(0xFF1E90FF),
+      customization: VehicleCustomizationState(
         bodyColor: Color(0xFF0D47A1),
         wheelColor: Color(0xFF1976D2),
         caliperColor: Color(0xFFB0BEC5),
@@ -359,7 +359,7 @@ class GarageVehicleModel {
         exhaustType: ExhaustSystemType.akrapovicTitanium,
       ),
       components: {
-        'engine': const ComponentInspectionSpec(
+        'engine': ComponentInspectionSpec(
           title: 'Crossplane CP4 Engine',
           category: 'Powertrain',
           shortSummary: '998cc Liquid-Cooled 200 HP In-line 4 with 270 deg-180 deg-90 deg-180 deg firing sequence.',
@@ -374,7 +374,7 @@ class GarageVehicleModel {
             'Fuel Injection': 'Twin-injector YCC-T & YCC-I variable intake',
           },
         ),
-        'brakes': const ComponentInspectionSpec(
+        'brakes': ComponentInspectionSpec(
           title: 'Radial Dual Front Brakes',
           category: 'Braking & Safety',
           shortSummary: 'Dual 320mm floating discs with Advics 4-piston radial monoblock calipers.',
@@ -388,7 +388,7 @@ class GarageVehicleModel {
             'Brake Lines': 'Stainless steel braided high-pressure lines',
           },
         ),
-        'suspension': const ComponentInspectionSpec(
+        'suspension': ComponentInspectionSpec(
           title: 'Öhlins Electronic Racing Suspension',
           category: 'Chassis Dynamics',
           shortSummary: 'Öhlins ERS NPX gas-charged inverted front fork (43mm) with Smart EC 2.0.',
@@ -401,7 +401,7 @@ class GarageVehicleModel {
             'Smart Modes': '3 Automatic active damping modes (A-1, A-2, A-3) + 3 Manual',
           },
         ),
-        'tyres': const ComponentInspectionSpec(
+        'tyres': ComponentInspectionSpec(
           title: 'Bridgestone Battlax Racing RS11',
           category: 'Wheels & Traction',
           shortSummary: 'High-grip 200/55 ZR17 rear and 120/70 ZR17 front supersport compound.',
@@ -414,7 +414,7 @@ class GarageVehicleModel {
             'TPMS Status': 'Integrated live BLE pressure monitoring active',
           },
         ),
-        'cockpit': const ComponentInspectionSpec(
+        'cockpit': ComponentInspectionSpec(
           title: '4.2-inch Color TFT Cockpit',
           category: 'Avionics & Display',
           shortSummary: 'Full-color high-luminance TFT display with Street and Track telemetry views.',
@@ -427,7 +427,7 @@ class GarageVehicleModel {
             'Throttle Tech': 'APSG Ride-by-Wire with magnetic position sensors',
           },
         ),
-        'exhaust': const ComponentInspectionSpec(
+        'exhaust': ComponentInspectionSpec(
           title: 'Akrapovič Evolution Titanium System',
           category: 'Exhaust & Sound',
           shortSummary: 'Full titanium headers, link pipe, and carbon fiber heat shield.',
@@ -444,7 +444,7 @@ class GarageVehicleModel {
     ),
 
     // 2. Ducati Panigale V4 S
-    GarageVehicleModel(
+    const GarageVehicleModel(
       id: 'ducati_panigale_v4s_2024',
       make: 'Ducati',
       model: 'Panigale V4 S',
@@ -467,8 +467,8 @@ class GarageVehicleModel {
       isCustomVehicle: false,
       imagePath: 'assets/garage/ducati_panigale.png',
       glbModelUrl: 'assets/models/ducati_panigale.glb',
-      factoryAccentColor: const Color(0xFFBA000D),
-      customization: const VehicleCustomizationState(
+      factoryAccentColor: Color(0xFFBA000D),
+      customization: VehicleCustomizationState(
         bodyColor: Color(0xFFBA000D),
         wheelColor: Color(0xFF1E1E1E),
         caliperColor: Color(0xFFFF1744),
@@ -478,7 +478,7 @@ class GarageVehicleModel {
         exhaustType: ExhaustSystemType.akrapovicTitanium,
       ),
       components: {
-        'engine': const ComponentInspectionSpec(
+        'engine': ComponentInspectionSpec(
           title: 'Desmosedici Stradale 90 deg V4',
           category: 'Powertrain',
           shortSummary: '1,103cc MotoGP-derived 90 deg V4 with Desmodromic valve actuation.',
@@ -493,7 +493,7 @@ class GarageVehicleModel {
             'Clutch': 'Hydraulically controlled slipper and self-servo wet clutch',
           },
         ),
-        'brakes': const ComponentInspectionSpec(
+        'brakes': ComponentInspectionSpec(
           title: 'Brembo Stylema Monoblock Calipers',
           category: 'Braking & Safety',
           shortSummary: 'Dual 330mm semi-floating discs clamped by top-tier Brembo Stylema calipers.',
@@ -506,7 +506,7 @@ class GarageVehicleModel {
             'Rear Brake': '245 mm disc, 2-piston caliper with cornering ABS',
           },
         ),
-        'suspension': const ComponentInspectionSpec(
+        'suspension': ComponentInspectionSpec(
           title: 'Öhlins Smart EC 2.0 Electronic Suspension',
           category: 'Chassis Dynamics',
           shortSummary: 'Öhlins NIX30 43mm TiN-treated fork and TTX36 shock with event-based damping.',
@@ -518,7 +518,7 @@ class GarageVehicleModel {
             'Steering Damper': 'Öhlins electronic active steering damper',
           },
         ),
-        'tyres': const ComponentInspectionSpec(
+        'tyres': ComponentInspectionSpec(
           title: 'Marchesini Forged Aluminum Wheels',
           category: 'Wheels & Traction',
           shortSummary: 'Ultralight 3-spoke forged aluminum alloy wheels wrapped in Pirelli Supercorsa SP.',
@@ -530,7 +530,7 @@ class GarageVehicleModel {
             'Wheels': 'Marchesini forged light alloy 3-spoke',
           },
         ),
-        'cockpit': const ComponentInspectionSpec(
+        'cockpit': ComponentInspectionSpec(
           title: '5-inch High-Res TFT Dashboard',
           category: 'Avionics & Display',
           shortSummary: '5-inch full-color TFT display featuring MotoGP-derived Track EVO interface.',
@@ -542,7 +542,7 @@ class GarageVehicleModel {
             'DTC EVO 3': 'Predictive slip control with corner-exit torque boosting',
           },
         ),
-        'exhaust': const ComponentInspectionSpec(
+        'exhaust': ComponentInspectionSpec(
           title: 'Dual Under-Engine Stainless/Titanium Exhaust',
           category: 'Exhaust & Sound',
           shortSummary: 'Compact 4-2-1-2 exhaust system positioned low under the crankcase.',
@@ -558,7 +558,7 @@ class GarageVehicleModel {
     ),
 
     // 3. BMW M 1000 RR
-    GarageVehicleModel(
+    const GarageVehicleModel(
       id: 'bmw_m1000rr_2024',
       make: 'BMW',
       model: 'M 1000 RR',
@@ -581,8 +581,8 @@ class GarageVehicleModel {
       isCustomVehicle: false,
       imagePath: 'assets/garage/bmw_m1000rr.png',
       glbModelUrl: 'assets/models/bmw_m1000rr.glb',
-      factoryAccentColor: const Color(0xFF0066CC),
-      customization: const VehicleCustomizationState(
+      factoryAccentColor: Color(0xFF0066CC),
+      customization: VehicleCustomizationState(
         bodyColor: Color(0xFFFAFAFA),
         wheelColor: Color(0xFF101010),
         caliperColor: Color(0xFF0066CC),
@@ -592,7 +592,7 @@ class GarageVehicleModel {
         exhaustType: ExhaustSystemType.akrapovicTitanium,
       ),
       components: {
-        'engine': const ComponentInspectionSpec(
+        'engine': ComponentInspectionSpec(
           title: 'BMW ShiftCam Inline-4 Engine',
           category: 'Powertrain',
           shortSummary: '999cc 4-cylinder with variable valve timing and valve stroke technology.',
@@ -606,7 +606,7 @@ class GarageVehicleModel {
             'ShiftCam': 'Variable intake camshaft timing switches at 9,000 RPM',
           },
         ),
-        'brakes': const ComponentInspectionSpec(
+        'brakes': ComponentInspectionSpec(
           title: 'BMW M Motorsport Brakes',
           category: 'Braking & Safety',
           shortSummary: 'Dual 320mm discs with anodized blue M 4-piston fixed radial calipers.',
@@ -619,7 +619,7 @@ class GarageVehicleModel {
             'ABS Pro': 'Race ABS with Slick and User customizable modes',
           },
         ),
-        'suspension': const ComponentInspectionSpec(
+        'suspension': ComponentInspectionSpec(
           title: 'Dynamic Damping Control (DDC)',
           category: 'Chassis Dynamics',
           shortSummary: '45mm upside-down telescopic fork with electronic dynamic damping regulation.',
@@ -631,7 +631,7 @@ class GarageVehicleModel {
             'Suspension Travel': '120 mm front / 118 mm rear',
           },
         ),
-        'tyres': const ComponentInspectionSpec(
+        'tyres': ComponentInspectionSpec(
           title: 'M Carbon Fiber Wheels',
           category: 'Wheels & Traction',
           shortSummary: 'Ultra-rigid M Carbon lightweight wheels reducing rotating mass by 1.7 kg.',
@@ -643,7 +643,7 @@ class GarageVehicleModel {
             'Tyres': '120/70 ZR17 front, 200/55 ZR17 rear',
           },
         ),
-        'cockpit': const ComponentInspectionSpec(
+        'cockpit': ComponentInspectionSpec(
           title: '6.5-inch High-Resolution TFT Cockpit',
           category: 'Avionics & Display',
           shortSummary: '6.5-inch color TFT with Pure Ride Screen and 3 Core Screen track displays.',
@@ -655,7 +655,7 @@ class GarageVehicleModel {
             'Telemetry Display': 'Live G-Meter, Lean angle left/right, Lap trigger',
           },
         ),
-        'exhaust': const ComponentInspectionSpec(
+        'exhaust': ComponentInspectionSpec(
           title: 'M Titanium Exhaust Silencer',
           category: 'Exhaust & Sound',
           shortSummary: 'Lightweight titanium sports silencer with carbon end-cap developed with Akrapovič.',

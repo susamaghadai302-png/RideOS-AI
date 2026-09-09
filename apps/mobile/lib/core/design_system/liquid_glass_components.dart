@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'dart:ui';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/lux_haptics_audio_service.dart';
@@ -47,7 +46,7 @@ class LiquidGlassCard extends StatefulWidget {
 }
 
 class _LiquidGlassCardState extends State<LiquidGlassCard> with SingleTickerProviderStateMixin {
-  bool _isHovered = false;
+  final bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +185,7 @@ class LiquidGlassButton extends StatefulWidget {
 class _LiquidGlassButtonState extends State<LiquidGlassButton> with SingleTickerProviderStateMixin {
   late AnimationController _pressController;
   late Animation<double> _scaleAnimation;
-  bool _isHovered = false;
+  final bool _isHovered = false;
 
   @override
   void initState() {

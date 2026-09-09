@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 class WebBleSupportInfo {
   final bool isSupported;

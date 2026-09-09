@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'map_provider.dart';
 import '../domain/models/navigation_models.dart';
 

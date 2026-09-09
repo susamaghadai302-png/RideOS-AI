@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gm;
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/widgets/floating_glass_dock_widget.dart';
 import '../bloc/navigation_bloc.dart';
 import '../bloc/navigation_state.dart';
@@ -90,15 +89,15 @@ class _NavigationHudScreenState extends State<NavigationHudScreen> {
                 color: const Color(0xFF00D4FF).withValues(alpha: 0.4),
                 width: 14,
               ),
-              gm.Polyline(
-                polylineId: const gm.PolylineId('route_core'),
-                points: const [
+              const gm.Polyline(
+                polylineId: gm.PolylineId('route_core'),
+                points: [
                   gm.LatLng(28.6139, 77.2090),
                   gm.LatLng(28.6180, 77.2120),
                   gm.LatLng(28.6250, 77.2180),
                   gm.LatLng(28.6340, 77.2200),
                 ],
-                color: const Color(0xFF00D4FF),
+                color: Color(0xFF00D4FF),
                 width: 6,
               ),
             },

@@ -217,7 +217,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'engineCc': 155,
           'powerBhp': 18.4,
           'torqueNm': 14.2,
@@ -250,7 +250,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'engineCc': 155,
           'powerBhp': 15.0,
           'torqueNm': 13.9,
@@ -282,7 +282,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'engineCc': 890,
           'powerBhp': 117.3,
           'torqueNm': 93.0,
@@ -319,7 +319,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'engineCc': 124,
           'powerBhp': 8.6,
           'torqueNm': 10.0,
@@ -356,7 +356,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'engineCc': 1103,
           'powerBhp': 215.5,
           'torqueNm': 123.6,
@@ -393,7 +393,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'engineCc': 999,
           'powerBhp': 210.0,
           'torqueNm': 113.0,
@@ -426,7 +426,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'batteryCapacityKwh': 8.9,
           'powerBhp': 42.0,
           'topSpeedKmh': 120,
@@ -461,7 +461,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'engineCc': 398.7,
           'powerBhp': 45.3,
           'torqueNm': 39.0,
@@ -497,7 +497,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'engineCc': 452,
           'powerBhp': 40.0,
           'torqueNm': 40.0,
@@ -534,7 +534,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'batteryCapacityKwh': 3.7,
           'powerBhp': 8.6,
           'torqueNm': 26.0,
@@ -571,7 +571,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.fullConnectedTwoWheeler(),
         compatibility: VehicleCompatibilityLevel.full,
         verification: VerificationSource.verified,
-        specifications: {
+        specifications: const {
           'batteryCapacityKwh': 4.0,
           'powerBhp': 14.7,
           'topSpeedKmh': 120,
@@ -604,7 +604,7 @@ class UniversalVehicleCatalogService {
         capabilities: VehicleCapabilities.standardObdGateway(),
         compatibility: VehicleCompatibilityLevel.diagnosticOnly,
         verification: VerificationSource.documented,
-        specifications: {},
+        specifications: const {},
         thumbnailUrl: 'assets/garage/generic_obd.png',
       ),
     ]);

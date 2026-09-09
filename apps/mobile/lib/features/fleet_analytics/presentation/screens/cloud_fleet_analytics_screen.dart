@@ -91,7 +91,7 @@ class _CloudFleetAnalyticsScreenState extends State<CloudFleetAnalyticsScreen> {
 
           Row(
             children: [
-              Expanded(child: _buildMetricCard('TOTAL DISTANCE', '${summary.totalDistanceKm.toStringAsFixed(1)}', 'KM', RoadOSColors.electricBlue)),
+              Expanded(child: _buildMetricCard('TOTAL DISTANCE', summary.totalDistanceKm.toStringAsFixed(1), 'KM', RoadOSColors.electricBlue)),
               const SizedBox(width: 10),
               Expanded(child: _buildMetricCard('TOTAL RIDES', '${summary.totalRides}', 'RIDES', RoadOSColors.cyberCyan)),
             ],
@@ -99,9 +99,9 @@ class _CloudFleetAnalyticsScreenState extends State<CloudFleetAnalyticsScreen> {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _buildMetricCard('PEAK SPEED', '${summary.topMaxSpeedKmh.toStringAsFixed(0)}', 'KM/H', RoadOSColors.hyperOrange)),
+              Expanded(child: _buildMetricCard('PEAK SPEED', summary.topMaxSpeedKmh.toStringAsFixed(0), 'KM/H', RoadOSColors.hyperOrange)),
               const SizedBox(width: 10),
-              Expanded(child: _buildMetricCard('MAX LEAN', '${summary.peakLeanAngleDeg.toStringAsFixed(1)}', ' deg', RoadOSColors.warningAmber)),
+              Expanded(child: _buildMetricCard('MAX LEAN', summary.peakLeanAngleDeg.toStringAsFixed(1), ' deg', RoadOSColors.warningAmber)),
             ],
           ),
           const SizedBox(height: 18),

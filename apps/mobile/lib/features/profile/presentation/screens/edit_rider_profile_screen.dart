@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
-import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
@@ -129,26 +128,26 @@ class _EditRiderProfileScreenState extends State<EditRiderProfileScreen> {
                       TextFormField(
                         controller: _nameController,
                         style: const TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline)),
+                        decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline)),
                         validator: (v) => (v == null || v.isEmpty) ? 'Name is required' : null,
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _phoneController,
                         style: const TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone_outlined)),
+                        decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone_outlined)),
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _emailController,
                         style: const TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined)),
+                        decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined)),
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _dobController,
                         style: const TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(labelText: 'Date of Birth (YYYY-MM-DD)', prefixIcon: Icon(Icons.cake_outlined)),
+                        decoration: const InputDecoration(labelText: 'Date of Birth (YYYY-MM-DD)', prefixIcon: Icon(Icons.cake_outlined)),
                       ),
                     ],
                   ),
@@ -161,27 +160,27 @@ class _EditRiderProfileScreenState extends State<EditRiderProfileScreen> {
                       TextFormField(
                         controller: _bloodGroupController,
                         style: const TextStyle(color: RoadOSColors.hyperOrange, fontWeight: FontWeight.w900),
-                        decoration: InputDecoration(labelText: 'Blood Group', prefixIcon: Icon(Icons.bloodtype_outlined)),
+                        decoration: const InputDecoration(labelText: 'Blood Group', prefixIcon: Icon(Icons.bloodtype_outlined)),
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _emergencyContactController,
                         style: const TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(labelText: 'Emergency ICE Contact', prefixIcon: Icon(Icons.contact_phone_outlined)),
+                        decoration: const InputDecoration(labelText: 'Emergency ICE Contact', prefixIcon: Icon(Icons.contact_phone_outlined)),
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _addressController,
                         maxLines: 2,
                         style: const TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(labelText: 'Residential Address', prefixIcon: Icon(Icons.home_outlined)),
+                        decoration: const InputDecoration(labelText: 'Residential Address', prefixIcon: Icon(Icons.home_outlined)),
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _medicalNotesController,
                         maxLines: 2,
                         style: const TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(labelText: 'Medical Notes & Allergies', prefixIcon: Icon(Icons.medical_services_outlined)),
+                        decoration: const InputDecoration(labelText: 'Medical Notes & Allergies', prefixIcon: Icon(Icons.medical_services_outlined)),
                       ),
                     ],
                   ),

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../../domain/entities/ai_vehicle_alert_entity.dart';
 import '../../../obd_tpms/core/services/obd_full_telemetry_service.dart';
 

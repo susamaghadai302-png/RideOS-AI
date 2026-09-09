@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -436,7 +436,7 @@ class RideIntelligenceRadarWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(color: const Color(0xFF334155), height: 1),
+          const Divider(color: Color(0xFF334155), height: 1),
           const SizedBox(height: 12),
           _buildHabitBar('Braking Smoothness', habit.brakingSmoothnessScore, RoadOSColors.cyberCyan),
           const SizedBox(height: 6),
@@ -677,12 +677,12 @@ class _SmartTripPlannerWidgetState extends State<SmartTripPlannerWidget> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.route_rounded, color: const Color(0xFF8B5CF6), size: 20),
+                  Icon(Icons.route_rounded, color: Color(0xFF8B5CF6), size: 20),
                   SizedBox(width: 8),
                   Text('SMART TRIP PLANNER', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: RoadOSColors.platinumWhite)),
                 ],
               ),
-              Text('AI Multi-Stop', style: TextStyle(fontSize: 10, color: const Color(0xFF8B5CF6), fontWeight: FontWeight.bold)),
+              Text('AI Multi-Stop', style: TextStyle(fontSize: 10, color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 10),
@@ -692,9 +692,9 @@ class _SmartTripPlannerWidgetState extends State<SmartTripPlannerWidget> {
           ),
           const SizedBox(height: 12),
           if (_isGenerating) ...[
-            const LinearProgressIndicator(color: const Color(0xFF8B5CF6), backgroundColor: Colors.black26),
+            const LinearProgressIndicator(color: Color(0xFF8B5CF6), backgroundColor: Colors.black26),
             const SizedBox(height: 8),
-            const Center(child: Text('AI Optimizing Multi-Stop Motorcycle Route...', style: TextStyle(fontSize: 10, color: const Color(0xFF8B5CF6)))),
+            const Center(child: Text('AI Optimizing Multi-Stop Motorcycle Route...', style: TextStyle(fontSize: 10, color: Color(0xFF8B5CF6)))),
           ] else if (_planGenerated) ...[
             Container(
               padding: const EdgeInsets.all(10),
@@ -722,7 +722,7 @@ class _SmartTripPlannerWidgetState extends State<SmartTripPlannerWidget> {
               backgroundColor: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
               foregroundColor: const Color(0xFF8B5CF6),
               minimumSize: const Size(double.infinity, 40),
-              side: const BorderSide(color: const Color(0xFF8B5CF6)),
+              side: const BorderSide(color: Color(0xFF8B5CF6)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),

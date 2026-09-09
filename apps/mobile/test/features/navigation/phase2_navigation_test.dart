@@ -36,12 +36,12 @@ void main() {
       ];
 
       // Point directly on/near polyline
-      final onRoutePoint = const LatLng(20.2962, 85.8246);
+      const onRoutePoint = LatLng(20.2962, 85.8246);
       final isOff1 = routingEngine.isOffRoute(onRoutePoint, polyline, thresholdMeters: 50.0);
       expect(isOff1, isFalse);
 
       // Point far away (>500 meters)
-      final farOffPoint = const LatLng(20.3500, 85.9000);
+      const farOffPoint = LatLng(20.3500, 85.9000);
       final isOff2 = routingEngine.isOffRoute(farOffPoint, polyline, thresholdMeters: 50.0);
       expect(isOff2, isTrue);
     });

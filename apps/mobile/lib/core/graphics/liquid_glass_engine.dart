@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'global_pointer_provider.dart';
 
 class LiquidSurfaceInteraction extends StatefulWidget {
   final Widget child;
@@ -23,7 +22,7 @@ class _LiquidSurfaceInteractionState extends State<LiquidSurfaceInteraction> wit
   double _tiltX = 0;
   double _tiltY = 0;
   double _scale = 1.0;
-  bool _isHovered = false;
+  final bool _isHovered = false;
 
   late AnimationController _springController;
 

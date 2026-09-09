@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../domain/models/advanced_trip_models.dart';
 import '../../core/services/advanced_trip_navigation_engine.dart';

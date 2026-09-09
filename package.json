@@ -19,7 +19,8 @@
     "dev:backend": "pnpm --filter backend run start:dev",
     "dev:admin": "pnpm --filter web-admin run dev",
     "lint": "pnpm --recursive run lint",
-    "test": "pnpm --recursive run test"
+    "test": "pnpm --recursive run test",
+    "validate:all": "./scripts/validate.sh"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",

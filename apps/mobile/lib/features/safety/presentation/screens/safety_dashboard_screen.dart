@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/premium_navigation.dart';
@@ -25,9 +25,9 @@ class _SafetyDashboardScreenState extends State<SafetyDashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Icon(Icons.shield_rounded, color: RoadOSColors.apexEmerald, size: 20),
             SizedBox(width: 8),
             Text(
@@ -96,9 +96,9 @@ class _SafetyDashboardScreenState extends State<SafetyDashboardScreen> {
                 child: const Icon(Icons.verified_user_rounded, color: RoadOSColors.apexEmerald, size: 24),
               ),
               const SizedBox(width: 14),
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text('STATUS: SAFE', style: TextStyle(color: RoadOSColors.apexEmerald, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                   SizedBox(height: 2),
                   Text('Multi-Signal Fallback & Crash Sentinel Active', style: TextStyle(color: RoadOSColors.textMuted, fontSize: 10)),
@@ -227,7 +227,7 @@ class _SafetyDashboardScreenState extends State<SafetyDashboardScreen> {
                     ),
                     Switch(
                       value: c.isEnabled,
-                      activeColor: RoadOSColors.apexEmerald,
+                      activeThumbColor: RoadOSColors.apexEmerald,
                       onChanged: (val) {
                         setState(() {
                           _safetyEngine.toggleEmergencyContact(c.id, val);
@@ -319,8 +319,8 @@ class _SafetyDashboardScreenState extends State<SafetyDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.science_rounded, color: RoadOSColors.neonViolet, size: 16),
               SizedBox(width: 8),
               Text(

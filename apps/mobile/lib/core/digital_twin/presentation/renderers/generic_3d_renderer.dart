@@ -45,15 +45,15 @@ class Generic3DRenderer extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.withOpacity(0.5)), // Orange to indicate generic
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.5)), // Orange to indicate generic
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('GENERIC CATEGORY MODEL', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+          const Text('GENERIC CATEGORY MODEL', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _buildStatRow('Speed', state.speedKmh, 'km/h'),
           _buildStatRow('RPM', state.rpm, ''),

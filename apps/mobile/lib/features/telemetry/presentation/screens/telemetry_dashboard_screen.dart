@@ -1,9 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/cinematic_background.dart';
 import '../../../../core/widgets/rideos_3d_model_viewer.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/vehicle_protocols/models/normalized_telemetry.dart';
@@ -393,7 +391,7 @@ class _TelemetryDashboardScreenState
             ),
             SizedBox(
               width: podWidth,
-              child: FloatingHudBubble(
+              child: const FloatingHudBubble(
                 icon: Icons.air_rounded,
                 label: 'Engine Load',
                 value: '42',
@@ -403,7 +401,7 @@ class _TelemetryDashboardScreenState
             ),
             SizedBox(
               width: podWidth,
-              child: FloatingHudBubble(
+              child: const FloatingHudBubble(
                 icon: Icons.compress_rounded,
                 label: 'Oil Pressure',
                 value: '4.2',
@@ -525,7 +523,7 @@ class _TelemetryDashboardScreenState
           ),
           Switch(
             value: isActive,
-            activeColor: activeColor,
+            activeThumbColor: activeColor,
             onChanged: (val) {
               LuxAudioHapticsService.selectionClick();
               onChanged(val);

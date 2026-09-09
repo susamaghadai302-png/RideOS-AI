@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/vehicle_capabilities.dart';
-import '../models/vehicle_variant_taxonomy.dart';
 import 'generic_vehicle_connectivity_engine.dart';
 import 'connection_recovery_engine.dart';
 

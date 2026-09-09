@@ -1,18 +1,15 @@
 import 'dart:convert';
-import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
+import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/theme_engine.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/bluetooth/bluetooth_engine.dart';
 import '../../../../core/vehicle_commands/services/vehicle_command_pipeline.dart';
-import '../../../../core/vehicle_commands/models/vehicle_command_log.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DIAGNOSTICS CENTER SCREEN — Luxury upgrade

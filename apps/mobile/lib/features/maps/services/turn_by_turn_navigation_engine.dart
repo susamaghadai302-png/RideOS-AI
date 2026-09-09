@@ -41,7 +41,7 @@ class TurnByTurnNavigationEngine {
   String _currentInstruction = 'Prepare to ride';
   String get currentInstruction => _currentInstruction;
 
-  String _nextStreetName = '';
+  final String _nextStreetName = '';
   String get nextStreetName => _nextStreetName;
 
   IconData _currentManeuverIcon = Icons.navigation_rounded;

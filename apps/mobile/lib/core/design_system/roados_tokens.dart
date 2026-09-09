@@ -54,22 +54,22 @@ class RoadOSColors {
   static const Color starlightSilver = Color(0xFFCBD5E1); // Light silver accent
 
   // Gradient tokens (LinearGradient — static final, not const)
-  static final LinearGradient hyperOrangeGradient = const LinearGradient(
+  static const LinearGradient hyperOrangeGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [Color(0xFFFF6B35), Color(0xFFF97316)],
   );
-  static final LinearGradient cyberCyanGradient = const LinearGradient(
+  static const LinearGradient cyberCyanGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [Color(0xFF00BFFF), Color(0xFF06B6D4)],
   );
-  static final LinearGradient violetGradient = const LinearGradient(
+  static const LinearGradient violetGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
   );
-  static final LinearGradient emeraldGradient = const LinearGradient(
+  static const LinearGradient emeraldGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [Color(0xFF10B981), Color(0xFF059669)],

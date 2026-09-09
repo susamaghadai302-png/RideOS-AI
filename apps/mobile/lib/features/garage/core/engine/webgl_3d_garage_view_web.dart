@@ -167,6 +167,6 @@ class _WebGl3dGarageViewPlatformState extends State<WebGl3dGarageViewPlatform> {
 
   @override
   Widget build(BuildContext context) {
-    return HtmlElementView(viewType: _viewType);
+    return const HtmlElementView(viewType: _viewType);
   }
 }

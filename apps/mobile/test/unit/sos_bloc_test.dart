@@ -48,7 +48,7 @@ void main() {
       ),
     );
 
-    sosBloc.add(CancelSosEvent());
+    sosBloc.add(const CancelSosEvent());
 
     expectLater(
       sosBloc.stream,

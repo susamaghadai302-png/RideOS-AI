@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/widgets/cinematic_background.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
@@ -198,9 +197,9 @@ class _VoiceAssistantHudScreenState extends State<VoiceAssistantHudScreen> {
                                         fontWeight: FontWeight.w600),
                                   ),
                                   const Spacer(),
-                                  Text(
+                                  const Text(
                                     'Command parsed via Tier 5 Intent Resolver',
-                                    style: const TextStyle(color: RoadOSColors.textMuted, fontSize: 11),
+                                    style: TextStyle(color: RoadOSColors.textMuted, fontSize: 11),
                                   ),
                                 ],
                               ),
