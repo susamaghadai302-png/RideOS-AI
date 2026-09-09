@@ -36,7 +36,7 @@ class RideOS3DModelViewer extends StatelessWidget {
     this.vehicleName,
     this.manufacturer,
     this.validationStatus,
-    this.autoRotate = true,
+    this.autoRotate = false,
     this.cameraControls = true,
     this.cameraOrbit = '35deg 75deg 100%',
     this.fieldOfView = '30deg',

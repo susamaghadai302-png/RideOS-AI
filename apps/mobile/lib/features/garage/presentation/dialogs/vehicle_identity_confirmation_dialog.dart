@@ -121,10 +121,15 @@ class VehicleIdentityConfirmationDialog extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Buttons
-            LuxButton(
-              label: 'CONFIRM THIS IS MY VEHICLE',
-              icon: Icons.check_circle_rounded,
-              gradient: RoadOSGradients.primaryViolet,
+            ElevatedButton.icon(
+              icon: Icon(Icons.check_circle_rounded, size: 18),
+              label: const Text('CONFIRM THIS IS MY VEHICLE', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: RoadOSColors.neonViolet,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 52),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
               onPressed: () {
         LuxAudioHapticsService.lightImpact();
                 Navigator.pop(context);
@@ -134,10 +139,15 @@ class VehicleIdentityConfirmationDialog extends StatelessWidget {
             const SizedBox(height: 10),
 
             if (identity.requiresScan) ...[
-              LuxButton(
-                label: 'SCAN VEHICLE (CREATE 3D TWIN)',
-                icon: Icons.camera_alt_rounded,
-                gradient: RoadOSGradients.brandCyan,
+              ElevatedButton.icon(
+                icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                label: const Text('SCAN VEHICLE (CREATE 3D TWIN)', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: RoadOSColors.cyberCyan,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 52),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
                 onPressed: () async {
                   Navigator.pop(context);
                   final twin = await Navigator.push(
@@ -158,9 +168,16 @@ class VehicleIdentityConfirmationDialog extends StatelessWidget {
               const SizedBox(height: 10),
             ],
 
-            LuxButton(
-              label: 'THIS IS NOT MY VEHICLE',
-              icon: Icons.close_rounded,
+            ElevatedButton.icon(
+              icon: const Icon(Icons.close_rounded, size: 18),
+              label: const Text('THIS IS NOT MY VEHICLE', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: RoadOSColors.errorCrimson.withValues(alpha: 0.15),
+                foregroundColor: RoadOSColors.errorCrimson,
+                minimumSize: const Size(double.infinity, 52),
+                side: BorderSide(color: RoadOSColors.errorCrimson.withValues(alpha: 0.4)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
               onPressed: () {
         LuxAudioHapticsService.lightImpact();
                 Navigator.pop(context);

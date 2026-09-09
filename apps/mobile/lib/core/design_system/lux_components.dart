@@ -47,16 +47,23 @@ class RoadOSCard extends StatelessWidget {
           boxShadow: glowColor != null
               ? LuxShadows.glassGlow(effectiveGlow)
               : [
+                  // Contact physical shadow (sharp, directly underneath)
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.85 : 0.25),
+                    blurRadius: 6,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 4),
+                  ),
                   // Deeper ambient occlusion
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.65 : 0.12),
-                    blurRadius: 36,
-                    spreadRadius: -4,
-                    offset: const Offset(0, 16),
+                    color: Colors.black.withValues(alpha: isDark ? 0.55 : 0.12),
+                    blurRadius: 24,
+                    spreadRadius: -2,
+                    offset: const Offset(0, 12),
                   ),
-                  // Core drop shadow
+                  // Outer soft glow
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -73,13 +80,7 @@ class RoadOSCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: isDark ? LuxGradients.liquidGlassDark : LuxGradients.liquidGlassLight,
                       borderRadius: BorderRadius.circular(borderRadius),
-                      border: Border.all(
-                        color: borderColor ??
-                            (isDark
-                                ? const Color(0x45FFFFFF) // Stronger white glass rim
-                                : RoadOSColors.lightBorder.withValues(alpha: 0.9)),
-                        width: 1.2,
-                      ),
+                        border: Border.all(color: isDark ? const Color(0x33FFFFFF) : const Color(0x66FFFFFF), width: 1.0),
                     ),
                   ),
                 ),
@@ -100,33 +101,35 @@ class RoadOSCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Top specular rim highlight (enhanced)
+              // Top specular rim highlight (enhanced bevel)
               Positioned(
                 top: 0,
-                left: 12,
-                right: 12,
-                height: 1.5,
+                left: 0,
+                right: 0,
+                height: 2.0,
                 child: IgnorePointer(
                   child: Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.transparent, Color(0xBBFFFFFF), Colors.transparent],
+                        colors: [Colors.transparent, Color(0xDDFFFFFF), Colors.transparent],
                       ),
                     ),
                   ),
                 ),
               ),
-              // Bottom subtle inner shadow rim
+              // Bottom thick inner shadow (creates physical thickness/extrusion)
               Positioned(
                 bottom: 0,
-                left: 12,
-                right: 12,
-                height: 1.0,
+                left: 0,
+                right: 0,
+                height: 6.0,
                 child: IgnorePointer(
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.transparent, isDark ? const Color(0x55000000) : const Color(0x22000000), Colors.transparent],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [isDark ? const Color(0xAA000000) : const Color(0x33000000), Colors.transparent],
                       ),
                     ),
                   ),
@@ -179,9 +182,29 @@ class LuxBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            color.withValues(alpha: 0.25),
+            color.withValues(alpha: 0.10),
+          ],
+        ),
         borderRadius: BorderRadius.circular(LuxRadius.sm),
-        border: Border.all(color: color.withValues(alpha: 0.6), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.8), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.15),
+            blurRadius: 6,
+            spreadRadius: 0,
+            offset: const Offset(0, 3),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -552,51 +575,23 @@ class LuxNavItem {
 }
 
 /// DYNAMIC LIQUID ANIMATED AURORA BACKGROUND (120 FPS CAPABLE)
-class LuxAuroraBackground extends StatefulWidget {
+class LuxAuroraBackground extends StatelessWidget {
   final Widget child;
 
   const LuxAuroraBackground({super.key, required this.child});
-
-  @override
-  State<LuxAuroraBackground> createState() => _LuxAuroraBackgroundState();
-}
-
-class _LuxAuroraBackgroundState extends State<LuxAuroraBackground>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 12),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         Container(color: Colors.transparent),
-        AnimatedBuilder(
-          animation: _animController,
-          builder: (context, child) {
-            return RepaintBoundary(
-              child: CustomPaint(
-                size: Size.infinite,
-                painter: LuxLiquidAuroraPainter(progress: _animController.value),
-              ),
-            );
-          },
+        RepaintBoundary(
+          child: CustomPaint(
+            size: Size.infinite,
+            painter: LuxLiquidAuroraPainter(progress: 0.0),
+          ),
         ),
-        widget.child,
+        child,
       ],
     );
   }

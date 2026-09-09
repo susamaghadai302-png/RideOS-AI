@@ -4,6 +4,8 @@ import '../../../../core/bluetooth/bluetooth_engine.dart';
 import '../../../../core/vehicle_protocols/models/normalized_telemetry.dart';
 import '../../../../core/vehicle_protocols/obd2_protocol_adapter.dart';
 import '../../../../core/vehicle_commands/models/vehicle_command.dart';
+import '../../../../core/vehicle_commands/models/command_result.dart';
+import '../../../../core/vehicle_commands/services/vehicle_command_pipeline.dart';
 import '../../domain/entities/obd_entity.dart';
 import '../services/obd_full_telemetry_service.dart';
 
@@ -121,9 +123,10 @@ class ObdBleService {
 
   /// Transmits Mode 04 Clear DTC command directly to the motorcycle ECU
   Future<bool> clearDtcFaults() async {
-    final adapter = bluetoothEngine.currentAdapter ?? obdAdapter;
-    final result = await adapter.executeCommand(VehicleCommand(type: VehicleCommandType.clearFaultCodes));
-    return result.isSuccess;
+    final result = await VehicleCommandPipeline().execute(
+      VehicleCommand(type: VehicleCommandType.clearFaultCodes),
+    );
+    return result.status == CommandResultStatus.success;
   }
 
   void stopScan() {

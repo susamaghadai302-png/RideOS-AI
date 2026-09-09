@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_connectivity/models/vehicle_connection_lifecycle.dart';
 import '../../../../core/vehicle_connectivity/services/production_vehicle_connection_manager.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class VehicleConnectionDiagnosticsScreen extends StatefulWidget {
   const VehicleConnectionDiagnosticsScreen({super.key});
@@ -52,7 +53,7 @@ class _VehicleConnectionDiagnosticsScreenState extends State<VehicleConnectionDi
         stream: _connectionManager.diagnosticsStream,
         initialData: _connectionManager.currentSession,
         builder: (context, snapshot) {
-          final session = snapshot.data ?? const ConnectionDiagnosticsSession(state: ConnectionLifecycleState.idle));
+          final session = snapshot.data ?? const ConnectionDiagnosticsSession(state: ConnectionLifecycleState.idle);
 
           return ListView(
             padding: const EdgeInsets.all(20),
@@ -77,7 +78,7 @@ class _VehicleConnectionDiagnosticsScreenState extends State<VehicleConnectionDi
             ],
           );
         },
-      ),
+      )),
     );
   }
 

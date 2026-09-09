@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_capabilities/models/universal_protocol_detection_models.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class UniversalCompatibilityReportScreen extends StatelessWidget {
   final DetailedCompatibilityBreakdown report;

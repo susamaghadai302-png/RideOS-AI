@@ -5,6 +5,7 @@ import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/safety_engine/models/safety_event_models.dart';
 import '../../../../core/safety_engine/services/safety_event_engine.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class SafetyDashboardScreen extends StatefulWidget {
   const SafetyDashboardScreen({super.key});

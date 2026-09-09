@@ -62,7 +62,7 @@ android {
 
     defaultConfig {
         applicationId = "ai.rideos.app"
-        minSdk = flutter.minSdkVersion
+        minSdk = 29
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -105,4 +105,25 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Android Auto / Car App Library — required for CarAppService
+    // Navigation category (androidx.car.app.navigation) requires minSdk 23+
+    implementation("androidx.car.app:app:1.7.0")
+    implementation("androidx.car.app:app-projected:1.7.0")
+    implementation("androidx.car.app:app-automotive:1.7.0")
+    
+    // Official Google Navigation SDK (includes MapView and NavigationViewForAuto)
+    // Used specifically to provide a real geographic map surface on the vehicle DHU
+    implementation("com.google.android.libraries.navigation:navigation:5.5.0")
+}
+
+configurations.all {
+    // Navigation SDK internally bundles maps. Exclude standalone play-services-maps
+    // to prevent Duplicate Class errors with google_maps_flutter.
+    exclude(group = "com.google.android.gms", module = "play-services-maps")
+    
+    // Fix AGP 8+ namespace collision between cronet-api and cronet-fallback
+    exclude(group = "org.chromium.net", module = "cronet-fallback")
 }

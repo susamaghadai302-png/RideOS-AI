@@ -6,6 +6,7 @@ import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/widgets/floating_glass_dock_widget.dart';
 import '../bloc/navigation_bloc.dart';
 import '../bloc/navigation_state.dart';
+import 'package:rideos_mobile/core/design_system/roados_components.dart';
 
 class NavigationHudScreen extends StatefulWidget {
   const NavigationHudScreen({super.key});

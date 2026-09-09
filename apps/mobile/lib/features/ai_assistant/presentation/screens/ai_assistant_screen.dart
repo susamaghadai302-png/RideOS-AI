@@ -1,25 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/design_tokens.dart';
+import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard, RoadOSThemeEngine;
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/widgets/roados_visual_environment.dart';
 import '../../../garage/presentation/screens/luxury_garage_showroom_screen.dart';
 import '../../../navigation/presentation/screens/three_d_navigation_screen.dart';
 import '../../../obd_tpms/presentation/screens/obd_diagnostics_screen.dart';
-import '../../../voice_assistant/core/services/voice_command_engine.dart';
-import '../widgets/ai_assistant_widgets.dart';
-import '../../../../core/design_system/premium_navigation.dart';
-
-/// Voice AI Interaction State Machine
-enum VoiceAiState {
-  idle,
-  listening,
-  processing,
-  thinking,
-  responding,
-  error,
-  offline,
-}
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/ai_assistant_bloc.dart';
+import '../bloc/ai_assistant_event.dart';
+import '../bloc/ai_assistant_state.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../../../core/contracts/text_to_speech_gateway.dart';
+import '../../../voice_assistant/presentation/bloc/voice_bloc.dart';
+import '../../../../core/contracts/voice_models.dart';
 
 class AiAssistantScreen extends StatefulWidget {
   const AiAssistantScreen({super.key});
@@ -30,19 +25,9 @@ class AiAssistantScreen extends StatefulWidget {
 
 class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final VoiceCommandEngine _voiceEngine = VoiceCommandEngine();
   final TextEditingController _textController = TextEditingController();
-
-  VoiceAiState _aiState = VoiceAiState.listening;
+  final TextToSpeechGateway _ttsGateway = getIt<TextToSpeechGateway>();
   bool _isTtsActive = true;
-
-  final List<Map<String, String>> _messages = [
-    {
-      'sender': 'RIDEO AI',
-      'text': 'Greetings Rider! Voice active. "Hey Rideo" wake-word listening. Telematics show 82% oil life & 36 PSI front TPMS. How can I assist your ride today?',
-      'time': 'Just now',
-    },
-  ];
 
   @override
   void initState() {
@@ -54,6 +39,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
   void dispose() {
     _tabController.dispose();
     _textController.dispose();
+    _ttsGateway.stop();
     super.dispose();
   }
 
@@ -63,144 +49,95 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
 
     LuxAudioHapticsService.mediumImpact();
     _textController.clear();
-
-    setState(() {
-      _aiState = VoiceAiState.thinking;
-      _messages.insert(0, {
-        'sender': 'RIDER',
-        'text': prompt,
-        'time': 'Just now',
-      });
-    });
-
-    // Simulate conversational AI reasoning & intent routing delay
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (!mounted) return;
-      final result = _voiceEngine.parseCommand(prompt);
-
-      setState(() {
-        _aiState = VoiceAiState.responding;
-        _messages.insert(0, {
-          'sender': 'RIDEO AI',
-          'text': result.aiResponse,
-          'time': 'Just now',
-        });
-      });
-
-      // App Action Navigation Router
-      _executeAppAction(result.commandType);
-
-      Future.delayed(const Duration(milliseconds: 1200), () {
-        if (mounted) {
-          setState(() => _aiState = VoiceAiState.listening);
-        }
-      });
-    });
-  }
-
-  void _executeAppAction(VoiceCommandType commandType) {
-    switch (commandType) {
-      case VoiceCommandType.openGarage:
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted) {
-            Navigator.push(context, premiumRoute(const LuxuryGarageShowroomScreen()));
-          }
-        });
-        break;
-      case VoiceCommandType.startNavigation:
-      case VoiceCommandType.navigateHome:
-      case VoiceCommandType.navigateWork:
-      case VoiceCommandType.findPetrolPump:
-      case VoiceCommandType.findEvCharger:
-      case VoiceCommandType.findHospital:
-      case VoiceCommandType.findScenicRoad:
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted) {
-            Navigator.push(context, premiumRoute(const ThreeDNavigationScreen()));
-          }
-        });
-        break;
-      case VoiceCommandType.showBikeHealth:
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted) {
-            Navigator.push(context, premiumRoute(const ObdDiagnosticsScreen()));
-          }
-        });
-        break;
-      default:
-        break;
-    }
+    context.read<AiAssistantBloc>().add(SendAiPromptEvent(prompt: prompt));
   }
 
   void _clearChatHistory() {
     LuxAudioHapticsService.selectionClick();
-    setState(() {
-      _messages.clear();
-      _messages.add({
-        'sender': 'RIDEO AI',
-        'text': 'Conversation context cleared. How can I assist your ride now?',
-        'time': 'Just now',
-      });
-    });
+    // In a real app we'd dispatch a ClearChatEvent. For now, it's a mock action.
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: RoadOSVisualEnvironment(
-        environmentType: RoadOSEnvironmentType.voiceAi,
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              // TabBar Header attached directly below TopBar
-              Container(
-                color: const Color(0x990A0F1E),
-                child: TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  indicatorColor: const Color(0xFF8B5CF6),
-                  labelColor: const Color(0xFF8B5CF6),
-                  unselectedLabelColor: RoadOSColors.textMuted,
-                  labelStyle: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, fontFamily: 'Inter'),
-                  tabs: const [
-                    Tab(text: 'VOICE AI'),
-                    Tab(text: 'MAINTENANCE'),
-                    Tab(text: 'RIDE ANALYTICS'),
-                    Tab(text: 'TRIP PLANNER'),
-                    Tab(text: 'NOTIFICATIONS'),
-                    Tab(text: 'LEADERBOARD'),
-                  ],
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<VoiceBloc, VoiceState>(
+          listenWhen: (previous, current) =>
+              previous.currentTranscript != current.currentTranscript &&
+              current.currentTranscript != null &&
+              current.currentTranscript!.isFinal,
+          listener: (context, state) {
+            context.read<AiAssistantBloc>().add(SendAiPromptEvent(prompt: state.currentTranscript!.text));
+          },
+        ),
+        BlocListener<AiAssistantBloc, AiAssistantState>(
+          listenWhen: (previous, current) => previous != current && current is AiAssistantLoadedState,
+          listener: (context, state) {
+            if (_isTtsActive && state is AiAssistantLoadedState) {
+              final lastMsg = state.messages.last;
+              if (!lastMsg.isUser) {
+                _ttsGateway.speak(lastMsg.text);
+              }
+            }
+          },
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: RoadOSVisualEnvironment(
+          environmentType: RoadOSEnvironmentType.voiceAi,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                // TabBar Header attached directly below TopBar
+                Container(
+                  color: const Color(0x990A0F1E),
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    indicatorColor: const Color(0xFF8B5CF6),
+                    labelColor: const Color(0xFF8B5CF6),
+                    unselectedLabelColor: RoadOSColors.textMuted,
+                    labelStyle: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, fontFamily: 'Inter'),
+                    tabs: const [
+                      Tab(text: 'VOICE AI'),
+                      Tab(text: 'MAINTENANCE'),
+                      Tab(text: 'RIDE ANALYTICS'),
+                      Tab(text: 'TRIP PLANNER'),
+                      Tab(text: 'NOTIFICATIONS'),
+                      Tab(text: 'LEADERBOARD'),
+                    ],
+                  ),
                 ),
-              ),
 
-              // TabBarView Content Pages
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // Tab 1: ChatGPT-Class Voice AI & Conversation
-                    _buildConversationalVoiceTab(),
+                // TabBarView Content Pages
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Tab 1: ChatGPT-Class Voice AI & Conversation
+                      _buildConversationalVoiceTab(),
 
-                    // Tab 2: Predictive Maintenance
-                    _buildMaintenanceTab(),
+                      // Tab 2: Predictive Maintenance
+                      _buildMaintenanceTab(),
 
-                    // Tab 3: Ride Analytics & Intelligence
-                    _buildRideAnalyticsTab(),
+                      // Tab 3: Ride Analytics & Intelligence
+                      _buildRideAnalyticsTab(),
 
-                    // Tab 4: Smart Trip Planner
-                    _buildTripPlannerTab(),
+                      // Tab 4: Smart Trip Planner
+                      _buildTripPlannerTab(),
 
-                    // Tab 5: AI Notifications
-                    _buildNotificationsTab(),
+                      // Tab 5: AI Notifications
+                      _buildNotificationsTab(),
 
-                    // Tab 6: Rider Profile & Leaderboard
-                    _buildLeaderboardTab(),
-                  ],
+                      // Tab 6: Rider Profile & Leaderboard
+                      _buildLeaderboardTab(),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -220,26 +157,28 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: _aiState == VoiceAiState.thinking || _aiState == VoiceAiState.responding
-                            ? RoadOSColors.hyperOrange
-                            : RoadOSColors.apexEmerald,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _aiState == VoiceAiState.thinking
-                          ? 'JARVIS REASONING...'
-                          : (_aiState == VoiceAiState.responding ? 'JARVIS SPEAKING...' : 'HEY ROADOS ENGINE ONLINE'),
-                      style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: RoadOSColors.textMuted, letterSpacing: 0.5),
-                    ),
-                  ],
+                BlocBuilder<VoiceBloc, VoiceState>(
+                  builder: (context, state) {
+                    final isProcessing = state.inputState == VoiceInputState.processing;
+                    final isListening = state.inputState == VoiceInputState.listening;
+                    return Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: isProcessing ? RoadOSColors.hyperOrange : RoadOSColors.apexEmerald,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isProcessing ? 'JARVIS REASONING...' : (isListening ? 'LISTENING...' : 'HEY ROADOS ENGINE ONLINE'),
+                          style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: RoadOSColors.textMuted, letterSpacing: 0.5),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 TextButton.icon(
                   onPressed: _clearChatHistory,
@@ -251,13 +190,20 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
           ),
 
           // Neural Orb Audio Visualizer
-          NeuralVoiceOrbWidget(
-            isListening: _aiState == VoiceAiState.listening,
-            wakeWordStatus: _aiState == VoiceAiState.thinking
-                ? 'Processing Rider Intent...'
-                : (_aiState == VoiceAiState.responding ? 'Speaking Response...' : 'Listening for "Hey RoadOS"...'),
-            onTap: () {
-              _handleUserPrompt('Show bike health');
+          BlocBuilder<VoiceBloc, VoiceState>(
+            builder: (context, state) {
+              final isListening = state.inputState == VoiceInputState.listening;
+              return NeuralVoiceOrbWidget(
+                isListening: isListening,
+                wakeWordStatus: isListening ? 'Listening for command...' : 'Tap to speak...',
+                onTap: () {
+                  if (isListening) {
+                    context.read<VoiceBloc>().add(StopVoiceListening());
+                  } else {
+                    context.read<VoiceBloc>().add(StartVoiceListening());
+                  }
+                },
+              );
             },
           ),
           const SizedBox(height: 10),
@@ -276,8 +222,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
                 _buildCommandChip('Show Bike Health'),
                 _buildCommandChip('Call Emergency'),
                 _buildCommandChip('Read Notifications'),
-                _buildCommandChip('Start Ride'),
-                _buildCommandChip('End Ride'),
               ],
             ),
           ),
@@ -285,35 +229,59 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
 
           // Multi-Turn Chat Feed
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              physics: const BouncingScrollPhysics(),
-              reverse: true,
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isAi = msg['sender'] == 'RIDEO AI';
-                // Only animate the very first message if it's AI and currently responding
-                final isLatest = index == 0;
-                final shouldAnimate = isAi && isLatest && _aiState == VoiceAiState.responding;
-
-                if (isAi) {
-                  return MarkdownAiMessageWidget(
-                    text: msg['text']!,
-                    isAnimated: shouldAnimate,
-                    onComplete: () {
-                      if (mounted && _aiState == VoiceAiState.responding) {
-                        setState(() {
-                          _aiState = VoiceAiState.listening;
-                        });
-                      }
-                    },
-                  );
-                } else {
-                  return MarkdownUserMessageWidget(
-                    text: msg['text']!,
+            child: BlocBuilder<AiAssistantBloc, AiAssistantState>(
+              builder: (context, state) {
+                if (state is AiAssistantInitialState) {
+                  return const Center(
+                    child: Text('How can I assist your ride today?', style: TextStyle(color: RoadOSColors.textMuted)),
                   );
                 }
+
+                List<AiUiMessage> messages = [];
+                bool isLoading = false;
+                if (state is AiAssistantLoadingState) {
+                  messages = state.messages;
+                  isLoading = true;
+                } else if (state is AiAssistantLoadedState) {
+                  messages = state.messages;
+                } else if (state is AiAssistantErrorState) {
+                  return Center(
+                    child: Text('Error: ${state.errorMessage}', style: const TextStyle(color: RoadOSColors.hyperOrange)),
+                  );
+                }
+
+                final reversed = messages.reversed.toList();
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  physics: const BouncingScrollPhysics(),
+                  reverse: true,
+                  itemCount: reversed.length + (isLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (isLoading && index == 0) {
+                      return const Padding(
+                        padding: EdgeInsets.only(bottom: 16),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: CircularProgressIndicator(color: RoadOSColors.cyberCyan, strokeWidth: 2),
+                        ),
+                      );
+                    }
+                    
+                    final msg = reversed[isLoading ? index - 1 : index];
+                    
+                    if (!msg.isUser) {
+                      return MarkdownAiMessageWidget(
+                        text: msg.text,
+                        isAnimated: false,
+                        onComplete: () {},
+                      );
+                    } else {
+                      return MarkdownUserMessageWidget(
+                        text: msg.text,
+                      );
+                    }
+                  },
+                );
               },
             ),
           ),
@@ -325,27 +293,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (_aiState == VoiceAiState.thinking || _aiState == VoiceAiState.responding) ...[
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      LuxAudioHapticsService.lightImpact();
-                      setState(() {
-                        _aiState = VoiceAiState.listening;
-                      });
-                    },
-                    icon: const Icon(Icons.stop_rounded, size: 16),
-                    label: const Text('Stop generating', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF141A29),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      minimumSize: Size.zero,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
                 Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFF0E1426).withValues(alpha: 0.8),
@@ -365,9 +312,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
                           ),
                           onPressed: () {
                             LuxAudioHapticsService.selectionClick();
-                            setState(() => _isTtsActive = !_isTtsActive);
+                            setState(() {
+                              _isTtsActive = !_isTtsActive;
+                              if (!_isTtsActive) {
+                                _ttsGateway.stop();
+                              }
+                            });
                           },
-                          tooltip: _isTtsActive ? 'Voice TTS Active' : 'Voice Muted',
                         ),
                       ),
                       Expanded(
@@ -390,28 +341,24 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
                       ),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4, right: 4),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: _aiState == VoiceAiState.thinking || _aiState == VoiceAiState.responding
-                                ? Colors.transparent
-                                : const Color(0xFF8B5CF6),
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: Icon(
-                              _aiState == VoiceAiState.thinking || _aiState == VoiceAiState.responding
-                                  ? Icons.more_horiz_rounded
-                                  : Icons.arrow_upward_rounded,
-                              color: _aiState == VoiceAiState.thinking || _aiState == VoiceAiState.responding
-                                  ? RoadOSColors.textMuted
-                                  : Colors.white,
-                              size: 20,
-                            ),
-                            onPressed: _aiState == VoiceAiState.thinking || _aiState == VoiceAiState.responding
-                                ? null
-                                : () => _handleUserPrompt(_textController.text),
-                            tooltip: 'Send Message',
-                          ),
+                        child: BlocBuilder<AiAssistantBloc, AiAssistantState>(
+                          builder: (context, aiState) {
+                            final isProcessing = aiState is AiAssistantLoadingState;
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: isProcessing ? Colors.transparent : const Color(0xFF8B5CF6),
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  isProcessing ? Icons.more_horiz_rounded : Icons.arrow_upward_rounded,
+                                  color: isProcessing ? RoadOSColors.textMuted : Colors.white,
+                                  size: 20,
+                                ),
+                                onPressed: isProcessing ? null : () => _handleUserPrompt(_textController.text),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],

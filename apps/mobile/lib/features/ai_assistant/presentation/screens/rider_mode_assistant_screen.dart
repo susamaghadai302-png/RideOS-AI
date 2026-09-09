@@ -7,6 +7,7 @@ import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/ai_assistant/models/ai_ride_assistant_models.dart';
 import '../../../../core/ai_assistant/services/ai_ride_assistant.dart';
 import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class RiderModeAssistantScreen extends ConsumerStatefulWidget {
   const RiderModeAssistantScreen({super.key});

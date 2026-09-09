@@ -1,3 +1,6 @@
+import '../../contracts/safety_classification_registry.dart';
+import '../../contracts/safety_context_bridge.dart';
+import '../../contracts/safety_interlock.dart';
 import '../../vehicle_protocols/models/normalized_telemetry.dart';
 import '../models/vehicle_command.dart';
 
@@ -12,42 +15,64 @@ class SafetyCheckResult {
   const SafetyCheckResult.blocked(this.reason) : isSafe = false;
 }
 
+/// Hardened Vehicle Safety Manager (ADR-16).
+///
+/// Delegates to the canonical [MotionSafetyInterlock] for fail-closed
+/// motion-based safety evaluation.
+///
+/// CRITICAL FIX (Tier 2): The previous implementation treated null/missing
+/// telemetry as speed=0.0 (safe), which was a **fail-open bug**. The hardened
+/// version defaults to BLOCK when telemetry is missing, stale, or invalid.
+///
+/// Preserves the existing [SafetyCheckResult] API so [VehicleCommandPipeline]
+/// requires zero changes.
 class VehicleSafetyManager {
   static final VehicleSafetyManager _instance = VehicleSafetyManager._internal();
   factory VehicleSafetyManager() => _instance;
   VehicleSafetyManager._internal();
 
-  /// Evaluates whether a command is safe to execute given the live telemetry state of the vehicle
-  SafetyCheckResult evaluateCommandSafety(VehicleCommand command, NormalizedTelemetry? currentTelemetry) {
-    final speed = currentTelemetry?.speed.available == true ? (currentTelemetry?.speed.value ?? 0.0) : 0.0;
-    final isMoving = speed > 1.0;
-    final engineRunning = currentTelemetry?.engineState.available == true && currentTelemetry?.engineState.value == 'RUNNING';
+  /// The canonical safety interlock instance.
+  final SafetyInterlock _interlock = const MotionSafetyInterlock();
 
-    // 1. Motion Lockouts: Critical operations prohibited while riding
-    if (isMoving) {
-      switch (command.type) {
-        case VehicleCommandType.toggleLock:
-          return SafetyCheckResult.blocked('Vehicle is in motion (${speed.toStringAsFixed(1)} km/h). Lock operations are prohibited for rider safety.');
-        case VehicleCommandType.toggleAlarm:
-          return const SafetyCheckResult.blocked('Vehicle is in motion. Alarm arming is prohibited.');
-        case VehicleCommandType.startCharging:
-        case VehicleCommandType.stopCharging:
-          return const SafetyCheckResult.blocked('Vehicle is in motion. Charging controls are locked.');
-        case VehicleCommandType.clearFaultCodes:
-          return const SafetyCheckResult.blocked('Cannot clear diagnostic fault codes while vehicle is moving.');
-        default:
-          break;
-      }
+  /// Evaluates whether a command is safe to execute given the live telemetry state of the vehicle.
+  ///
+  /// Fail-closed policy: if telemetry is null, unavailable, stale, invalid,
+  /// or the vehicle is disconnected, safety-sensitive commands are BLOCKED.
+  SafetyCheckResult evaluateCommandSafety(VehicleCommand command, NormalizedTelemetry? currentTelemetry) {
+    // 1. Determine safety classification from canonical registry
+    final classification = classifyCommand(command.type);
+
+    // 2. Determine connection state from telemetry availability
+    final isConnected = currentTelemetry != null;
+
+    // 3. Build canonical safety context via bridge
+    final context = SafetyContextBridge.fromNormalizedTelemetry(
+      currentTelemetry,
+      commandClassification: classification,
+      isVehicleConnected: isConnected,
+    );
+
+    // 4. Evaluate through canonical interlock (fail-closed)
+    final verdict = _interlock.evaluate(context);
+
+    // 5. If interlock blocked, return immediately
+    if (verdict.isBlocked) {
+      return SafetyCheckResult.blocked(verdict.reason);
     }
 
-    // 2. Engine Active Lockouts: Prohibit charging controls if engine is actively running
+    // 6. Additional non-motion safety checks (engine state, parameter validation)
+    //    These are NOT motion-based and are supplementary to the interlock.
+    final engineRunning = currentTelemetry?.engineState.available == true &&
+        currentTelemetry?.engineState.value == 'RUNNING';
+
+    // Engine Active Lockouts: Prohibit charging controls if engine is actively running
     if (engineRunning) {
       if (command.type == VehicleCommandType.startCharging) {
         return const SafetyCheckResult.blocked('Engine is running. Charging cannot be initiated.');
       }
     }
 
-    // 3. Parameter Validation
+    // Parameter Validation for conditionally safe commands
     switch (command.type) {
       case VehicleCommandType.setRidingMode:
         final mode = command.parameter?.toString().toUpperCase();

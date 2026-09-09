@@ -15,7 +15,14 @@ import GoogleMaps
       NSLog("[RideOS] WARNING: GOOGLE_MAPS_API_KEY is not set. Map tiles will not load.")
     }
     GMSServices.provideAPIKey(mapsApiKey)
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    
+    if let flutterController = window?.rootViewController as? FlutterViewController {
+        CarPlayStateBridge.shared.setupChannel(binaryMessenger: flutterController.binaryMessenger)
+    }
+    
+    return result
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {

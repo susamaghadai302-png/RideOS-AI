@@ -5,6 +5,7 @@ import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class AddEditVehicleScreen extends StatefulWidget {
   final Map<String, dynamic>? initialBike;
@@ -231,12 +232,11 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
                             return Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                child: ChoiceChip(
+                                  child: ChoiceChip(
                                   label: Text(f, style: TextStyle(fontSize: 11, color: isSelected ? Colors.black : RoadOSColors.platinumWhite, fontWeight: FontWeight.bold)),
                                   selected: isSelected,
                                   selectedColor: RoadOSColors.cyberCyan,
                                   backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
                                   onSelected: (val) {
                                     if (val) setState(() => _fuelType = f);
                                   },

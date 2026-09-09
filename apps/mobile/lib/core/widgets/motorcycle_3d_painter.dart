@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../design_system/roados_components.dart';
 import '../theme/lux_theme.dart';
 import '../services/lux_haptics_audio_service.dart';
 
@@ -55,7 +56,7 @@ class _Motorcycle3dWidgetState extends State<Motorcycle3dWidget> with SingleTick
   double _scale = 1.0;
   double _baseScale = 1.0;
   bool _engineActive = true;
-  bool _isAutoRotating = true;
+  bool _isAutoRotating = false;
   bool _isLoading = true;
   Timer? _loadingTimer;
 
@@ -65,7 +66,7 @@ class _Motorcycle3dWidgetState extends State<Motorcycle3dWidget> with SingleTick
     _rotationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 16),
-    )..repeat();
+    );
 
     // Simulate showroom studio asset initialization
     _loadingTimer = Timer(const Duration(milliseconds: 100), () {

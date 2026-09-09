@@ -6,6 +6,7 @@ import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../core/map_abstraction/map_engine_interface.dart';
 import '../../core/services/ai_route_optimizer_service.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class AiRouteOptimizerScreen extends StatefulWidget {
   const AiRouteOptimizerScreen({super.key});
@@ -160,7 +161,6 @@ class _AiRouteOptimizerScreenState extends State<AiRouteOptimizerScreen> {
                               return Chip(
                                 label: Text('✓ $h', style: const TextStyle(fontSize: 9, color: RoadOSColors.platinumWhite)),
                                 backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
                                 padding: EdgeInsets.zero,
                                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               );

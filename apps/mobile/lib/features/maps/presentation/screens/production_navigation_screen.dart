@@ -9,6 +9,7 @@ import '../../core/local_graph_map_provider.dart';
 import '../../core/map_provider_factory.dart';
 import '../../domain/models/navigation_models.dart';
 import '../../services/turn_by_turn_navigation_engine.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class ProductionNavigationScreen extends StatefulWidget {
   const ProductionNavigationScreen({super.key});

@@ -79,7 +79,7 @@ class _Advanced3dGarageScreenState extends State<Advanced3dGarageScreen> {
                   child: RideOS3DModelViewer(
                     modelPath: bike.isAssetAvailable ? bike.assetGlbPath : '',
                     vehicleName: '${bike.manufacturer} ${bike.modelName}',
-                    autoRotate: true,
+                    autoRotate: false,
                     cameraControls: true,
                   ),
                 ),

@@ -19,10 +19,13 @@ class AiAssistantRemoteDatasource {
 
   AiAssistantRemoteDatasource({required this.apiClient});
 
-  Future<AiChatMessage> sendQuery(String prompt) async {
+  Future<AiChatMessage> sendQuery(String prompt, [Map<String, dynamic>? telemetryContext]) async {
     final response = await apiClient.dio.post(
       '/ai/assistant/query',
-      data: {'prompt': prompt},
+      data: {
+        'prompt': prompt,
+        'telemetryContext': telemetryContext,
+      },
     );
 
     return AiChatMessage(

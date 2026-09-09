@@ -45,6 +45,63 @@ class RoadOSColors {
   static const Color textCyan = Color(0xFF00F2FE);
   static const Color textViolet = Color(0xFFA78BFA);
   static const Color platinumWhite = Color(0xFFF8FAFC);
+
+  // Extended Accent Colors (referenced across the codebase)
+  static const Color solarGold = Color(0xFFFFD700); // Solar gold accent
+  static const Color obsidianCard = Color(0xFF101733); // Card alias (same as cardSurface)
+  static const Color crimsonRed = Color(0xFFEF4444); // Alias of errorCrimson
+  static const Color titaniumSlate = Color(0xFF334155); // Dark slate/titanium
+  static const Color starlightSilver = Color(0xFFCBD5E1); // Light silver accent
+
+  // Gradient tokens (LinearGradient — static final, not const)
+  static final LinearGradient hyperOrangeGradient = const LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFFF6B35), Color(0xFFF97316)],
+  );
+  static final LinearGradient cyberCyanGradient = const LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF00BFFF), Color(0xFF06B6D4)],
+  );
+  static final LinearGradient violetGradient = const LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+  );
+  static final LinearGradient emeraldGradient = const LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF10B981), Color(0xFF059669)],
+  );
+
+  // Convenience decoration helpers
+  static BoxDecoration glassCardDecoration({
+    Color? glowColor,
+    double radius = 18,
+    double borderWidth = 1.0,
+  }) {
+    return BoxDecoration(
+      color: const Color(0xFF101733).withValues(alpha: 0.8),
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: (glowColor ?? const Color(0xFF6366F1)).withValues(alpha: 0.25),
+        width: borderWidth,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: (glowColor ?? const Color(0xFF6366F1)).withValues(alpha: 0.08),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+        ),
+        const BoxShadow(
+          color: Color(0x44000000),
+          blurRadius: 6,
+          offset: Offset(0, 3),
+        ),
+      ],
+    );
+  }
 }
 
 /// Standardized Motion System for Consistent, Jitter-Free Animations

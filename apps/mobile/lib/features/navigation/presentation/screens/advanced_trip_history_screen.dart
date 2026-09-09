@@ -4,6 +4,7 @@ import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../domain/models/advanced_trip_models.dart';
 import '../../core/services/advanced_trip_navigation_engine.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class AdvancedTripHistoryScreen extends StatefulWidget {
   const AdvancedTripHistoryScreen({super.key});

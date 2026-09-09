@@ -12,6 +12,7 @@ abstract class AuthRemoteDatasource {
   Future<RiderModel> addBike(String make, String model, int year, int engineCC, double? maxLeanAngleLimit);
   Future<RiderModel> deleteBike(String bikeId);
   Future<RiderModel> setPrimaryBike(String bikeId);
+  Future<void> requestPasswordReset(String email);
 }
 
 class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
@@ -140,5 +141,13 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
   Future<RiderModel> setPrimaryBike(String bikeId) async {
     final response = await apiClient.dio.patch('${ApiConstants.garageEndpoint}/$bikeId/primary');
     return RiderModel.fromJson(response.data);
+  }
+
+  @override
+  Future<void> requestPasswordReset(String email) async {
+    await apiClient.dio.post(
+      ApiConstants.forgotPasswordEndpoint,
+      data: {'email': email.trim().toLowerCase()},
+    );
   }
 }

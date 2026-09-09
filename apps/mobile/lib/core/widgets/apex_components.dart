@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../design_system/roados_components.dart';
 import '../theme/lux_theme.dart';
 
 class ApexGlassPanel extends StatelessWidget {
@@ -80,7 +81,7 @@ class ApexGradientText extends StatelessWidget {
     this.text, {
     super.key,
     required this.style,
-    this.gradient = RoadOSColors.hyperOrangeGradient,
+    this.gradient = const LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFFF8C00)]),
   });
 
   @override
@@ -106,86 +107,65 @@ class ApexGlowButton extends StatefulWidget {
     required this.label,
     this.icon,
     required this.onPressed,
-    this.gradient = RoadOSColors.hyperOrangeGradient,
+    this.gradient = const LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFFF8C00)]),
   });
 
   @override
   State<ApexGlowButton> createState() => _ApexGlowButtonState();
 }
 
-class _ApexGlowButtonState extends State<ApexGlowButton> with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
+class _ApexGlowButtonState extends State<ApexGlowButton> {
   double _scale = 1.0;
 
   @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animController,
-      builder: (context, child) {
-        final glowBlur = 12.0 + (_animController.value * 12.0);
-        return GestureDetector(
-          onTapDown: (_) => setState(() => _scale = 0.96),
-          onTapUp: (_) {
-            setState(() => _scale = 1.0);
-            widget.onPressed();
-          },
-          onTapCancel: () => setState(() => _scale = 1.0),
-          child: Transform.scale(
-            scale: _scale,
-            child: Container(
-              height: 56,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: widget.gradient,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: RoadOSColors.hyperOrange.withValues(alpha: 0.4),
-                    blurRadius: glowBlur,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 4),
-                  ),
+    const glowBlur = 16.0;
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _scale = 0.96),
+      onTapUp: (_) {
+        setState(() => _scale = 1.0);
+        widget.onPressed();
+      },
+      onTapCancel: () => setState(() => _scale = 1.0),
+      child: Transform.scale(
+        scale: _scale,
+        child: Container(
+          height: 56,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: widget.gradient,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: RoadOSColors.hyperOrange.withValues(alpha: 0.4),
+                blurRadius: glowBlur,
+                spreadRadius: 1,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (widget.icon != null) ...[
+                  Icon(widget.icon, color: Colors.white, size: 22),
+                  const SizedBox(width: 10),
                 ],
-              ),
-              child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (widget.icon != null) ...[
-                      Icon(widget.icon, color: Colors.white, size: 22),
-                      const SizedBox(width: 10),
-                    ],
-                    Text(
-                      widget.label,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ],
+                Text(
+                  widget.label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -244,7 +224,7 @@ class ApexCockpitGauge extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                   letterSpacing: -1.0,
                 ),
-                gradient: RoadOSColors.cyberCyanGradient,
+                gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF00BFFF), Color(0xFF0080FF)]),
               ),
               const Text(
                 'KM / H',

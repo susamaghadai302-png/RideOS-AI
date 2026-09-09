@@ -95,7 +95,7 @@ class DigitalTwinPreviewDialog extends StatelessWidget {
                 child: RideOS3DModelViewer(
                   key: ValueKey('preview_${twin.twinId}'),
                   modelPath: twin.modelGlbPath,
-                  autoRotate: true,
+                  autoRotate: false,
                   cameraControls: true,
                   height: 240,
                   showPedestalGlow: true,

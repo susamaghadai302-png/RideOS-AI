@@ -34,7 +34,7 @@ class LiquidWaterRipple extends StatefulWidget {
     this.borderRadius = 18.0,
     this.rippleColor,
     this.onTap,
-    this.enableHoverLight = true,
+    this.enableHoverLight = false,
     this.blurSigma = 0.0,
   });
 
@@ -92,32 +92,7 @@ class _LiquidWaterRippleState extends State<LiquidWaterRipple>
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (e) {
-        if (widget.enableHoverLight) {
-          setState(() {
-            _isHovering = true;
-            _hoverPosition = e.localPosition;
-          });
-          if (!_ticker.isAnimating) _ticker.repeat();
-        }
-      },
-      onHover: (e) {
-        if (widget.enableHoverLight) {
-          setState(() {
-            _hoverPosition = e.localPosition;
-          });
-        }
-      },
-      onExit: (_) {
-        if (widget.enableHoverLight) {
-          setState(() {
-            _isHovering = false;
-            _hoverPosition = null;
-          });
-        }
-      },
-      child: GestureDetector(
+    return GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapDown: (details) {
           _addRipple(details.localPosition);
@@ -145,8 +120,7 @@ class _LiquidWaterRippleState extends State<LiquidWaterRipple>
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
 

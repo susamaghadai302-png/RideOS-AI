@@ -39,6 +39,9 @@ class MockIntegrationAuthDS implements AuthRemoteDatasource {
 
   @override
   Future<RiderModel> setPrimaryBike(String bikeId) async => getProfile();
+
+  @override
+  Future<void> requestPasswordReset(String email) async {}
 }
 
 

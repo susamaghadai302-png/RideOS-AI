@@ -5,6 +5,7 @@ import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_connectivity/models/hardware_calibration_models.dart';
 import '../../../../core/vehicle_connectivity/services/hardware_calibration_engine.dart';
 import '../../../../core/vehicle_connectivity/transports/mock_vehicle_transport.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class HardwareDiagnosticsScreen extends StatefulWidget {
   const HardwareDiagnosticsScreen({super.key});
@@ -106,9 +107,9 @@ class _HardwareDiagnosticsScreenState extends State<HardwareDiagnosticsScreen> {
                 onPressed: _isBenchmarking ? null : _runHardwareBenchmark,
               ),
             ],
-          ));
+          );
         },
-      ),
+      )),
     );
   }
 

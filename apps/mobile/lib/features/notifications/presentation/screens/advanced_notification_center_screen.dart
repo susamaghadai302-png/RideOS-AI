@@ -5,6 +5,7 @@ import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../domain/models/advanced_notification_models.dart';
 import '../../core/services/advanced_notification_engine.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class AdvancedNotificationCenterScreen extends StatefulWidget {
   const AdvancedNotificationCenterScreen({super.key});

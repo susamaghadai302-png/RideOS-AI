@@ -58,7 +58,7 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
   int _selectedVehicleIndex = 0;
   String _activeCameraOrbit = '35deg 75deg 100%';
   ShowroomLightingMode _lightingMode = ShowroomLightingMode.studio;
-  bool _autoRotate = true;
+  bool _autoRotate = false;
   bool _showTelemetricsOverlay = false;
   bool _showHotspots = false;
   bool _isFullscreenShowcase = false;
@@ -77,6 +77,20 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
   void initState() {
     super.initState();
     BluetoothEngine().initialize(ref);
+    
+    // Sync selected vehicle index with global active context if available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final activeCtx = ref.read(activeVehicleContextProvider);
+      if (activeCtx.profile != null) {
+        final allProfiles = VehicleRegistry().verifiedProfiles;
+        final idx = allProfiles.indexWhere((p) => p.id == activeCtx.profile!.id);
+        if (idx != -1 && mounted) {
+          setState(() {
+            _selectedVehicleIndex = idx;
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -129,10 +143,10 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
                         decoration: BoxDecoration(
                           color: const Color(0xCC070B18),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: RoadOSColors.cyberCyan.withOpacity(0.4)),
+                          border: Border.all(color: RoadOSColors.cyberCyan.withValues(alpha: 0.4)),
                           boxShadow: [
                             BoxShadow(
-                              color: RoadOSColors.cyberCyan.withOpacity(0.15),
+                              color: RoadOSColors.cyberCyan.withValues(alpha: 0.15),
                               blurRadius: 20,
                             ),
                           ],
@@ -144,7 +158,7 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: RoadOSColors.cyberCyan.withOpacity(0.15),
+                                color: RoadOSColors.cyberCyan.withValues(alpha: 0.15),
                               ),
                               child: const Icon(Icons.view_in_ar_rounded, color: RoadOSColors.cyberCyan, size: 18),
                             ),
@@ -208,9 +222,9 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: RoadOSColors.cyberCyan.withOpacity(0.2),
+                                  color: RoadOSColors.cyberCyan.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: RoadOSColors.cyberCyan.withOpacity(0.6)),
+                                  border: Border.all(color: RoadOSColors.cyberCyan.withValues(alpha: 0.6)),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,

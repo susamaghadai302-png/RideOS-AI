@@ -8,6 +8,7 @@ import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../domain/models/advanced_safety_models.dart';
 import '../../core/services/advanced_safety_protection_engine.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class AdvancedSafetyCenterScreen extends StatefulWidget {
   const AdvancedSafetyCenterScreen({super.key});

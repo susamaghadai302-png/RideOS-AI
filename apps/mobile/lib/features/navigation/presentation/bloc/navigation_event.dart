@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/contracts/navigation_models.dart';
 import '../../core/map_abstraction/map_engine_interface.dart';
 import '../../core/services/gps_tracking_service.dart';
 
@@ -49,3 +50,27 @@ class SwitchMapProviderEvent extends NavigationEvent {
 class ToggleVoiceGuidanceEvent extends NavigationEvent {}
 
 class StopNavigationEvent extends NavigationEvent {}
+
+/// Tier 4: Reroute requested event (triggered by off-route detection or user).
+class RerouteRequestedEvent extends NavigationEvent {
+  final MapCoordinates currentLocation;
+  final RerouteReason reason;
+
+  const RerouteRequestedEvent({
+    required this.currentLocation,
+    this.reason = RerouteReason.offRoute,
+  });
+
+  @override
+  List<Object?> get props => [currentLocation, reason];
+}
+
+/// Tier 4: Gateway session state changed event.
+class NavigationSessionStateChangedEvent extends NavigationEvent {
+  final NavigationSessionState newSessionState;
+
+  const NavigationSessionStateChangedEvent({required this.newSessionState});
+
+  @override
+  List<Object?> get props => [newSessionState];
+}

@@ -5,6 +5,7 @@ import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../core/services/offline_navigation_cache_manager.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class OfflineMapsManagerScreen extends StatefulWidget {
   const OfflineMapsManagerScreen({super.key});
@@ -184,7 +185,6 @@ class _OfflineMapsManagerScreenState extends State<OfflineMapsManagerScreen> {
                           LinearProgressIndicator(
                             value: progress,
                             backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
                             color: RoadOSColors.cyberCyan,
                           ),
                         ],

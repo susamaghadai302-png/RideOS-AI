@@ -95,18 +95,12 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _onGoogleSignIn() async {
     if (_socialLoading) return;
 
-    if (kIsWeb) {
-      context.read<AuthBloc>().add(GoogleLoginEvent());
-      return;
-    }
-
     setState(() { _socialLoading = true; _socialLoadingType = 'google'; });
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
       await googleSignIn.signOut();
       final GoogleSignInAccount? account = await googleSignIn.signIn();
       if (account == null) {
-        if (mounted) context.read<AuthBloc>().add(GoogleLoginEvent());
         return;
       }
       final GoogleSignInAuthentication auth = await account.authentication;
@@ -118,7 +112,16 @@ class _LoginScreenState extends State<LoginScreen>
             accessToken: auth.accessToken,
           ));
     } catch (e) {
-      if (mounted) context.read<AuthBloc>().add(GoogleLoginEvent());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Google Sign-In is unavailable or not configured on this build. Please sign in with email & password.'),
+            backgroundColor: const Color(0xFF1E293B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() { _socialLoading = false; _socialLoadingType = null; });
     }
@@ -128,7 +131,14 @@ class _LoginScreenState extends State<LoginScreen>
     if (_socialLoading) return;
 
     if (kIsWeb || Platform.isAndroid) {
-      context.read<AuthBloc>().add(AppleLoginEvent());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Apple Sign-In is only available on iOS devices. Please sign in with email & password.'),
+          backgroundColor: const Color(0xFF1E293B),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
       return;
     }
 
@@ -152,7 +162,16 @@ class _LoginScreenState extends State<LoginScreen>
             authorizationCode: credential.authorizationCode,
           ));
     } catch (e) {
-      if (mounted) context.read<AuthBloc>().add(AppleLoginEvent());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Apple Sign-In was cancelled or is unavailable. Please sign in with email & password.'),
+            backgroundColor: const Color(0xFF1E293B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() { _socialLoading = false; _socialLoadingType = null; });
     }
@@ -162,7 +181,14 @@ class _LoginScreenState extends State<LoginScreen>
     if (_socialLoading) return;
 
     if (kIsWeb) {
-      context.read<AuthBloc>().add(BiometricAuthRequestedEvent());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Biometric authentication is not supported on web.'),
+          backgroundColor: const Color(0xFF1E293B),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
       return;
     }
 
@@ -173,22 +199,51 @@ class _LoginScreenState extends State<LoginScreen>
       final bool isDeviceSupported = await localAuth.isDeviceSupported();
 
       if (!canCheckBiometrics && !isDeviceSupported) {
-        if (mounted) context.read<AuthBloc>().add(BiometricAuthRequestedEvent());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Biometric authentication is not supported on this device.'),
+              backgroundColor: const Color(0xFF1E293B),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
         return;
       }
       final List<BiometricType> availableBiometrics = await localAuth.getAvailableBiometrics();
       if (availableBiometrics.isEmpty) {
-        if (mounted) context.read<AuthBloc>().add(BiometricAuthRequestedEvent());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('No biometrics enrolled. Please set up fingerprint or face unlock in system settings.'),
+              backgroundColor: const Color(0xFF1E293B),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
         return;
       }
-      await localAuth.authenticate(
+      final bool authenticated = await localAuth.authenticate(
         localizedReason: 'Authenticate to unlock RideOS AI',
         options: const AuthenticationOptions(stickyAuth: true, biometricOnly: false),
       );
       if (!mounted) return;
-      context.read<AuthBloc>().add(BiometricAuthRequestedEvent());
+      if (authenticated) {
+        context.read<AuthBloc>().add(BiometricAuthRequestedEvent());
+      }
     } catch (e) {
-      if (mounted) context.read<AuthBloc>().add(BiometricAuthRequestedEvent());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Biometric authentication cancelled or failed.'),
+            backgroundColor: const Color(0xFF1E293B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() { _socialLoading = false; _socialLoadingType = null; });
     }
@@ -336,6 +391,16 @@ class _LoginScreenState extends State<LoginScreen>
                             duration: 0.28,
                             child: _buildServerBadge(),
                           ),
+
+                          const SizedBox(height: 14),
+
+                          // Quick-Fill Demo Rider
+                          _buildQuickFillChip(),
+
+                          const SizedBox(height: 20),
+
+                          // Legal footer
+                          _buildLegalFooter(),
 
                           const SizedBox(height: 24),
                         ],
@@ -670,6 +735,49 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  Widget _buildQuickFillChip() {
+    return GestureDetector(
+      onTap: () {
+        LuxAudioHapticsService.selectionClick();
+        _emailController.text = 'rider@rideos.ai';
+        _passwordController.text = 'Password123!';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Test credentials populated: rider@rideos.ai'),
+            backgroundColor: const Color(0xFF1E293B),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: RoadOSColors.neonViolet.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: RoadOSColors.neonViolet.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.flash_on_rounded, color: RoadOSColors.neonViolet, size: 13),
+            const SizedBox(width: 5),
+            Text(
+              'QUICK-FILL TEST RIDER',
+              style: GoogleFonts.outfit(
+                color: RoadOSColors.neonViolet,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─── Server Badge ─────────────────────────────────────────────────────────
   Widget _buildServerBadge() {
     return GestureDetector(
@@ -704,6 +812,61 @@ class _LoginScreenState extends State<LoginScreen>
             const Icon(Icons.edit_outlined, color: RoadOSColors.cyberCyan, size: 11),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLegalFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () => _showLegalInfoDialog('Privacy Policy', 'RideOS-AI processes ECU diagnostics, motorcycle telemetry, and location data securely on-device with zero unauthorized third-party sharing.'),
+          child: Text(
+            'Privacy Policy',
+            style: GoogleFonts.inter(
+              color: RoadOSColors.textMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text('·', style: TextStyle(color: const Color(0xFF374151))),
+        ),
+        GestureDetector(
+          onTap: () => _showLegalInfoDialog('Terms of Service', 'By signing into RideOS-AI, you acknowledge that all AI telemetry, lean angle guidance, and safety insights are advisory assistive tools.'),
+          child: Text(
+            'Terms of Service',
+            style: GoogleFonts.inter(
+              color: RoadOSColors.textMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showLegalInfoDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF0C1222),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: RoadOSColors.cyberCyan.withValues(alpha: 0.3)),
+        ),
+        title: Text(title, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text(content, style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 13, height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('CLOSE', style: TextStyle(color: RoadOSColors.cyberCyan, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

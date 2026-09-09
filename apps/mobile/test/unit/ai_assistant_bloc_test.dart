@@ -1,34 +1,54 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rideos_mobile/core/network/api_client.dart';
-import 'package:rideos_mobile/core/storage/token_storage.dart';
-import 'package:rideos_mobile/features/ai_assistant/data/datasources/ai_assistant_remote_datasource.dart';
 import 'package:rideos_mobile/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 import 'package:rideos_mobile/features/ai_assistant/presentation/bloc/ai_assistant_event.dart';
 import 'package:rideos_mobile/features/ai_assistant/presentation/bloc/ai_assistant_state.dart';
+import 'package:rideos_mobile/core/contracts/ai_models.dart';
+import 'package:rideos_mobile/core/contracts/ai_provider_gateway.dart';
+import 'package:rideos_mobile/features/ai_assistant/domain/services/ai_intent_resolver.dart';
 
-class MockAiRemoteDatasource extends AiAssistantRemoteDatasource {
-  MockAiRemoteDatasource() : super(apiClient: ApiClient(tokenStorage: TokenStorage()));
+class MockAIProviderGateway implements AIProviderGateway {
+  bool shouldThrow = false;
 
   @override
-  Future<AiChatMessage> sendQuery(String prompt) async {
-    return AiChatMessage(
-      text: 'Shell station is 4.2 km ahead on your route.',
-      isUser: false,
-      timestamp: DateTime.now().toIso8601String(),
-      action: 'NAVIGATE_FUEL',
+  AiProviderType get activeProviderType => AiProviderType.mockTest;
+
+  @override
+  Future<AIResponse> processQuery(AIRequest request) async {
+    if (shouldThrow) {
+      throw Exception('Network Error');
+    }
+    return AIResponse(
+      text: 'Mock Response',
+      intent: AIIntent.informational,
+      timestamp: '2026-09-06T10:00:00.000Z',
     );
   }
 }
 
-void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+class MockAiIntentResolver implements AiIntentResolver {
+  bool resolveCalled = false;
 
-  late MockAiRemoteDatasource mockDatasource;
+  @override
+  get navigationGateway => throw UnimplementedError();
+
+  @override
+  Future<void> resolveAndExecute(AIResponse response) async {
+    resolveCalled = true;
+  }
+}
+
+void main() {
   late AiAssistantBloc bloc;
+  late MockAIProviderGateway mockGateway;
+  late MockAiIntentResolver mockIntentResolver;
 
   setUp(() {
-    mockDatasource = MockAiRemoteDatasource();
-    bloc = AiAssistantBloc(remoteDatasource: mockDatasource);
+    mockGateway = MockAIProviderGateway();
+    mockIntentResolver = MockAiIntentResolver();
+    bloc = AiAssistantBloc(
+      gateway: mockGateway,
+      intentResolver: mockIntentResolver,
+    );
   });
 
   tearDown(() {
@@ -39,15 +59,29 @@ void main() {
     expect(bloc.state, isA<AiAssistantInitialState>());
   });
 
-  test('emits [AiAssistantLoadingState, AiAssistantLoadedState] on prompt', () async {
-    expectLater(
-      bloc.stream,
-      emitsInOrder([
-        isA<AiAssistantLoadingState>(),
-        isA<AiAssistantLoadedState>(),
-      ]),
-    );
+  test('emits [AiAssistantLoadingState, AiAssistantLoadedState] on SendAiPromptEvent success', () async {
+    final expectedStates = [
+      isA<AiAssistantLoadingState>(),
+      isA<AiAssistantLoadedState>(),
+    ];
 
-    bloc.add(const SendAiPromptEvent(prompt: 'Where is gas?'));
+    expectLater(bloc.stream, emitsInOrder(expectedStates)).then((_) {
+      expect(mockIntentResolver.resolveCalled, isTrue);
+    });
+
+    bloc.add(const SendAiPromptEvent(prompt: 'Hello!'));
+  });
+
+  test('emits [AiAssistantLoadingState, AiAssistantErrorState] on SendAiPromptEvent error', () async {
+    mockGateway.shouldThrow = true;
+
+    final expectedStates = [
+      isA<AiAssistantLoadingState>(),
+      isA<AiAssistantErrorState>(),
+    ];
+
+    expectLater(bloc.stream, emitsInOrder(expectedStates));
+
+    bloc.add(const SendAiPromptEvent(prompt: 'Hello!'));
   });
 }

@@ -42,6 +42,10 @@ class NotificationListNotifier extends StateNotifier<List<AppNotificationModel>>
     state = state.where((n) => n.id != id).toList();
   }
 
+  void clearAll() {
+    state = [];
+  }
+
   List<AppNotificationModel> _sortNotifications(List<AppNotificationModel> list) {
     final sorted = List<AppNotificationModel>.from(list);
     sorted.sort((a, b) {
@@ -120,6 +124,47 @@ class NotificationCenterManager {
     _notifications.removeWhere((n) => n.id == id);
     _ref?.read(notificationsListProvider.notifier).deleteNotification(id);
     await _saveLocalNotifications();
+  }
+
+  Future<void> clearAll() async {
+    _notifications.clear();
+    _ref?.read(notificationsListProvider.notifier).clearAll();
+    await _saveLocalNotifications();
+  }
+
+  Future<void> seedSampleAlerts() async {
+    await dispatchNotification(
+      key: 'alert_low_fuel',
+      title: 'Low Fuel Reserve Warning',
+      body: 'Fuel level is below 10%. Estimated cruising range: 35 km. Locate nearest fuel station.',
+      category: NotificationCategory.diagnostics,
+      priority: NotificationPriority.critical,
+      deepLinkRoute: 'diagnostics',
+    );
+    await dispatchNotification(
+      key: 'alert_engine_temp',
+      title: 'Engine Coolant High Temp',
+      body: 'Coolant temperature reached 102°C during high load. Cooling fan operating at maximum duty cycle.',
+      category: NotificationCategory.diagnostics,
+      priority: NotificationPriority.warning,
+      deepLinkRoute: 'health',
+    );
+    await dispatchNotification(
+      key: 'alert_service_due',
+      title: 'Scheduled Service Due',
+      body: 'Periodic maintenance inspection interval reached in 450 km. Engine oil & brake fluid check required.',
+      category: NotificationCategory.maintenance,
+      priority: NotificationPriority.info,
+      deepLinkRoute: 'maintenance',
+    );
+    await dispatchNotification(
+      key: 'alert_ride_sync',
+      title: 'Telemetry Synced & Saved',
+      body: 'Evening Canyon Run (42.8 km) analyzed. Maximum lean angle: 44.2°, Top speed: 118 km/h.',
+      category: NotificationCategory.trip,
+      priority: NotificationPriority.notice,
+      deepLinkRoute: 'trips',
+    );
   }
 
   Future<void> _saveLocalNotifications() async {

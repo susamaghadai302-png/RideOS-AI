@@ -1,5 +1,22 @@
 import 'package:equatable/equatable.dart';
-import '../../data/datasources/ai_assistant_remote_datasource.dart';
+import '../../../../core/contracts/ai_models.dart';
+
+class AiUiMessage extends Equatable {
+  final String text;
+  final bool isUser;
+  final String timestamp;
+  final AIIntent? intent;
+
+  const AiUiMessage({
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
+    this.intent,
+  });
+
+  @override
+  List<Object?> get props => [text, isUser, timestamp, intent];
+}
 
 abstract class AiAssistantState extends Equatable {
   const AiAssistantState();
@@ -11,7 +28,7 @@ abstract class AiAssistantState extends Equatable {
 class AiAssistantInitialState extends AiAssistantState {}
 
 class AiAssistantLoadingState extends AiAssistantState {
-  final List<AiChatMessage> messages;
+  final List<AiUiMessage> messages;
 
   const AiAssistantLoadingState({required this.messages});
 
@@ -20,7 +37,7 @@ class AiAssistantLoadingState extends AiAssistantState {
 }
 
 class AiAssistantLoadedState extends AiAssistantState {
-  final List<AiChatMessage> messages;
+  final List<AiUiMessage> messages;
 
   const AiAssistantLoadedState({required this.messages});
 

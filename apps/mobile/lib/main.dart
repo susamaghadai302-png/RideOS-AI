@@ -1,23 +1,21 @@
 import 'dart:async' show unawaited;
-import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/design_system/roados_tokens.dart';
-import 'core/widgets/cinematic_background.dart';
 import 'core/design_system/theme_engine.dart';
-import 'core/graphics/global_pointer_provider.dart';
+
 import 'core/di/service_locator.dart';
 import 'core/network/api_client.dart';
 import 'core/network/api_config.dart';
+import 'core/contracts/ai_provider_gateway.dart';
 import 'features/ai_assistant/data/datasources/ai_assistant_remote_datasource.dart';
+import 'features/ai_assistant/domain/services/ai_intent_resolver.dart';
 import 'features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
-import 'features/auth/presentation/bloc/auth_state.dart';
-import 'features/auth/presentation/screens/welcome_screen.dart';
+import 'features/auth/presentation/screens/auth_gate.dart';
 import 'features/navigation/core/services/gps_tracking_service.dart';
 import 'features/navigation/core/services/voice_guidance_service.dart';
 import 'features/navigation/domain/repositories/navigation_repository.dart';
@@ -25,13 +23,18 @@ import 'features/navigation/presentation/bloc/navigation_bloc.dart';
 import 'features/obd_tpms/core/ble/obd_ble_service.dart';
 import 'features/obd_tpms/data/datasources/obd_remote_datasource.dart';
 import 'features/obd_tpms/presentation/bloc/obd_bloc.dart';
-import 'features/shell/presentation/screens/main_shell.dart';
+
+import 'features/calling/presentation/widgets/call_overlay.dart';
 import 'features/sos_safety/presentation/bloc/sos_bloc.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 import 'features/squad_ride/data/datasources/squad_remote_datasource.dart';
 import 'features/squad_ride/presentation/bloc/squad_bloc.dart';
+import 'features/vehicle/presentation/bloc/vehicle_bloc.dart';
+import 'features/vehicle/presentation/bloc/vehicle_event.dart';
+import 'core/contracts/voice_gateway.dart';
+import 'features/voice_assistant/presentation/bloc/voice_bloc.dart';
+import 'core/carplay/carplay_state_bridge.dart';
+import 'dart:io' show Platform;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -100,6 +103,7 @@ class RideOSApp extends StatefulWidget {
   final ApiClient? apiClient;
   final GpsTrackingService? gpsService;
   final VoiceGuidanceService? voiceService;
+  final VehicleBloc? vehicleBloc;
 
   const RideOSApp({
     super.key,
@@ -112,6 +116,7 @@ class RideOSApp extends StatefulWidget {
     this.apiClient,
     this.gpsService,
     this.voiceService,
+    this.vehicleBloc,
   });
 
   @override
@@ -120,27 +125,6 @@ class RideOSApp extends StatefulWidget {
 
 class _RideOSAppState extends State<RideOSApp> {
   bool _splashFinished = false;
-  bool _onboardingCompleted = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkOnboarding();
-  }
-
-  Future<void> _checkOnboarding() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final done = prefs.getBool('onboarding_completed') ?? false;
-      if (mounted) {
-        setState(() => _onboardingCompleted = kIsWeb ? true : done);
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _onboardingCompleted = true);
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,15 +137,37 @@ class _RideOSAppState extends State<RideOSApp> {
             )..add(AppStartedEvent()),
           ),
           BlocProvider(
-            create: (context) => NavigationBloc(
-              repository: widget.navRepository ?? getIt<NavigationRepository>(),
-              gpsTrackingService: widget.gpsService ?? getIt<GpsTrackingService>(),
-              voiceGuidanceService: widget.voiceService ?? getIt<VoiceGuidanceService>(),
-            ),
+            create: (context) {
+              final navBloc = NavigationBloc(
+                repository: widget.navRepository ?? getIt<NavigationRepository>(),
+                gpsTrackingService: widget.gpsService ?? getIt<GpsTrackingService>(),
+                voiceGuidanceService: widget.voiceService ?? getIt<VoiceGuidanceService>(),
+              );
+              
+              if (Platform.isIOS) {
+                navBloc.stream.listen((state) {
+                  CarPlayStateBridge.onNavigationUpdate(state);
+                });
+              }
+              
+              return navBloc;
+            },
+          ),
+          BlocProvider(
+            create: (context) => (widget.vehicleBloc ?? getIt<VehicleBloc>())
+              ..add(const LoadVehiclesEvent()),
           ),
           BlocProvider(
             create: (context) => AiAssistantBloc(
-              remoteDatasource: widget.aiRemoteDatasource ?? getIt<AiAssistantRemoteDatasource>(),
+              gateway: widget.aiRemoteDatasource != null 
+                  ? RemoteAiAssistantGatewayAdapter(remoteDatasource: widget.aiRemoteDatasource!)
+                  : getIt<AIProviderGateway>(),
+              intentResolver: getIt<AiIntentResolver>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => VoiceBloc(
+              gateway: getIt<VoiceGateway>(),
             ),
           ),
           BlocProvider(
@@ -184,55 +190,22 @@ class _RideOSAppState extends State<RideOSApp> {
         child: AnimatedBuilder(
           animation: LuxThemeEngine(),
           builder: (context, child) {
-            return GlobalPointerTracker(
-              child: MaterialApp(
+            return MaterialApp(
               title: 'RideOS Pro',
               debugShowCheckedModeBanner: false,
               theme: LuxThemeEngine.lightTheme,
               darkTheme: LuxThemeEngine.darkTheme,
               themeMode: LuxThemeEngine().themeMode,
-              home: kIsWeb
-                  ? const MainShell()
-                  : !_splashFinished
-                      ? SplashScreen(
-                          onInitialized: () {
-                            setState(() => _splashFinished = true);
-                          },
-                        )
-                      : !_onboardingCompleted
-                          ? OnboardingFlowScreen(
-                              onComplete: () {
-                                setState(() => _onboardingCompleted = true);
-                              },
-                            )
-                          : BlocBuilder<AuthBloc, AuthState>(
-                          builder: (context, state) {
-                            if (state is AuthenticatedState) {
-                              return const MainShell();
-                            }
-                            if (state is UnauthenticatedState || state is AuthFailureState) {
-                              if (kIsWeb) {
-                                return const MainShell();
-                              }
-                              return const WelcomeScreen();
-                            }
-                            return Scaffold(
-                              backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
-                              body: CinematicBackground(child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.navigation_rounded, size: 64, color: RoadOSColors.roadCyan),
-                                    SizedBox(height: 16),
-                                    CircularProgressIndicator(color: RoadOSColors.roadCyan),
-                                  ],
-                                ),
-                              )),
-                            );
-                          },
-                        ),
-              ),
+              builder: (context, child) {
+                return GlobalCallOverlay(child: child!);
+              },
+              home: !_splashFinished
+                  ? SplashScreen(
+                      onInitialized: () {
+                        setState(() => _splashFinished = true);
+                      },
+                    )
+                  : const AuthGate(),
             );
           },
         ),

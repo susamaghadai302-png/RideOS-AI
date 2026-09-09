@@ -31,3 +31,13 @@ class AuthFailureState extends AuthState {
   @override
   List<Object?> get props => [errorMessage];
 }
+
+/// Emitted when the backend confirms a password-reset email was dispatched.
+class ForgotPasswordSentState extends AuthState {
+  final String email;
+
+  const ForgotPasswordSentState({required this.email});
+
+  @override
+  List<Object?> get props => [email];
+}

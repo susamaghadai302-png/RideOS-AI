@@ -1,25 +1,35 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/widgets/cinematic_background.dart';
+import '../../../../core/vehicle_mode/vehicle_mode.dart';
+import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
+import '../../../../core/vehicle_resolution/models/active_vehicle_context.dart';
+import '../../../../core/vehicle_resolution/models/vehicle_display_capability.dart';
+import '../../../../core/vehicle_resolution/services/vehicle_connection_manager.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../dashcam/presentation/screens/ai_vision_dashcam_screen.dart';
 import '../../../dashboard/presentation/screens/home_screen.dart';
 import '../../../vehicle_manager/presentation/screens/my_vehicles_screen.dart';
 import '../../../connected_vehicle/presentation/screens/connect_vehicle_screen.dart';
+import '../../../connected_vehicle/presentation/screens/connection_center_screen.dart';
 import '../../../garage/presentation/screens/luxury_garage_showroom_screen.dart';
 import '../../../garage/presentation/screens/vehicle_maintenance_screen.dart';
-import '../../../telemetry/presentation/screens/telemetry_dashboard_screen.dart';
+import '../../../dashboard/presentation/screens/advanced_realtime_dashboard_screen.dart';
 import '../../../documents/presentation/screens/vehicle_documents_screen.dart';
 import '../../../diagnostics/presentation/screens/vehicle_health_dashboard_screen.dart';
 import '../../../navigation/presentation/screens/three_d_navigation_screen.dart';
 import '../../../profile/presentation/screens/profile_settings_screen.dart';
 import '../../../ride_history/presentation/screens/ride_history_screen.dart';
 import '../../../safety/presentation/screens/rider_safety_center_screen.dart';
+import '../../../vehicle_mode/presentation/screens/car_mode_screen.dart';
+import '../../../vehicle_mode/presentation/screens/bike_mode_screen.dart';
+import '../../../vehicle_mode/presentation/screens/scooter_mode_screen.dart';
 
 /// Navigation Item Model with Dynamic Accents for Ultra Glass Navigation 2.0
 class RoadOSShellNavItem {
@@ -38,15 +48,15 @@ class RoadOSShellNavItem {
   });
 }
 
-class RoadOSAppShell extends StatefulWidget {
+class RoadOSAppShell extends ConsumerStatefulWidget {
   final int initialIndex;
   const RoadOSAppShell({super.key, this.initialIndex = 1});
 
   @override
-  State<RoadOSAppShell> createState() => _RoadOSAppShellState();
+  ConsumerState<RoadOSAppShell> createState() => _RoadOSAppShellState();
 }
 
-class _RoadOSAppShellState extends State<RoadOSAppShell> with SingleTickerProviderStateMixin {
+class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTickerProviderStateMixin {
   late int _selectedIndex;
   bool _isSidebarExpanded = true;
   bool _isFullscreen = false;
@@ -57,99 +67,154 @@ class _RoadOSAppShellState extends State<RoadOSAppShell> with SingleTickerProvid
   // Standardized Compact Top Bar & Sidebar Header Height
   static const double kHeaderHeight = 56.0;
 
-  final List<RoadOSShellNavItem> _navItems = const [
-    RoadOSShellNavItem(
-      icon: Icons.home_rounded,
-      label: 'Home',
-      category: 'MAIN',
-      accentColor: RoadOSColors.electricBlue,
-      screen: HomeScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.two_wheeler_rounded,
-      label: 'My Vehicles',
-      category: 'MAIN',
-      accentColor: RoadOSColors.neonViolet,
-      screen: MyVehiclesScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.bluetooth_searching_rounded,
-      label: 'Connect Vehicle',
-      category: 'MAIN',
-      accentColor: RoadOSColors.electricBlue,
-      screen: ConnectVehicleScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.view_in_ar_rounded,
-      label: '3D Garage',
-      category: 'VEHICLE',
-      accentColor: RoadOSColors.cyberCyan,
-      screen: LuxuryGarageShowroomScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.speed_rounded,
-      label: 'Live Dashboard',
-      category: 'VEHICLE',
-      accentColor: RoadOSColors.neonViolet,
-      screen: TelemetryDashboardScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.analytics_rounded,
-      label: 'Trips',
-      category: 'TELEMETRY',
-      accentColor: RoadOSColors.apexEmerald,
-      screen: RideHistoryScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.navigation_rounded,
-      label: 'Navigation',
-      category: 'TELEMETRY',
-      accentColor: RoadOSColors.cyberCyan,
-      screen: ThreeDNavigationScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.health_and_safety_rounded,
-      label: 'Health',
-      category: 'DIAGNOSTICS',
-      accentColor: RoadOSColors.apexEmerald,
-      screen: VehicleHealthDashboardScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.build_rounded,
-      label: 'Maintenance',
-      category: 'DIAGNOSTICS',
-      accentColor: RoadOSColors.hyperOrange,
-      screen: VehicleMaintenanceScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.shield_rounded,
-      label: 'Safety',
-      category: 'SYSTEM',
-      accentColor: Color(0xFFFF4444),
-      screen: RiderSafetyCenterScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.videocam_rounded,
-      label: 'Dashcam',
-      category: 'SYSTEM',
-      accentColor: RoadOSColors.neonViolet,
-      screen: AiVisionDashcamScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.description_rounded,
-      label: 'Documents',
-      category: 'SYSTEM',
-      accentColor: RoadOSColors.cyberCyan,
-      screen: VehicleDocumentsScreen(),
-    ),
-    RoadOSShellNavItem(
-      icon: Icons.settings_rounded,
-      label: 'Settings',
-      category: 'SYSTEM',
-      accentColor: RoadOSColors.textSecondary,
-      screen: ProfileSettingsScreen(),
-    ),
-  ];
+  List<RoadOSShellNavItem> get _navItems {
+    // Drive Hub routes to the correct mode screen based on vehicleModeProvider
+    final vehicleMode = ref.watch(vehicleModeProvider);
+    final driveScreen = _driveScreenForMode(vehicleMode);
+    final driveColor = _driveColorForMode(vehicleMode);
+    final driveIcon = _driveIconForMode(vehicleMode);
+
+    return [
+      RoadOSShellNavItem(
+        icon: Icons.home_rounded,
+        label: 'Home',
+        category: 'MAIN',
+        accentColor: RoadOSColors.electricBlue,
+        screen: const HomeScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: driveIcon,
+        label: 'Drive',
+        category: 'MAIN',
+        accentColor: driveColor,
+        screen: driveScreen,
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.navigation_rounded,
+        label: 'Navigation',
+        category: 'MAIN',
+        accentColor: RoadOSColors.cyberCyan,
+        screen: const ThreeDNavigationScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.two_wheeler_rounded,
+        label: 'My Vehicles',
+        category: 'VEHICLE',
+        accentColor: RoadOSColors.neonViolet,
+        screen: const MyVehiclesScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.bluetooth_searching_rounded,
+        label: 'Connect',
+        category: 'VEHICLE',
+        accentColor: RoadOSColors.electricBlue,
+        screen: const ConnectVehicleScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.view_in_ar_rounded,
+        label: '3D Garage',
+        category: 'VEHICLE',
+        accentColor: RoadOSColors.cyberCyan,
+        screen: const LuxuryGarageShowroomScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.speed_rounded,
+        label: 'Dashboard',
+        category: 'VEHICLE',
+        accentColor: RoadOSColors.neonViolet,
+        screen: const AdvancedRealtimeDashboardScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.hub_rounded,
+        label: 'Connection Center',
+        category: 'VEHICLE',
+        accentColor: RoadOSColors.cyberCyan,
+        screen: const ConnectionCenterScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.analytics_rounded,
+        label: 'Trips',
+        category: 'TELEMETRY',
+        accentColor: RoadOSColors.apexEmerald,
+        screen: const RideHistoryScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.health_and_safety_rounded,
+        label: 'Health',
+        category: 'DIAGNOSTICS',
+        accentColor: RoadOSColors.apexEmerald,
+        screen: const VehicleHealthDashboardScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.build_rounded,
+        label: 'Maintenance',
+        category: 'DIAGNOSTICS',
+        accentColor: RoadOSColors.hyperOrange,
+        screen: const VehicleMaintenanceScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.shield_rounded,
+        label: 'Safety',
+        category: 'SYSTEM',
+        accentColor: const Color(0xFFFF4444),
+        screen: const RiderSafetyCenterScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.videocam_rounded,
+        label: 'Dashcam',
+        category: 'SYSTEM',
+        accentColor: RoadOSColors.neonViolet,
+        screen: const AiVisionDashcamScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.description_rounded,
+        label: 'Documents',
+        category: 'SYSTEM',
+        accentColor: RoadOSColors.cyberCyan,
+        screen: const VehicleDocumentsScreen(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.settings_rounded,
+        label: 'Settings',
+        category: 'SYSTEM',
+        accentColor: RoadOSColors.textSecondary,
+        screen: const ProfileSettingsScreen(),
+      ),
+    ];
+  }
+
+  Widget _driveScreenForMode(VehicleMode mode) {
+    switch (mode) {
+      case VehicleMode.car:
+        return const CarModeScreen();
+      case VehicleMode.bike:
+        return const BikeModeScreen();
+      case VehicleMode.scooter:
+        return const ScooterModeScreen();
+    }
+  }
+
+  Color _driveColorForMode(VehicleMode mode) {
+    switch (mode) {
+      case VehicleMode.car:
+        return RoadOSColors.electricBlue;
+      case VehicleMode.bike:
+        return RoadOSColors.neonViolet;
+      case VehicleMode.scooter:
+        return RoadOSColors.apexEmerald;
+    }
+  }
+
+  IconData _driveIconForMode(VehicleMode mode) {
+    switch (mode) {
+      case VehicleMode.car:
+        return Icons.directions_car_rounded;
+      case VehicleMode.bike:
+        return Icons.two_wheeler_rounded;
+      case VehicleMode.scooter:
+        return Icons.electric_scooter_rounded;
+    }
+  }
 
   @override
   void initState() {
@@ -205,6 +270,40 @@ class _RoadOSAppShellState extends State<RoadOSAppShell> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(activeVehicleContextProvider, (previous, next) {
+      if (next.profile != null && next.connectionStatus == VehicleConnectionStatus.connected) {
+        if (previous?.profile?.id != next.profile!.id || previous?.connectionStatus != VehicleConnectionStatus.connected) {
+          final p = next.profile!;
+          VehicleMode newMode = VehicleMode.car;
+          if (p.isScooter) {
+            newMode = VehicleMode.scooter;
+          } else if (p.category.toLowerCase().contains('motorcycle') || p.category.toLowerCase().contains('bike')) {
+            newMode = VehicleMode.bike;
+          }
+          ref.read(vehicleModeProvider.notifier).setMode(newMode);
+          
+          // Phase 12: Capability Layer Update
+          final capability = VehicleDisplayCapability(
+            protocol: ConnectionProtocol.ble, // Default base protocol for profile resolution
+            status: ConnectionStatus.ready,
+            hasAudio: true,
+            hasMicrophone: true,
+            hasCalling: true,
+            hasNavigation: true,
+            hasTouch: true,
+            hasVoice: true,
+          );
+          ref.read(vehicleConnectionManagerProvider.notifier).updateConnection(capability, '${p.manufacturer} ${p.model}');
+          ref.read(vehicleConnectionManagerProvider.notifier).setNavigationReady(true);
+          ref.read(vehicleConnectionManagerProvider.notifier).setGpsReady(true);
+          ref.read(vehicleConnectionManagerProvider.notifier).setCallingAvailable(true);
+        }
+      } else if (next.connectionStatus == VehicleConnectionStatus.disconnected) {
+        ref.read(vehicleConnectionManagerProvider.notifier).updateConnection(VehicleDisplayCapability.unsupported(), 'None');
+        ref.read(vehicleConnectionManagerProvider.notifier).setNavigationReady(false);
+      }
+    });
+
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 920;
     final isTablet = screenWidth >= 640 && screenWidth < 920;

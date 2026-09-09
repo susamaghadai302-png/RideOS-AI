@@ -199,7 +199,7 @@ class AiCopilotEngine {
     if (lower.contains('temp') || lower.contains('coolant')) {
       if (context.coolantTempC != null) {
         final mode = context.isSimulated ? ' (Simulated)' : '';
-        return 'Engine coolant temperature is ${context.coolantTempC!.round()}°C$mode.';
+        return 'Engine coolant temperature is ${context.coolantTempC!.round()} °C$mode.';
       }
       return 'Engine temperature is currently unavailable from vehicle.';
     }

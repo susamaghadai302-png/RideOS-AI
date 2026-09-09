@@ -52,21 +52,11 @@ class _LiquidSurfaceInteractionState extends State<LiquidSurfaceInteraction> wit
   }
 
   void _onHover(PointerHoverEvent event, Size size) {
-    if (!widget.interactive) return;
-    setState(() {
-      _isHovered = true;
-      final dx = (event.localPosition.dx / size.width) - 0.5;
-      final dy = (event.localPosition.dy / size.height) - 0.5;
-      _tiltX = dy * 2.0;
-      _tiltY = -dx * 2.0;
-      _scale = 1.02;
-    });
+    // Hovering with cursor does NOT tilt or shift cards (stable 3D requirement)
   }
 
   void _onExit(PointerExitEvent event) {
     if (!widget.interactive) return;
-    _isHovered = false;
-    _springController.forward(from: 0.0);
     setState(() {
       _scale = 1.0;
     });
@@ -75,14 +65,14 @@ class _LiquidSurfaceInteractionState extends State<LiquidSurfaceInteraction> wit
   void _onTapDown(TapDownDetails details) {
     if (!widget.interactive) return;
     setState(() {
-      _scale = 0.95;
+      _scale = 0.97;
     });
   }
 
   void _onTapUp(TapUpDetails details) {
     if (!widget.interactive) return;
     setState(() {
-      _scale = _isHovered ? 1.02 : 1.0;
+      _scale = 1.0;
     });
   }
 
@@ -90,33 +80,20 @@ class _LiquidSurfaceInteractionState extends State<LiquidSurfaceInteraction> wit
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final size = Size(constraints.maxWidth, constraints.maxHeight);
-        
-        // Combine local hover tilt with subtle global parallax
-        final globalOffset = GlobalPointerProvider.of(context);
-        final finalTiltX = _tiltX + (globalOffset.dy * 0.15);
-        final finalTiltY = _tiltY + (-globalOffset.dx * 0.15);
-
+        // Elements remain stably aligned in 3D space with zero tilt during passive pointer movement
         final transform = Matrix4.identity()
-          ..setEntry(3, 2, 0.0015) // Perspective
-          ..rotateX(finalTiltX * (widget.depth / 100))
-          ..rotateY(finalTiltY * (widget.depth / 100))
           ..scale(_scale);
 
-        return MouseRegion(
-          onHover: (e) => _onHover(e, size),
-          onExit: _onExit,
-          child: GestureDetector(
-            onTapDown: _onTapDown,
-            onTapUp: _onTapUp,
-            onTapCancel: () => _onTapUp(TapUpDetails(kind: PointerDeviceKind.touch)),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeOut,
-              transform: transform,
-              transformAlignment: FractionalOffset.center,
-              child: widget.child,
-            ),
+        return GestureDetector(
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: () => _onTapUp(TapUpDetails(kind: PointerDeviceKind.touch)),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOut,
+            transform: transform,
+            transformAlignment: FractionalOffset.center,
+            child: widget.child,
           ),
         );
       },
@@ -144,11 +121,8 @@ class RideOSLiquidGlassEngine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final globalOffset = GlobalPointerProvider.of(context);
-    
-    // Simulate specular highlight based on global pointer
-    final dx = globalOffset.dx;
-    final dy = globalOffset.dy;
+    // Fixed studio top-left specular highlight alignment for static 3D depth
+    const highlightCenter = Alignment(-0.5, -0.5);
 
     return ClipRRect(
       borderRadius: borderRadius,
@@ -170,7 +144,7 @@ class RideOSLiquidGlassEngine extends StatelessWidget {
               ),
             ],
             gradient: RadialGradient(
-              center: Alignment(dx, dy),
+              center: highlightCenter,
               radius: 1.5,
               colors: [
                 highlightColor.withValues(alpha: 0.15),
@@ -183,7 +157,7 @@ class RideOSLiquidGlassEngine extends StatelessWidget {
               if (enableChromaticDispersion)
                 Positioned.fill(
                   child: CustomPaint(
-                    painter: _ChromaticDispersionPainter(globalOffset),
+                    painter: _ChromaticDispersionPainter(Offset.zero),
                   ),
                 ),
               child,
@@ -256,7 +230,21 @@ class SpatialFloatingWidget extends StatelessWidget {
     return Transform(
       transform: transform,
       alignment: FractionalOffset.center,
-      child: child,
+      child: zDepth > 0
+          ? Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: zDepth.abs() * 0.8,
+                    spreadRadius: zDepth.abs() * 0.1,
+                    offset: Offset(0, zDepth.abs() * 0.3),
+                  ),
+                ],
+              ),
+              child: child,
+            )
+          : child,
     );
   }
 }

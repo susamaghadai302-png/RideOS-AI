@@ -4,6 +4,7 @@ import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../domain/models/multi_vehicle_fleet_models.dart';
 import '../../services/multi_vehicle_fleet_engine.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class FleetIntelligenceScreen extends StatefulWidget {
   const FleetIntelligenceScreen({super.key});

@@ -28,7 +28,8 @@ class _Living3dEnvironmentState extends State<Living3dEnvironment> with SingleTi
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
-    )..repeat();
+      value: 0.5,
+    );
 
     _initParticles();
   }

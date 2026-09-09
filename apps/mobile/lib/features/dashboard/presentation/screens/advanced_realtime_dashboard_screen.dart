@@ -6,6 +6,7 @@ import '../../../../core/design_system/roados_tokens.dart';
 import '../../domain/models/advanced_dashboard_models.dart';
 import '../../core/services/realtime_dashboard_telemetry_engine.dart';
 import '../../../../core/graphics/global_3d_state_bridge.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class AdvancedRealtimeDashboardScreen extends StatefulWidget {
   const AdvancedRealtimeDashboardScreen({super.key});

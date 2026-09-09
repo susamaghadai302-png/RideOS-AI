@@ -856,6 +856,7 @@ class _ConnectVehicleScreenState extends ConsumerState<ConnectVehicleScreen>
     return Center(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -864,24 +865,24 @@ class _ConnectVehicleScreenState extends ConsumerState<ConnectVehicleScreen>
               animation: Listenable.merge([_radarCtrl, _pulseCtrl]),
               builder: (_, __) {
                 return SizedBox(
-                  width: 220,
-                  height: 220,
+                  width: 280,
+                  height: 280,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       // Core 3D Rings
                       for (int i = 0; i < 4; i++)
                         SpatialFloatingWidget(
-                          tiltX: (_radarCtrl.value * math.pi * 2) + (i * 0.5),
-                          tiltY: (_radarCtrl.value * math.pi * 2) + (i * 0.8),
-                          zDepth: scanning ? (math.sin(_pulseCtrl.value * math.pi) * 20.0) : 0,
+                          tiltX: 0.0,
+                          tiltY: 0.0,
+                          zDepth: 0.0,
                           child: Container(
-                            width: 90.0 + (i * 32.0),
-                            height: 90.0 + (i * 32.0),
+                            width: 120.0 + (i * 40.0),
+                            height: 120.0 + (i * 40.0),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: const Color(0xFF00F2FE).withValues(alpha: scanning ? 0.4 - (i * 0.1) : 0.1),
+                                color: const Color(0xFF00F2FE).withOpacity(scanning ? 0.4 - (i * 0.1) : 0.1),
                                 width: 1.5,
                               ),
                             ),
@@ -890,34 +891,34 @@ class _ConnectVehicleScreenState extends ConsumerState<ConnectVehicleScreen>
                         
                       // Spatial Glowing Center Core
                       SpatialFloatingWidget(
-                        zDepth: scanning ? 20 : 0,
+                        zDepth: 0.0,
+                        tiltX: 0.0,
+                        tiltY: 0.0,
                         child: Container(
-                          width: 70,
-                          height: 70,
+                          width: 80,
+                          height: 80,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: RadialGradient(colors: [
-                              const Color(0xFF00F2FE).withValues(alpha: 0.3),
-                              const Color(0xFF00F2FE).withValues(alpha: 0.05),
+                              const Color(0xFF00F2FE).withOpacity(0.3),
+                              const Color(0xFF00F2FE).withOpacity(0.05),
                             ]),
                             border: Border.all(
-                              color: const Color(0xFF00F2FE)
-                                  .withValues(alpha: scanning ? 0.6 + _pulseCtrl.value * 0.4 : 0.3),
+                              color: const Color(0xFF00F2FE).withOpacity(scanning ? 0.6 : 0.3),
                               width: 2.0,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00F2FE)
-                                    .withValues(alpha: scanning ? 0.3 + _pulseCtrl.value * 0.3 : 0.1),
-                                blurRadius: 30,
-                                spreadRadius: scanning ? 8 : 0,
+                                color: const Color(0xFF00F2FE).withOpacity(scanning ? 0.4 : 0.1),
+                                blurRadius: 40,
+                                spreadRadius: scanning ? 10 : 0,
                               ),
                             ],
                           ),
                           child: Icon(
                             scanning ? Icons.radar_rounded : Icons.bluetooth_searching_rounded,
                             color: const Color(0xFF00F2FE),
-                            size: 32,
+                            size: 36,
                           ),
                         ),
                       ),
@@ -926,71 +927,71 @@ class _ConnectVehicleScreenState extends ConsumerState<ConnectVehicleScreen>
                 );
               },
             ),
-            
-            const SizedBox(height: 20),
-            
-            SpatialFloatingWidget(
-              zDepth: 15,
-              tiltX: 0.05,
-              child: Text(
-                scanning ? 'SCANNING 3D CHAMBER...' : 'CHAMBER READY',
-                style: GoogleFonts.outfit(
-                  color: scanning ? const Color(0xFF00F2FE) : const Color(0xFF64748B),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2.2,
-                ),
+          
+          const SizedBox(height: 32),
+          
+          SpatialFloatingWidget(
+            zDepth: 15,
+            tiltX: 0.05,
+            child: Text(
+              scanning ? 'SCANNING 3D CHAMBER...' : 'CHAMBER READY',
+              style: GoogleFonts.outfit(
+                color: scanning ? const Color(0xFF00F2FE) : const Color(0xFF64748B),
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2.5,
               ),
             ),
-            
-            const SizedBox(height: 8),
-            
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                kIsWeb
-                    ? 'Tap "SCAN FOR BLE DEVICES" to pair with your vehicle.'
-                    : 'Ensure ignition is ON, Bluetooth pairing active.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  color: const Color(0xFF64748B),
-                  fontSize: 12,
-                  height: 1.4,
-                ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              kIsWeb
+                  ? 'Tap "SCAN FOR BLE DEVICES" to pair with your vehicle.'
+                  : 'Ensure ignition is ON, Bluetooth pairing active.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: const Color(0xFF64748B),
+                fontSize: 12,
+                height: 1.5,
               ),
             ),
-            
-            const SizedBox(height: 20),
-            
-            SpatialFloatingWidget(
-              zDepth: 25,
-              tiltX: -0.1, // tilt up towards the user
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (kIsWeb) ...[
-                    _Lux3DButton(
-                      label: 'INITIATE SCAN',
-                      accentColor: const Color(0xFF00F2FE),
-                      isLoading: _isWebBleScanning,
-                      onTap: _scanForWebBleDevice,
-                    ),
-                    const SizedBox(width: 10),
-                  ],
-                  _LuxOutlinedButton(
-                    label: 'MANUAL SELECTION',
-                    icon: Icons.two_wheeler_rounded,
-                    color: const Color(0xFF00F2FE),
-                    onTap: _openManualVehicleSelector,
+          ),
+          
+          const SizedBox(height: 32),
+          
+          SpatialFloatingWidget(
+            zDepth: 25,
+            tiltX: -0.1, // tilt up towards the user
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (kIsWeb) ...[
+                  _Lux3DButton(
+                    label: 'INITIATE SCAN',
+                    accentColor: const Color(0xFF00F2FE),
+                    isLoading: _isWebBleScanning,
+                    onTap: _scanForWebBleDevice,
                   ),
+                  const SizedBox(width: 10),
                 ],
-              ),
+                _LuxOutlinedButton(
+                  label: 'MANUAL SELECTION',
+                  icon: Icons.two_wheeler_rounded,
+                  color: const Color(0xFF00F2FE),
+                  onTap: _openManualVehicleSelector,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
   // ─────────────────────────────────────────────────────────────────────────
   //  LUXURY DEVICE CARD (BLE scan result — slide-in on appear)
   // ─────────────────────────────────────────────────────────────────────────
@@ -1755,13 +1756,24 @@ class _Lux3DButtonState extends State<_Lux3DButton> {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [widget.accentColor, widget.accentColor.withValues(alpha: 0.70)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [widget.accentColor, widget.accentColor.withValues(alpha: 0.80)],
             ),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
             boxShadow: [
+              // Contact shadow
               BoxShadow(
                 color: widget.accentColor.withValues(alpha: 0.40),
-                blurRadius: 16,
+                blurRadius: 4,
+                spreadRadius: 0,
+                offset: const Offset(0, 3),
+              ),
+              // Ambient shadow
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
             ],
@@ -1822,9 +1834,24 @@ class _LuxOutlinedButtonState extends State<_LuxOutlinedButton> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: widget.color.withValues(alpha: 0.06),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                widget.color.withValues(alpha: 0.12),
+                widget.color.withValues(alpha: 0.04),
+              ],
+            ),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: widget.color.withValues(alpha: 0.45), width: 1),
+            border: Border.all(color: widget.color.withValues(alpha: 0.4), width: 1.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 4,
+                spreadRadius: 0,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

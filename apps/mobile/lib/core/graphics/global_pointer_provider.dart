@@ -13,12 +13,11 @@ class GlobalPointerProvider extends InheritedNotifier<ValueNotifier<Offset>> {
   }
 
   static Offset of(BuildContext context) {
-    final notifier = maybeOf(context);
-    return notifier?.value ?? Offset.zero;
+    return Offset.zero;
   }
 }
 
-/// A wrapper to be placed at the root of the app/scaffold to track the mouse.
+/// A wrapper placed at the root of the app/scaffold. Maintains a stable resting position.
 class GlobalPointerTracker extends StatefulWidget {
   final Widget child;
   const GlobalPointerTracker({super.key, required this.child});
@@ -30,14 +29,6 @@ class GlobalPointerTracker extends StatefulWidget {
 class _GlobalPointerTrackerState extends State<GlobalPointerTracker> {
   final ValueNotifier<Offset> _pointerPosition = ValueNotifier(Offset.zero);
 
-  void _updatePointer(PointerEvent event, Size size) {
-    if (size.isEmpty) return;
-    // Normalize to -1.0 to 1.0 based on screen center
-    final dx = (event.position.dx / size.width) * 2 - 1;
-    final dy = (event.position.dy / size.height) * 2 - 1;
-    _pointerPosition.value = Offset(dx, dy);
-  }
-
   @override
   void dispose() {
     _pointerPosition.dispose();
@@ -46,17 +37,9 @@ class _GlobalPointerTrackerState extends State<GlobalPointerTracker> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    return MouseRegion(
-      onHover: (event) => _updatePointer(event, size),
-      child: Listener(
-        onPointerMove: (event) => _updatePointer(event, size),
-        onPointerDown: (event) => _updatePointer(event, size),
-        child: GlobalPointerProvider(
-          notifier: _pointerPosition,
-          child: widget.child,
-        ),
-      ),
+    return GlobalPointerProvider(
+      notifier: _pointerPosition,
+      child: widget.child,
     );
   }
 }

@@ -3,27 +3,30 @@ import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadO
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/theme_engine.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/widgets/roados_visual_environment.dart';
+import '../../../../core/vehicle_mode/vehicle_mode.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../vehicle_mode/presentation/screens/vehicle_mode_selector_screen.dart';
 import 'edit_rider_profile_screen.dart';
 
-class ProfileSettingsScreen extends StatefulWidget {
+class ProfileSettingsScreen extends ConsumerStatefulWidget {
   final Function(bool isDark)? onThemeToggle;
   const ProfileSettingsScreen({super.key, this.onThemeToggle});
 
   @override
-  State<ProfileSettingsScreen> createState() => _ProfileSettingsScreenState();
+  ConsumerState<ProfileSettingsScreen> createState() => _ProfileSettingsScreenState();
 }
 
-class _ProfileSettingsScreenState extends State<ProfileSettingsScreen>
+class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
     with SingleTickerProviderStateMixin {
   bool _useMetric = true;
   bool _crashDetectionEnabled = true;
@@ -191,6 +194,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen>
                 );
               },
             ),
+            const SizedBox(height: 20),
+
+            // ── VEHICLE MODE ───────────────────────────────────────────────
+            _buildSectionHeader('VEHICLE MODE'),
+            const SizedBox(height: 8),
+            _buildVehicleModeSelector(),
             const SizedBox(height: 20),
 
             // ── DIGITAL VAULT ─────────────────────────────────────────────
@@ -450,6 +459,78 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildVehicleModeSelector() {
+    final currentMode = ref.watch(vehicleModeProvider);
+    Color accent;
+    IconData modeIcon;
+    switch (currentMode) {
+      case VehicleMode.car:
+        accent = RoadOSColors.electricBlue;
+        modeIcon = Icons.directions_car_rounded;
+        break;
+      case VehicleMode.bike:
+        accent = RoadOSColors.neonViolet;
+        modeIcon = Icons.two_wheeler_rounded;
+        break;
+      case VehicleMode.scooter:
+        accent = RoadOSColors.apexEmerald;
+        modeIcon = Icons.electric_scooter_rounded;
+        break;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => const VehicleModeSelectorScreen(isOnboarding: false),
+        ));
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D1020),
+          borderRadius: BorderRadius.circular(14),
+          border: Border(
+            top: BorderSide(color: accent.withValues(alpha: 0.3), width: 1.0),
+            left: BorderSide(color: accent.withValues(alpha: 0.15), width: 1.0),
+            right: BorderSide(color: Colors.black.withValues(alpha: 0.2), width: 1.0),
+            bottom: BorderSide(color: Colors.black.withValues(alpha: 0.4), width: 2.0),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: accent.withValues(alpha: 0.3)),
+              ),
+              child: Icon(modeIcon, color: accent, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${currentMode.icon} ${currentMode.displayName} Mode',
+                    style: const TextStyle(color: RoadOSColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  const Text(
+                    'Tap to change vehicle type',
+                    style: TextStyle(color: RoadOSColors.textSecondary, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: RoadOSColors.textSecondary, size: 18),
+          ],
+        ),
+      ),
     );
   }
 

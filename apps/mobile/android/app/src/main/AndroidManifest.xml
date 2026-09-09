@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
     <!-- Network & Communication -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
@@ -26,8 +27,25 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
+    <!-- Calling Integration -->
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+
     <!-- Required for Google Maps Android SDK v2 OpenGL rendering -->
     <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+
+    <!-- Android Auto / Car App Library —
+         This declares that the app supports Android Auto.
+         android.hardware.type.automotive is NOT required (that is for
+         Automotive OS). Android Auto uses android.software.car.templates.host. -->
+    <uses-feature
+        android:name="android.software.car.templates.host"
+        android:required="false" />
+
+    <!-- Android Automotive OS feature declaration -->
+    <uses-feature
+        android:name="android.hardware.type.automotive"
+        android:required="false" />
 
     <application
         android:label="RideOS Pro"
@@ -35,6 +53,21 @@
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config">
+        
+        <service android:name="androidx.car.app.CarAppMetadataHolderService"
+            android:enabled="false"
+            android:exported="false"
+            tools:node="merge">
+            <!-- Resolve merger conflict between app-projected and app-automotive -->
+            <meta-data
+                android:name="androidx.car.app.CarAppMetadataHolderService.CAR_HARDWARE_MANAGER"
+                android:value="androidx.car.app.hardware.AutomotiveCarHardwareManager"
+                tools:replace="android:value" />
+        </service>
+
+        <!-- AAOS Car Library required tag -->
+        <uses-library android:name="android.car" android:required="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -73,6 +106,36 @@
                 <data android:scheme="https" android:host="rideos.ai" android:pathPrefix="/app" />
             </intent-filter>
         </activity>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             ANDROID AUTO — CarAppService (Projected)
+             ══════════════════════════════════════════════════════════════════
+        -->
+        <service
+            android:name=".RideOSCarAppService"
+            android:exported="true"
+            android:label="RideOS Navigation">
+            <intent-filter>
+                <action android:name="androidx.car.app.CarAppService" />
+                <category android:name="androidx.car.app.category.NAVIGATION" />
+            </intent-filter>
+        </service>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             AAOS — CarAppService (Standalone)
+             ══════════════════════════════════════════════════════════════════
+             RideOSAaosService is the entry point for Android Automotive OS.
+        -->
+        <service
+            android:name=".aaos.RideOSAaosService"
+            android:exported="true"
+            android:label="RideOS AAOS Navigation">
+            <intent-filter>
+                <action android:name="androidx.car.app.CarAppService" />
+                <category android:name="androidx.car.app.category.NAVIGATION" />
+            </intent-filter>
+        </service>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -86,6 +149,10 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${GOOGLE_MAPS_API_KEY}" />
+
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -96,6 +163,11 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Required for tel: URI intent queries (calling integration) -->
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
         </intent>
     </queries>
 </manifest>

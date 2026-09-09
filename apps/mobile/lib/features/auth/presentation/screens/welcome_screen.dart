@@ -1,13 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/cinematic_background.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
-import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
-import '../bloc/auth_bloc.dart';
-import '../bloc/auth_event.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import '../../../../core/design_system/premium_navigation.dart';
@@ -253,39 +249,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     ),
                   ),
                   const SizedBox(height: 12),
-
-                  // Guest
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: () {
-                        LuxAudioHapticsService.heavyImpact();
-                        context.read<AuthBloc>().add(
-                          GoogleSignInWithCredentialEvent(
-                            email: 'rider@rideos.ai',
-                            fullName: 'RideOS Pilot',
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.flash_on_rounded,
-                          color: RoadOSColors.cyberCyan, size: 16),
-                      label: Text(
-                        'CONTINUE AS GUEST',
-                        style: TextStyle(
-                          color: RoadOSColors.cyberCyan,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 16),
+                  _buildLegalFooter(),
                   const SizedBox(height: 8),
-
                   const Center(
                     child: Text(
                       'Ride smarter. Ride safer. RideOS.',
                       style: TextStyle(
-                        color: Color(0xFF4B5563),
+                        color: Color(0xFF374151),
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
@@ -297,6 +268,114 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           ),
         ],
       )),
+    );
+  }
+
+  void _showLegalDialog(String title, String content) {
+    LuxAudioHapticsService.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D1322),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: RoadOSColors.cyberCyan.withValues(alpha: 0.3), width: 1.5),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              content,
+              style: const TextStyle(
+                color: RoadOSColors.platinumWhite,
+                fontSize: 13.5,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: RoadOSColors.cyberCyan,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('I UNDERSTAND', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegalFooter() {
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => _showLegalDialog(
+              'Privacy Policy',
+              'RideOS-AI processes your motorcycle telemetry, trip statistics, and diagnostics locally on-device with zero unauthorized third-party sharing.',
+            ),
+            child: const Text(
+              'Privacy Policy',
+              style: TextStyle(
+                color: Color(0xFF6B7280),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              '·',
+              style: TextStyle(color: Color(0xFF374151)),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => _showLegalDialog(
+              'Terms of Service',
+              'By using RideOS-AI, you agree that telemetry advisories, lean angle metrics, and safety alerts are assistive tools.',
+            ),
+            child: const Text(
+              'Terms of Service',
+              style: TextStyle(
+                color: Color(0xFF6B7280),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

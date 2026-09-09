@@ -74,33 +74,24 @@ class PremiumFloatingOrb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, _) {
-        final t = (animation.value * 2 * math.pi) + phaseOffset;
-        final dx = math.sin(t * 0.7) * 28.0;
-        final dy = math.cos(t * 0.5) * 20.0;
-        final pulse = 0.82 + math.sin(t * 1.1) * 0.18;
-        return Positioned(
-          left: startX + dx,
-          top: startY + dy,
-          child: IgnorePointer(
-            child: Container(
-              width: size * pulse,
-              height: size * pulse,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    color.withValues(alpha: 0.28),
-                    color.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
+    return Positioned(
+      left: startX,
+      top: startY,
+      child: IgnorePointer(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                color.withValues(alpha: 0.28),
+                color.withValues(alpha: 0.0),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

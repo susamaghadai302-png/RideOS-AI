@@ -51,53 +51,34 @@ class _LiquidGlassCardState extends State<LiquidGlassCard> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    final hoverTransform = _isHovered && widget.enableHoverElevation
-        ? Matrix4.translationValues(0, -3.0, 0)
-        : Matrix4.identity();
-
     final effectiveGlow = widget.glowColor ?? RoadOSColors.cyberCyan;
 
-    Widget cardBody = MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        transform: hoverTransform,
-        margin: widget.margin,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-          boxShadow: _isHovered
-              ? [
-                  BoxShadow(
-                    color: effectiveGlow.withValues(alpha: 0.28),
-                    blurRadius: 28,
-                    offset: const Offset(0, 8),
-                  ),
-                  ...RoadOSShadows.luxuryCard,
-                ]
-              : (widget.glowColor != null
-                  ? RoadOSShadows.neonGlow(color: widget.glowColor!, opacity: 0.35, blur: 24)
-                  : RoadOSShadows.luxuryCard),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-          child: Stack(
-            children: [
-              // 1. Backdrop Filter Blur & Translucent Glass Base
-              Positioned.fill(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: widget.blurSigma, sigmaY: widget.blurSigma),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: widget.customGradient ?? RoadOSGradients.liquidWaterGlass,
-                      borderRadius: BorderRadius.circular(widget.borderRadius),
-                      border: Border.all(
-                        color: _isHovered
-                            ? effectiveGlow.withValues(alpha: 0.65)
-                            : (widget.borderColor ?? RoadOSColors.borderSubtle),
-                        width: _isHovered ? 1.4 : 1.1,
-                      ),
+    Widget cardBody = AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      margin: widget.margin,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        boxShadow: widget.glowColor != null
+            ? RoadOSShadows.neonGlow(color: widget.glowColor!, opacity: 0.35, blur: 24)
+            : RoadOSShadows.luxuryCard,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        child: Stack(
+          children: [
+            // 1. Backdrop Filter Blur & Translucent Glass Base
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: widget.blurSigma, sigmaY: widget.blurSigma),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: widget.customGradient ?? RoadOSGradients.liquidWaterGlass,
+                    borderRadius: BorderRadius.circular(widget.borderRadius),
+                    border: Border.all(
+                      color: widget.borderColor ?? RoadOSColors.borderSubtle,
+                      width: 1.1,
+                    ),
                     ),
                   ),
                 ),
@@ -160,8 +141,7 @@ class _LiquidGlassCardState extends State<LiquidGlassCard> with SingleTickerProv
             ],
           ),
         ),
-      ),
-    );
+      );
 
     return cardBody;
   }
@@ -243,10 +223,7 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton> with SingleTicker
             end: Alignment.bottomRight,
           );
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedBuilder(
+    return AnimatedBuilder(
         animation: _scaleAnimation,
         builder: (context, child) => Transform.scale(
           scale: _scaleAnimation.value,
@@ -350,8 +327,7 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton> with SingleTicker
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
 

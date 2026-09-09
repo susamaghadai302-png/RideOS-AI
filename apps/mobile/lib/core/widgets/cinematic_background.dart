@@ -53,7 +53,8 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 22),
-    )..repeat();
+      value: 0.5,
+    );
 
     _initParticles();
     _initLightTrails();
@@ -118,13 +119,8 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
     // 2. Clean expired touch pulses
     _touchPulses.removeWhere((pulse) => pulse.isExpired);
 
-    // 3. Smooth mouse parallax interpolation
-    if (widget.enableParallax) {
-      _mouseParallax = Offset(
-        _mouseParallax.dx + (_targetParallax.dx - _mouseParallax.dx) * 0.05,
-        _mouseParallax.dy + (_targetParallax.dy - _mouseParallax.dy) * 0.05,
-      );
-    }
+    // Parallax remains fixed at Offset.zero for 3D stability
+    _mouseParallax = Offset.zero;
   }
 
   @override
@@ -135,10 +131,7 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
   }
 
   void _handlePointerHover(PointerHoverEvent event, Size screenSize) {
-    if (!widget.enableParallax || screenSize.width == 0 || screenSize.height == 0) return;
-    final normX = (event.position.dx / screenSize.width - 0.5).clamp(-0.5, 0.5);
-    final normY = (event.position.dy / screenSize.height - 0.5).clamp(-0.5, 0.5);
-    _targetParallax = Offset(normX, normY);
+    // Mouse hover tracking disabled for physical stability
   }
 
   void _handlePointerDown(PointerDownEvent event) {
@@ -206,14 +199,9 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
     final quality = _resolveQuality(context);
     final screenSize = MediaQuery.of(context).size;
 
-    return MouseRegion(
-      onHover: (e) => _handlePointerHover(e, screenSize),
-      child: Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: _handlePointerDown,
-        child: Stack(
-          children: [
-            // Layer 1: Dark Automotive Atmospheric Base Gradient (Transparent on Web for Three.js depth)
+    return Stack(
+      children: [
+        // Layer 1: Dark Automotive Atmospheric Base Gradient (Transparent on Web for Three.js depth)
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -237,144 +225,134 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
               ),
             ),
 
-             // Layer 2: Animated Volumetric Caustics, Aurora & Lens Light Fields
+             // Layer 2: Volumetric Caustics & Aurora Fields (Stable, Static Spatial Position)
              if (widget.showAuroras && quality != BackgroundQualityTier.low)
                Positioned.fill(
                  child: RepaintBoundary(
-                   child: AnimatedBuilder(
-                     animation: _controller,
-                     builder: (context, _) {
-                       final t = _controller.value * 2 * math.pi;
-                       final parallax = _mouseParallax;
-                       // Slow breath: 0.88 -> 1.12
-                       final breath = 0.88 + 0.24 * math.sin(t * 0.38);
+                   child: Stack(
+                     children: [
+                       // 2a. Primary Cyan Fluid Caustic (Top-Left)
+                       Positioned(
+                         left: -80,
+                         top: -80,
+                         width: 650,
+                         height: 650,
+                         child: Container(
+                           decoration: BoxDecoration(
+                             shape: BoxShape.circle,
+                             gradient: RadialGradient(
+                               colors: [
+                                 widget.timeMode == AmbientTimeMode.sunset
+                                     ? const Color(0x38F59E0B)
+                                     : const Color(0x3800F2FE),
+                                 widget.timeMode == AmbientTimeMode.sunset
+                                     ? const Color(0x140066FF)
+                                     : const Color(0x160066FF),
+                                 Colors.transparent,
+                               ],
+                               stops: const [0.0, 0.44, 1.0],
+                               radius: 0.85,
+                             ),
+                           ),
+                         ),
+                       ),
 
-                       return Stack(
-                         children: [
-                           // 2a. Primary Cyan Fluid Caustic (Top-Left) — breathes
-                           Positioned(
-                             left: -120 + math.sin(t * 0.6) * 110 + parallax.dx * 60,
-                             top: -100 + math.cos(t * 0.45) * 85 + parallax.dy * 45,
-                             width: 680 * breath,
-                             height: 680 * breath,
-                             child: Container(
-                               decoration: BoxDecoration(
-                                 shape: BoxShape.circle,
-                                 gradient: RadialGradient(
-                                   colors: [
-                                     widget.timeMode == AmbientTimeMode.sunset
-                                         ? const Color(0x38F59E0B)
-                                         : const Color(0x3800F2FE),
-                                     widget.timeMode == AmbientTimeMode.sunset
-                                         ? const Color(0x140066FF)
-                                         : const Color(0x160066FF),
-                                     Colors.transparent,
-                                   ],
-                                   stops: const [0.0, 0.44, 1.0],
-                                   radius: 0.85,
-                                 ),
+                       // 2b. Indigo/Violet Field (Top-Right)
+                       Positioned(
+                         right: -100,
+                         top: 80,
+                         width: 600,
+                         height: 600,
+                         child: Container(
+                           decoration: BoxDecoration(
+                             shape: BoxShape.circle,
+                             gradient: RadialGradient(
+                               colors: [
+                                 widget.timeMode == AmbientTimeMode.sunset
+                                     ? const Color(0x2CEC4899)
+                                     : const Color(0x2E6366F1),
+                                 const Color(0x0C8A2BE2),
+                                 Colors.transparent,
+                               ],
+                               stops: const [0.0, 0.52, 1.0],
+                               radius: 0.82,
+                             ),
+                           ),
+                         ),
+                       ),
+
+                       // 2c. Bottom Ocean Caustic Sweep
+                       Positioned(
+                         left: 100,
+                         bottom: -140,
+                         width: 740,
+                         height: 560,
+                         child: Container(
+                           decoration: const BoxDecoration(
+                             shape: BoxShape.circle,
+                             gradient: RadialGradient(
+                               colors: [
+                                 Color(0x2506B6D4),
+                                 Color(0x103B82F6),
+                                 Colors.transparent,
+                               ],
+                               stops: [0.0, 0.46, 1.0],
+                               radius: 0.88,
+                             ),
+                           ),
+                         ),
+                       ),
+
+                       // 2d. Deep Magenta atmospheric ring (Mid-screen)
+                       if (quality == BackgroundQualityTier.high)
+                         Positioned(
+                           left: -40,
+                           bottom: 80,
+                           width: 500,
+                           height: 500,
+                           child: Container(
+                             decoration: BoxDecoration(
+                               shape: BoxShape.circle,
+                               gradient: RadialGradient(
+                                 colors: [
+                                   Colors.transparent,
+                                   widget.timeMode == AmbientTimeMode.sunset
+                                       ? const Color(0x14F59E0B)
+                                       : const Color(0x18B84FE8),
+                                   Colors.transparent,
+                                 ],
+                                 stops: const [0.4, 0.68, 1.0],
+                                 radius: 0.90,
                                ),
                              ),
                            ),
+                         ),
 
-                           // 2b. Indigo/Violet Field (Top-Right) — breathes
-                           Positioned(
-                             right: -140 + math.cos(t * 0.5) * 95 - parallax.dx * 50,
-                             top: 80 + math.sin(t * 0.8) * 75 - parallax.dy * 40,
-                             width: 620 * breath,
-                             height: 620 * breath,
-                             child: Container(
-                               decoration: BoxDecoration(
-                                 shape: BoxShape.circle,
-                                 gradient: RadialGradient(
-                                   colors: [
-                                     widget.timeMode == AmbientTimeMode.sunset
-                                         ? const Color(0x2CEC4899)
-                                         : const Color(0x2E6366F1),
-                                     const Color(0x0C8A2BE2),
-                                     Colors.transparent,
-                                   ],
-                                   stops: const [0.0, 0.52, 1.0],
-                                   radius: 0.82,
-                                 ),
+                       // 2e. Top-center star-burst lens leak
+                       if (quality == BackgroundQualityTier.high)
+                         Positioned(
+                           left: 20,
+                           top: -180,
+                           width: 420,
+                           height: 420,
+                           child: Container(
+                             decoration: BoxDecoration(
+                               shape: BoxShape.circle,
+                               gradient: RadialGradient(
+                                 colors: [
+                                   widget.timeMode == AmbientTimeMode.sunset
+                                       ? const Color(0x22FFD700)
+                                       : const Color(0x1EFFFFFF),
+                                   const Color(0x0A00F2FE),
+                                   Colors.transparent,
+                                 ],
+                                 stops: const [0.0, 0.35, 1.0],
+                                 radius: 0.75,
                                ),
                              ),
                            ),
-
-                           // 2c. Bottom Ocean Caustic Sweep
-                           Positioned(
-                             left: 100 + math.sin(t * 0.35) * 130 + parallax.dx * 35,
-                             bottom: -140 + math.cos(t * 0.55) * 70 + parallax.dy * 30,
-                             width: 740,
-                             height: 560,
-                             child: Container(
-                               decoration: const BoxDecoration(
-                                 shape: BoxShape.circle,
-                                 gradient: RadialGradient(
-                                   colors: [
-                                     Color(0x2506B6D4),
-                                     Color(0x103B82F6),
-                                     Colors.transparent,
-                                   ],
-                                   stops: [0.0, 0.46, 1.0],
-                                   radius: 0.88,
-                                 ),
-                               ),
-                             ),
-                           ),
-
-                           // 2d. Deep Magenta atmospheric ring (Mid-screen)
-                           if (quality == BackgroundQualityTier.high)
-                             Positioned(
-                               left: -80 + math.cos(t * 0.42) * 60 + parallax.dx * 25,
-                               bottom: 80 + math.sin(t * 0.33) * 50,
-                               width: 500,
-                               height: 500,
-                               child: Container(
-                                 decoration: BoxDecoration(
-                                   shape: BoxShape.circle,
-                                   gradient: RadialGradient(
-                                     colors: [
-                                       Colors.transparent,
-                                       widget.timeMode == AmbientTimeMode.sunset
-                                           ? const Color(0x14F59E0B)
-                                           : const Color(0x18B84FE8),
-                                       Colors.transparent,
-                                     ],
-                                     stops: const [0.4, 0.68, 1.0],
-                                     radius: 0.90,
-                                   ),
-                                 ),
-                               ),
-                             ),
-
-                           // 2e. Top-center star-burst lens leak
-                           if (quality == BackgroundQualityTier.high)
-                             Positioned(
-                               left: -60 + math.sin(t * 0.25) * 80 + parallax.dx * 20,
-                               top: -200 + math.cos(t * 0.18) * 40 + parallax.dy * 20,
-                               width: 420,
-                               height: 420,
-                               child: Container(
-                                 decoration: BoxDecoration(
-                                   shape: BoxShape.circle,
-                                   gradient: RadialGradient(
-                                     colors: [
-                                       widget.timeMode == AmbientTimeMode.sunset
-                                           ? const Color(0x22FFD700)
-                                           : const Color(0x1EFFFFFF),
-                                       const Color(0x0A00F2FE),
-                                       Colors.transparent,
-                                     ],
-                                     stops: const [0.0, 0.35, 1.0],
-                                     radius: 0.75,
-                                   ),
-                                 ),
-                               ),
-                             ),
-                         ],
-                       );
-                     },
+                         ),
+                     ],
                    ),
                  ),
                ),
@@ -444,8 +422,6 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
             // Layer 9: Foreground Glass UI & Page Content
             widget.child,
           ],
-        ),
-      ),
-    );
+        );
   }
 }

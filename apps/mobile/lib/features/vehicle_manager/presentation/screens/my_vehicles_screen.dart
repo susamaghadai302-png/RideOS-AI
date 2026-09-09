@@ -86,16 +86,13 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
               itemBuilder: (context, index) {
                 final vehicle = ownedVehicles[index];
                 
-                // Calculate 3D transformation properties based on scroll position
+                // Calculate transformation properties based on scroll position
                 double relativePosition = index - _currentPageValue;
                 double scale = 1.0 - (relativePosition.abs() * 0.2).clamp(0.0, 0.4);
-                double tiltY = -relativePosition * 0.5; // Rotate away from center
                 double opacity = 1.0 - (relativePosition.abs() * 0.5).clamp(0.0, 0.8);
 
                 return Transform(
                   transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.001) // Perspective
-                    ..rotateY(tiltY)
                     ..scale(scale),
                   alignment: FractionalOffset.center,
                   child: Opacity(
@@ -113,7 +110,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
 
   Widget _buildTopHeader(BuildContext context, ActiveVehicleContext activeContext) {
     return SpatialFloatingWidget(
-      tiltX: 0.1,
+      tiltX: 0.0,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -122,9 +119,9 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
-                border: Border.all(color: RoadOSColors.cyberCyan.withOpacity(0.5)),
+                border: Border.all(color: RoadOSColors.cyberCyan.withValues(alpha: 0.5)),
               ),
               child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
             ),
@@ -188,7 +185,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                       child: RideOS3DModelViewer(
                         vehicleProfile: vehicle,
                         cameraOrbit: isActive ? '45deg 75deg 90%' : '90deg 75deg 90%',
-                        autoRotate: true,
+                        autoRotate: false,
                         exposure: 1.2,
                       ),
                     ),
@@ -274,9 +271,9 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Text(
         text.toUpperCase(),

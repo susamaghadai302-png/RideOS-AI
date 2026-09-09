@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../storage/token_storage.dart';
 import '../utils/constants.dart';
+import '../contracts/auth_fail_stream.dart';
 
 class ApiClient {
   late final Dio dio;
@@ -70,9 +71,11 @@ class ApiClient {
               } catch (_) {
                 _isRefreshing = false;
                 await tokenStorage.clearTokens();
+                AuthFailStream.instance.notifyAuthFailure();
               }
             } else {
               await tokenStorage.clearTokens();
+              AuthFailStream.instance.notifyAuthFailure();
             }
           }
 

@@ -47,7 +47,7 @@ class _RoadOSVisualEnvironmentState extends State<RoadOSVisualEnvironment> with 
       duration: const Duration(seconds: 14),
     );
     if (widget.animate) {
-      _ambientController.repeat();
+      _ambientController.value = 0.5;
     }
     _initEnvironmentParticles();
   }
@@ -58,11 +58,7 @@ class _RoadOSVisualEnvironmentState extends State<RoadOSVisualEnvironment> with 
     if (oldWidget.environmentType != widget.environmentType) {
       _initEnvironmentParticles();
     }
-    if (widget.animate && !_ambientController.isAnimating) {
-      _ambientController.repeat();
-    } else if (!widget.animate && _ambientController.isAnimating) {
-      _ambientController.stop();
-    }
+    _ambientController.value = 0.5;
   }
 
   void _initEnvironmentParticles() {

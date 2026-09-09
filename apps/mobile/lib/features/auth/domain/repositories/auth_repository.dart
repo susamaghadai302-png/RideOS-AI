@@ -34,5 +34,6 @@ abstract class AuthRepository {
   });
   Future<RiderEntity> deleteBike({required String bikeId});
   Future<RiderEntity> setPrimaryBike({required String bikeId});
+  Future<void> forgotPassword({required String email});
   Future<void> logout();
 }

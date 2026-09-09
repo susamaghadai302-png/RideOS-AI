@@ -1,0 +1,8 @@
+lib/core/location/services/vehicle_location_manager.dart:181:      _phoneGpsSubscription = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
+lib/core/bluetooth/transport/android_bluetooth_transport.dart:64:    _platformStreamSub = _eventChannel.receiveBroadcastStream().listen((dynamic raw) {
+lib/features/navigation/core/services/gps_tracking_service.dart:57:    _positionStreamSub = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
+lib/features/navigation/presentation/screens/three_d_navigation_screen.dart:155:      _positionSubscription = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
+lib/features/obd_tpms/presentation/bloc/obd_bloc.dart:27:    _bleSub = bleService.streamBleTelemetry().listen(
+lib/features/vehicle_mode/presentation/screens/bike_mode_screen.dart:99:      ).listen((p) {
+lib/features/vehicle_mode/presentation/screens/car_mode_screen.dart:101:      ).listen((p) {
+lib/features/vehicle_mode/presentation/screens/scooter_mode_screen.dart:102:      ).listen((p) {

@@ -6,10 +6,15 @@ import { AiQueryDto } from './dto/ai-query.dto';
 export class AiAssistantService {
   private readonly logger = new Logger(AiAssistantService.name);
 
+  // Isolate model IDs to configuration constants, not hard-coded in domain logic.
+  private readonly DEFAULT_CLOUD_MODEL = 'gemini-1.5-flash';
+
   constructor(private readonly configService: ConfigService) {}
 
   async processQuery(dto: AiQueryDto) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY') || this.configService.get<string>('GOOGLE_GEMINI_API_KEY');
+    const modelId = this.configService.get<string>('GEMINI_MODEL_ID') || this.DEFAULT_CLOUD_MODEL;
+    
     this.logger.log(`Processing AI riding query: "${dto.prompt}"`);
 
     const lowerPrompt = dto.prompt.toLowerCase();
@@ -37,7 +42,7 @@ export class AiAssistantService {
           : '[Telemetry Context: Disconnected / Not Available]';
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -68,7 +73,7 @@ export class AiAssistantService {
           }
         }
       } catch (error) {
-        this.logger.warn(`Gemini API call failed, falling back to local copilot reasoning engine: ${error}`);
+        this.logger.warn(`Cloud API call failed, falling back to local copilot reasoning engine: ${error}`);
       }
     }
 

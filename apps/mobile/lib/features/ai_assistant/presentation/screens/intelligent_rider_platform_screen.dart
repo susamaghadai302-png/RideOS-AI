@@ -3,6 +3,7 @@ import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../domain/models/intelligent_platform_models.dart';
 import '../../core/services/intelligent_rider_platform_engine.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class ChatMessage {
   final String text;

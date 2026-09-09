@@ -183,7 +183,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   child: RideOS3DModelViewer(
                     vehicleProfile: activeVehicle,
                     cameraOrbit: '30deg 75deg 105%',
-                    autoRotate: true,
+                    autoRotate: false,
                     cameraControls: false, // Disabled to allow scrolling the UI on top
                     exposure: 1.2,
                   ),
@@ -230,14 +230,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         SizedBox(height: MediaQuery.of(context).size.height * 0.45),
 
                         // ── 2. Floating Spatial Telemetry Bubbles ──────────
-                        // We map them onto a 3D plane facing the user
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Left Wing (Tilted slightly to the right)
+                            // Left Wing
                             SpatialFloatingWidget(
-                              tiltY: 0.15, // Tilt inwards
-                              zDepth: 20,
+                              tiltY: 0.0,
+                              zDepth: 0.0,
                               child: Column(
                                 children: [
                                   FloatingHudBubble(
@@ -259,10 +258,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               ),
                             ),
                             
-                            // Right Wing (Tilted slightly to the left)
+                            // Right Wing
                             SpatialFloatingWidget(
-                              tiltY: -0.15, // Tilt inwards
-                              zDepth: 20,
+                              tiltY: 0.0,
+                              zDepth: 0.0,
                               child: Column(
                                 children: [
                                   FloatingHudBubble(
@@ -290,8 +289,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                         // ── 3. Quick Action Command Deck ──────────────────────────────
                         SpatialFloatingWidget(
-                          tiltX: -0.1, // Tilted slightly upwards to face the rider
-                          zDepth: 10,
+                          tiltX: 0.0,
+                          zDepth: 0.0,
                           child: _buildQuickActionDeck(context),
                         ),
                         
@@ -299,8 +298,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                         // ── 4. AI Copilot & Live Status Banner ─────────────────────────
                         SpatialFloatingWidget(
-                          tiltX: -0.15,
-                          zDepth: 30, // Floats closer
+                          tiltX: 0.0,
+                          zDepth: 0.0,
                           child: _buildAiCopilotBanner(context, aiIntel),
                         ),
                         
@@ -324,7 +323,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     bool isConnected,
   ) {
     return SpatialFloatingWidget(
-      tiltX: 0.1, // Tilt downwards slightly
+      tiltX: 0.0, // Tilt downwards slightly
       child: Row(
         children: [
           Expanded(

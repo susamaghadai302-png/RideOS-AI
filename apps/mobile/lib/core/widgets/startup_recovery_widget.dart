@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../design_system/roados_components.dart';
 import '../design_system/roados_tokens.dart';
+import 'cinematic_background.dart';
 
 /// Global Startup & Runtime Error Recovery Boundary
 class StartupRecoveryWidget extends StatefulWidget {

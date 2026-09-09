@@ -125,7 +125,7 @@ class GarageMotorcycleHero extends StatelessWidget {
                 modelPath: motorcycle.model3DPath,
                 vehicleName: motorcycle.fullName,
                 height: h,
-                autoRotate: true,
+                autoRotate: false,
                 cameraControls: true,
               ),
 

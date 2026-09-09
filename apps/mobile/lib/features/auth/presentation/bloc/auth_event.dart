@@ -132,4 +132,13 @@ class SetPrimaryBikeSubmittedEvent extends AuthEvent {
   List<Object?> get props => [bikeId];
 }
 
+class ForgotPasswordSubmittedEvent extends AuthEvent {
+  final String email;
+
+  const ForgotPasswordSubmittedEvent({required this.email});
+
+  @override
+  List<Object?> get props => [email];
+}
+
 class LogoutEvent extends AuthEvent {}

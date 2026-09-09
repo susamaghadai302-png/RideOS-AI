@@ -4,6 +4,7 @@ import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/reliability/services/system_health_center_service.dart';
 import '../../../../core/reliability/services/observability_logger.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class SystemHealthCenterScreen extends StatefulWidget {
   const SystemHealthCenterScreen({super.key});
@@ -64,7 +65,7 @@ class _SystemHealthCenterScreenState extends State<SystemHealthCenterScreen> {
         ],
       ),
       body: CinematicBackground(child: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: RoadOSColors.electricBlue)))
+          ? const Center(child: CircularProgressIndicator(color: RoadOSColors.electricBlue))
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
@@ -80,6 +81,7 @@ class _SystemHealthCenterScreenState extends State<SystemHealthCenterScreen> {
                 _buildObservabilityLogsCard(),
               ],
             ),
+      ),
     );
   }
 

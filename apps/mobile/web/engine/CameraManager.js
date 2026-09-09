@@ -61,12 +61,6 @@ export class CameraManager {
   }
 
   _setupParallaxListener() {
-    window.addEventListener('mousemove', (e) => {
-      const normX = (e.clientX / window.innerWidth - 0.5) * 2;
-      const normY = (e.clientY / window.innerHeight - 0.5) * 2;
-      this.targetMouseParallax.set(normX * 0.18, -normY * 0.12);
-    });
-
     this.controls.addEventListener('start', () => {
       this.isUserInteracting = true;
     });
@@ -103,9 +97,6 @@ export class CameraManager {
   update(delta) {
     this.idleTime += delta;
 
-    // Smooth mouse parallax
-    this.mouseParallax.lerp(this.targetMouseParallax, 0.04);
-
     if (this.isInterpolating) {
       this.interpTime += delta;
       let t = this.interpTime / this.interpDuration;
@@ -117,12 +108,6 @@ export class CameraManager {
       const easedT = this._ease(t);
       this.camera.position.lerpVectors(this.startPos, this.endPos, easedT);
       this.controls.target.lerpVectors(this.startTarget, this.endTarget, easedT);
-    } else if (!this.isUserInteracting) {
-      // Subtle idle breathing motion
-      const driftX = Math.sin(this.idleTime * 0.4) * 0.04 + this.mouseParallax.x;
-      const driftY = Math.cos(this.idleTime * 0.3) * 0.025 + this.mouseParallax.y;
-      this.camera.position.x += (driftX * 0.1);
-      this.camera.position.y += (driftY * 0.05);
     }
 
     this.controls.update();

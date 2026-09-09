@@ -7,6 +7,7 @@ import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/device_providers/interfaces/device_provider.dart';
 import '../../../../core/device_providers/models/normalized_telemetry_models.dart';
 import '../../../../core/device_providers/services/fleet_telematics_engine.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class DeviceCenterScreen extends StatefulWidget {
   const DeviceCenterScreen({super.key});

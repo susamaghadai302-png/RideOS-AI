@@ -47,6 +47,17 @@
 					<string>Main</string>
 				</dict>
 			</array>
+			<key>CPTemplateApplicationSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>CPTemplateApplicationScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>carplay</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate</string>
+				</dict>
+			</array>
 		</dict>
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
@@ -71,5 +82,9 @@
 	<string>RideOS Pro requires Bluetooth access to connect to your motorcycle or scooter smart dashboard, CCU, and telemetry sensors.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>RideOS Pro uses Bluetooth to discover and pair with two-wheeler diagnostic and display modules.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>RideOS needs microphone access for voice commands.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>RideOS needs speech recognition for voice commands.</string>
 </dict>
 </plist>

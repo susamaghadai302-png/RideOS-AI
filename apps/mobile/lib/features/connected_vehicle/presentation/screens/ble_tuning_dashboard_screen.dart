@@ -4,6 +4,7 @@ import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_connectivity/services/ble_characteristic_tuning_engine.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class BleTuningDashboardScreen extends StatefulWidget {
   const BleTuningDashboardScreen({super.key});
@@ -82,9 +83,9 @@ class _BleTuningDashboardScreenState extends State<BleTuningDashboardScreen> {
                 },
               ),
             ],
-          ));
+          );
         },
-      ),
+      )),
     );
   }
 

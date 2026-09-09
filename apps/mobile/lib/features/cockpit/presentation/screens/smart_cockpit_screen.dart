@@ -14,6 +14,7 @@ import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/premium_overlays.dart';
 import '../../../../core/widgets/apex_components.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class SmartCockpitScreen extends ConsumerStatefulWidget {
   const SmartCockpitScreen({super.key});
@@ -93,7 +94,7 @@ class _SmartCockpitScreenState extends ConsumerState<SmartCockpitScreen> {
         stream: _telemetryEngine.snapshotStream,
         initialData: _telemetryEngine.currentSnapshot,
         builder: (context, snapshot) {
-          final data = snapshot.data ?? LiveVehicleCockpitSnapshot.initialDisconnected());
+          final data = snapshot.data ?? LiveVehicleCockpitSnapshot.initialDisconnected();
           return Column(
             children: [
               _buildStaleOrOfflineBanner(data),
@@ -116,7 +117,7 @@ class _SmartCockpitScreenState extends ConsumerState<SmartCockpitScreen> {
             ],
           );
         },
-      ),
+      )),
     );
   }
 

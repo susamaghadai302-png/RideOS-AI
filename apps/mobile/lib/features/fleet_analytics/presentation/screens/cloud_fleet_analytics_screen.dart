@@ -4,6 +4,7 @@ import '../../../../core/cloud_sync/models/sync_state_models.dart';
 import '../../../../core/cloud_sync/services/cloud_sync_manager.dart';
 import '../../domain/models/fleet_analytics_models.dart';
 import '../../services/fleet_analytics_engine.dart';
+import '../../../../core/widgets/cinematic_background.dart';
 
 class CloudFleetAnalyticsScreen extends StatefulWidget {
   const CloudFleetAnalyticsScreen({super.key});

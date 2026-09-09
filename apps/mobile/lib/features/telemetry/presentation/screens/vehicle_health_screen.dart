@@ -56,9 +56,29 @@ class VehicleHealthScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF080C1A),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF14192A),
+            const Color(0xFF080C1A),
+          ],
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isAvailable ? RoadOSColors.electricBlue : RoadOSColors.borderTranslucent),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1.0),
+          left: BorderSide(color: Colors.white.withValues(alpha: 0.05), width: 1.0),
+          right: BorderSide(color: Colors.black.withValues(alpha: 0.2), width: 1.0),
+          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.4), width: 2.0), // Extrusion
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 10,
+            spreadRadius: -2,
+            offset: const Offset(0, 6), // Drop shadow
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -81,7 +101,28 @@ class VehicleHealthScreen extends ConsumerWidget {
     if (!telemetry.faultCodes.available) {
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: const Color(0xFF080C1A), borderRadius: BorderRadius.circular(16), border: Border.all(color: RoadOSColors.borderTranslucent)),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF14192A), Color(0xFF080C1A)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1.0),
+            left: BorderSide(color: Colors.white.withValues(alpha: 0.05), width: 1.0),
+            right: BorderSide(color: Colors.black.withValues(alpha: 0.2), width: 1.0),
+            bottom: BorderSide(color: Colors.black.withValues(alpha: 0.4), width: 2.0),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 10,
+              spreadRadius: -2,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
         child: const Center(child: Text('DIAGNOSTIC DATA UNAVAILABLE', style: TextStyle(color: RoadOSColors.textMuted, fontWeight: FontWeight.bold))),
       );
     }
@@ -90,7 +131,31 @@ class VehicleHealthScreen extends ConsumerWidget {
     if (codes.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: RoadOSColors.apexEmerald.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: RoadOSColors.apexEmerald.withValues(alpha: 0.3))),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              RoadOSColors.apexEmerald.withValues(alpha: 0.15),
+              RoadOSColors.apexEmerald.withValues(alpha: 0.05),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border(
+            top: BorderSide(color: RoadOSColors.apexEmerald.withValues(alpha: 0.4), width: 1.0),
+            left: BorderSide(color: RoadOSColors.apexEmerald.withValues(alpha: 0.2), width: 1.0),
+            right: BorderSide(color: Colors.black.withValues(alpha: 0.2), width: 1.0),
+            bottom: BorderSide(color: Colors.black.withValues(alpha: 0.4), width: 2.0),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 10,
+              spreadRadius: -2,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
         child: const Row(
           children: [
             Icon(Icons.check_circle, color: RoadOSColors.apexEmerald),

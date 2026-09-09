@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/contracts/navigation_models.dart';
 import '../../core/map_abstraction/map_engine_interface.dart';
 import '../../core/services/gps_tracking_service.dart';
 import '../../domain/entities/route_entity.dart';
@@ -72,9 +73,43 @@ class NavigationEndedState extends NavigationState {}
 
 class NavigationErrorState extends NavigationState {
   final String message;
+  final NavigationError? navigationError;
 
-  const NavigationErrorState({required this.message});
+  const NavigationErrorState({required this.message, this.navigationError});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, navigationError];
 }
+
+/// Tier 4: Navigation is running but with degraded quality (e.g., poor GPS, stale data).
+class NavigationDegradedState extends NavigationState {
+  final NavigationRouteEntity? lastKnownRoute;
+  final String reason;
+
+  const NavigationDegradedState({this.lastKnownRoute, required this.reason});
+
+  @override
+  List<Object?> get props => [lastKnownRoute, reason];
+}
+
+/// Tier 4: Navigation is operating in offline mode with limited capabilities.
+class NavigationOfflineState extends NavigationState {
+  final NavigationRouteEntity? cachedRoute;
+  final String reason;
+
+  const NavigationOfflineState({this.cachedRoute, required this.reason});
+
+  @override
+  List<Object?> get props => [cachedRoute, reason];
+}
+
+/// Tier 4: Route is being recalculated.
+class NavigationReroutingState extends NavigationState {
+  final RerouteReason reason;
+
+  const NavigationReroutingState({required this.reason});
+
+  @override
+  List<Object?> get props => [reason];
+}
+

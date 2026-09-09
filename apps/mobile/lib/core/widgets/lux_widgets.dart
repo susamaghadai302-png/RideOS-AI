@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/lux_theme.dart';
+import 'package:rideos_mobile/core/design_system/roados_components.dart';
 
 class RoadOSCard extends StatelessWidget {
   final Widget child;
@@ -24,8 +25,8 @@ class RoadOSCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: RoadOSColors.glassCardDecoration(
-        borderColor: borderColor,
-        borderRadius: borderRadius,
+        glowColor: glowColor,
+        radius: borderRadius,
       ),
       child: Material(
         color: Colors.transparent,
