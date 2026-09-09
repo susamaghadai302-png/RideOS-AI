@@ -82,6 +82,8 @@
 	<string>RideOS Pro requires Bluetooth access to connect to your motorcycle or scooter smart dashboard, CCU, and telemetry sensors.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>RideOS Pro uses Bluetooth to discover and pair with two-wheeler diagnostic and display modules.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>RideOS Pro uses Face ID to securely authenticate and unlock your rider account.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>RideOS needs microphone access for voice commands.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

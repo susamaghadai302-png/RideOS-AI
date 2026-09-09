@@ -146,7 +146,9 @@ class SmartScanOrchestrator {
       await Future.delayed(const Duration(milliseconds: 30));
 
       // Step 4: Query ECU Calibration ID Mode $09 PID $0A
-      final calId = 'CAL_SIMULATOR_GENERIC_01';
+      final calId = mode == SmartScanExecutionMode.realHardware
+          ? 'CAL_PENDING_HARDWARE_READ'
+          : 'CAL_SIMULATOR_GENERIC_01';
       _emit(SmartScanProgressState(
         currentStep: SmartScanStep.queryingEcuCalibration,
         progressFraction: 0.75,

@@ -100,23 +100,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final ownedVehicles = ref.watch(myVehiclesProvider);
     final aiIntel = ref.watch(vehicleIntelligenceProvider);
 
-    final activeVehicle = activeContext.hasActiveVehicle
+    final VehicleProfile? activeVehicle = activeContext.hasActiveVehicle
         ? activeContext.profile!
         : (ownedVehicles.isNotEmpty
             ? ownedVehicles.first
-            : const VehicleProfile(
-                id: 'v_bmw_m1000rr',
-                manufacturer: 'BMW',
-                model: 'M1000RR',
-                variant: 'M Competition',
-                year: 2024,
-                category: 'Superbike',
-                engineType: '999cc Inline-4',
-                fuelType: 'Petrol',
-                protocolAdapter: 'bmw_motorrad',
-                model3DUrl: 'assets/models/bmw_m1000rr.glb',
-                thumbnailUrl: 'assets/garage/bmw_m1000rr.png',
-              ));
+            : null);
 
     final telemetry = activeContext.telemetry;
 
@@ -146,7 +134,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Global3DStateBridge().setCameraPreset('home');
-      Global3DStateBridge().loadVehicle(activeVehicle);
+      if (activeVehicle != null) {
+        Global3DStateBridge().loadVehicle(activeVehicle);
+      }
       Global3DStateBridge().updateTelemetry(
         speedKmh: _isSimulatorMode
             ? _simSpeed
@@ -314,9 +304,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// Top Command Center Header
   Widget _buildCommandHeader(
     BuildContext context,
-    VehicleProfile vehicle,
+    VehicleProfile? vehicle,
     bool isConnected,
   ) {
+    final vehicleName = vehicle != null
+        ? '${vehicle.manufacturer.toUpperCase()} ${vehicle.model.toUpperCase()}'
+        : 'NO VEHICLE';
+    final vehicleSubtitle = vehicle != null
+        ? '${vehicle.category.toUpperCase()} | ${vehicle.engineType} | DIGITAL TWIN ACTIVE'
+        : 'ADD A VEHICLE FROM GARAGE TO GET STARTED';
     return SpatialFloatingWidget(
       tiltX: 0.0, // Tilt downwards slightly
       child: Row(
@@ -331,7 +327,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   runSpacing: 4,
                   children: [
                     Text(
-                      '${vehicle.manufacturer.toUpperCase()} ${vehicle.model.toUpperCase()}',
+                      vehicleName,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -349,7 +345,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${vehicle.category.toUpperCase()} | ${vehicle.engineType} | DIGITAL TWIN ACTIVE',
+                  vehicleSubtitle,
                   style: const TextStyle(
                     color: RoadOSColors.textMuted,
                     fontSize: 11,

@@ -55,3 +55,10 @@ release/
 key.properties
 local.properties
 **/android/local.properties
+
+# ── Audit / debugging artifacts ────────────────────────────────────────────────
+analyze_out*.txt
+listeners.txt
+workspace_tree.txt
+*.patch
+scripts/validate.sh
