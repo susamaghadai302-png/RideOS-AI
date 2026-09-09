@@ -93,6 +93,9 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> requestPhoneOtp(String phone) async {}
+
+  @override
   Future<RiderEntity> loginWithPhoneOtp({required String phone, required String otpCode}) async {
     throw Exception('Phone OTP authentication requires SMS gateway verification');
   }

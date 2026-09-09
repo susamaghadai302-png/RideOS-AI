@@ -34,6 +34,9 @@ class MockAuthRepository implements AuthRepository {
   Future<RiderEntity> loginWithAppleCredential({String? email, String? fullName, String? identityToken, String? authorizationCode}) async => getProfile();
 
   @override
+  Future<void> requestPhoneOtp(String phone) async {}
+
+  @override
   Future<RiderEntity> loginWithPhoneOtp({required String phone, required String otpCode}) async => getProfile();
 
   @override

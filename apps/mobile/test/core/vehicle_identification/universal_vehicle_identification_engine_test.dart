@@ -79,39 +79,29 @@ void main() {
       expect(matches.first.ocrConfidence, equals(1.0));
     });
 
-    test('7. Smart Scan Orchestration probes transport, protocol, Mode 09 and builds Universal Profile', () async {
+    test('7. Smart Scan Orchestration probes transport, protocol, Mode 09 and builds Generic Profile', () async {
       final profile = await smartScan.executeSmartScan(
         mode: SmartScanExecutionMode.simulator,
         preferredTransport: PhysicalTransportType.bluetoothLowEnergy,
-        mockModelTarget: 'Yamaha',
       );
 
       expect(profile, isNotNull);
-      expect(profile!.manufacturer, equals('Yamaha'));
-      expect(profile.model, equals('YZF-R1M'));
-      expect(profile.domain, equals(VehicleDomainType.motorcycle));
+      expect(profile!.manufacturer, equals('Unknown Manufacturer'));
+      expect(profile.model, equals('Generic OBDII Vehicle'));
+      expect(profile.domain, equals(VehicleDomainType.unknown));
       expect(profile.propulsionType, equals(PropulsionType.internalCombustion));
-      expect(profile.engineOrMotorCode, contains('CP4'));
-      expect(profile.maxPowerHp, equals(200.0));
-      expect(profile.identificationConfidence, equals(UniversalIdentificationConfidence.exactVinMatch));
-      expect(profile.identificationSource, equals(IdentificationSource.simulatedTestBench));
+      expect(profile.identificationConfidence, equals(UniversalIdentificationConfidence.modelYearPlusEcuMatch));
       expect(profile.capabilities.supportsDiagnostics, isTrue);
-      expect(profile.capabilities.supportsTelemetry, isTrue);
-      expect(profile.capabilities.supportsNavigation, isTrue);
     });
 
     test('8. Smart Scan distinguishes Real Hardware vs Simulator Mode', () async {
-      final hardwareProfile = await smartScan.executeSmartScan(
+      final profile = await smartScan.executeSmartScan(
         mode: SmartScanExecutionMode.realHardware,
         preferredTransport: PhysicalTransportType.bluetoothLowEnergy,
-        mockModelTarget: 'Ducati',
       );
-
-      expect(hardwareProfile, isNotNull);
-      expect(hardwareProfile!.manufacturer, equals('Ducati'));
-      expect(hardwareProfile.model, equals('Panigale V4 S'));
-      expect(hardwareProfile.identificationSource, equals(IdentificationSource.obdEcuQuery));
-      expect(hardwareProfile.maxPowerHp, equals(214.0));
+      expect(profile, isNull);
+      expect(smartScan.currentState.currentStep, equals(SmartScanStep.failed));
+      expect(smartScan.currentState.errorMessage, contains('HARDWARE_NOT_CONNECTED'));
     });
 
     test('9. Manual Fallback Profile constructor generates complete profile', () {

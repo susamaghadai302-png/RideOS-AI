@@ -53,30 +53,5 @@ export class GarageService {
     );
   }
 
-  async seedMockVehiclesIfEmpty(riderId: string): Promise<void> {
-    const existing = await this.getGarage(riderId);
-    if (existing.length === 0) {
-      await this.addVehicle({
-        riderId,
-        vehicleId: 'yamaha_r1m_2024',
-        make: 'Yamaha',
-        model: 'YZF-R1M',
-        year: 2024,
-      });
-      await this.addVehicle({
-        riderId,
-        vehicleId: 'ducati_panigale_v4s_2024',
-        make: 'Ducati',
-        model: 'Panigale V4 S',
-        year: 2024,
-      });
-      await this.addVehicle({
-        riderId,
-        vehicleId: 'bmw_s1000rr_m_2024',
-        make: 'BMW',
-        model: 'S 1000 RR M',
-        year: 2024,
-      });
-    }
-  }
+
 }

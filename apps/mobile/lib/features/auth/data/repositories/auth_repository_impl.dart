@@ -1,3 +1,4 @@
+import 'package:local_auth/local_auth.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../domain/entities/rider_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -64,17 +65,42 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> requestPhoneOtp(String phone) async {
+    await remoteDatasource.requestPhoneOtp(phone);
+  }
+
+  @override
   Future<RiderEntity> loginWithPhoneOtp({required String phone, required String otpCode}) async {
-    throw Exception('Phone OTP authentication requires SMS gateway verification');
+    return await remoteDatasource.loginWithPhoneOtp(phone, otpCode);
   }
 
   @override
   Future<RiderEntity> loginWithBiometrics() async {
-    final token = await tokenStorage.getAccessToken();
-    if (token != null && token.isNotEmpty) {
-      return await remoteDatasource.getProfile();
+    final LocalAuthentication auth = LocalAuthentication();
+    final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
+    final bool canAuthenticate = canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+
+    if (!canAuthenticate) {
+      throw Exception('Biometric authentication is not supported on this device.');
     }
-    throw Exception('No active session found for biometric login. Please sign in with email and password.');
+
+    final bool didAuthenticate = await auth.authenticate(
+      localizedReason: 'Authenticate to access your RideOS account',
+      options: const AuthenticationOptions(
+        biometricOnly: true,
+        stickyAuth: true,
+      ),
+    );
+
+    if (didAuthenticate) {
+      final token = await tokenStorage.getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        return await remoteDatasource.getProfile();
+      }
+      throw Exception('No active session found. Please sign in with email/password.');
+    } else {
+      throw Exception('Biometric authentication failed or was cancelled.');
+    }
   }
 
   @override

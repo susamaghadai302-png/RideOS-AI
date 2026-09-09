@@ -56,11 +56,24 @@ class PredictiveVehicleHealthEngine {
       classification = 'SIMULATED DATA';
     } else if (isBleConnected) {
       classification = 'LIVE BLE VEHICLE';
+    } else {
+      classification = 'HARDWARE_NOT_CONNECTED';
     }
 
     final subsystems = <VehicleSubsystemHealth>[];
     final recommendations = <AiRecommendationEntity>[];
     final now = DateTime.now();
+
+    if (!isBleConnected && !isSimulated) {
+      return OverallVehicleHealthReport(
+        overallHealthScore: 0,
+        overallStatus: 'DATA_UNAVAILABLE',
+        dataClassification: classification,
+        subsystems: [],
+        predictiveRecommendations: [],
+        timestamp: now,
+      );
+    }
 
     // 1. Engine & Powertrain Subsystem
     int engineScore = 100;
@@ -86,9 +99,6 @@ class PredictiveVehicleHealthEngine {
         engineScore = 85;
         engineStatus = 'Warm operating temperature (${obd.coolantTempC!.round()} degC)';
       }
-    } else if (!isSimulated && !isBleConnected) {
-      engineScore = 95;
-      engineStatus = 'Awaiting live CAN-bus link';
     }
 
     subsystems.add(
@@ -125,9 +135,6 @@ class PredictiveVehicleHealthEngine {
         batteryScore = 80;
         batteryStatus = 'Discharge detected (${obd.batteryVoltage!.toStringAsFixed(1)}V)';
       }
-    } else if (!isSimulated && !isBleConnected) {
-      batteryScore = 92;
-      batteryStatus = 'Last known voltage 12.6V';
     }
 
     subsystems.add(

@@ -19,7 +19,7 @@ void main() {
 
       ObdFullTelemetryService().isSimulatorMode = false;
       final offlineReport = engine.evaluateHealthReport(isBleConnected: false);
-      expect(offlineReport.dataClassification, equals('HISTORICAL / OFFLINE'));
+      expect(offlineReport.dataClassification, equals('HARDWARE_NOT_CONNECTED'));
 
       final liveReport = engine.evaluateHealthReport(isBleConnected: true);
       expect(liveReport.dataClassification, equals('LIVE BLE VEHICLE'));

@@ -16,6 +16,7 @@ abstract class AuthRepository {
     String? identityToken,
     String? authorizationCode,
   });
+  Future<void> requestPhoneOtp(String phone);
   Future<RiderEntity> loginWithPhoneOtp({required String phone, required String otpCode});
   Future<RiderEntity> loginWithBiometrics();
   Future<RiderEntity> register({

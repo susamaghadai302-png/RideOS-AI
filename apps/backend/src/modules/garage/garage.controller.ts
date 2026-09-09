@@ -8,8 +8,6 @@ export class GarageController {
 
   @Get(':riderId')
   async getGarage(@Param('riderId') riderId: string) {
-    // Auto-seed for development purposes
-    await this.garageService.seedMockVehiclesIfEmpty(riderId);
     return this.garageService.getGarage(riderId);
   }
 

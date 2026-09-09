@@ -52,6 +52,12 @@ class MockAuthRemoteDS implements AuthRemoteDatasource {
 
   @override
   Future<void> requestPasswordReset(String email) async {}
+
+  @override
+  Future<void> requestPhoneOtp(String phone) async {}
+
+  @override
+  Future<RiderModel> loginWithPhoneOtp(String phone, String otpCode) async => getProfile();
 }
 
 

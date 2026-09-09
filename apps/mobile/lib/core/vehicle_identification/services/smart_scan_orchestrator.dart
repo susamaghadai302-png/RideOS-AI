@@ -105,9 +105,14 @@ class SmartScanOrchestrator {
     SmartScanExecutionMode mode = SmartScanExecutionMode.simulator,
     PhysicalTransportType preferredTransport = PhysicalTransportType.bluetoothLowEnergy,
     String? knownVin,
-    String? mockModelTarget,
   }) async {
     try {
+      if (mode == SmartScanExecutionMode.realHardware) {
+        // Enforce physical check here or throw
+        if (knownVin == null || knownVin.isEmpty) {
+          throw Exception('HARDWARE_NOT_CONNECTED: No physical diagnostic gateway detected.');
+        }
+      }
       // Step 1: Probe transport
       _emit(SmartScanProgressState(
         currentStep: SmartScanStep.probingTransport,
@@ -129,7 +134,7 @@ class SmartScanOrchestrator {
       await Future.delayed(const Duration(milliseconds: 30));
 
       // Step 3: Query VIN Mode $09 PID $02
-      final vin = knownVin ?? (mockModelTarget == 'Ducati' ? 'ZDM1DA11XRB012345' : 'JYARN39E5FA000101');
+      final vin = knownVin ?? 'SIMULATOR_VIN_00000000';
       _emit(SmartScanProgressState(
         currentStep: SmartScanStep.queryingVinMode09,
         progressFraction: 0.55,
@@ -141,7 +146,7 @@ class SmartScanOrchestrator {
       await Future.delayed(const Duration(milliseconds: 30));
 
       // Step 4: Query ECU Calibration ID Mode $09 PID $0A
-      final calId = mockModelTarget == 'Ducati' ? 'CAL_DUCATI_BBS_V4_2024_03' : 'CAL_YAMAHA_DENSO_CP4_2024_01';
+      final calId = 'CAL_SIMULATOR_GENERIC_01';
       _emit(SmartScanProgressState(
         currentStep: SmartScanStep.queryingEcuCalibration,
         progressFraction: 0.75,
@@ -169,7 +174,6 @@ class SmartScanOrchestrator {
         calId: calId,
         transport: preferredTransport,
         mode: mode,
-        mockTarget: mockModelTarget,
       );
 
       _emit(SmartScanProgressState(
@@ -202,76 +206,28 @@ class SmartScanOrchestrator {
     required String calId,
     required PhysicalTransportType transport,
     required SmartScanExecutionMode mode,
-    String? mockTarget,
   }) {
     final decodeResult = _vinEngine.decodeVin(vin);
-    final isDucati = mockTarget == 'Ducati' || vin.startsWith('ZDM');
 
-    if (isDucati) {
-      return UniversalVehicleProfile(
-        vehicleId: 'veh_ducati_v4s_auth_01',
-        vin: vin,
-        domain: VehicleDomainType.motorcycle,
-        manufacturer: 'Ducati',
-        model: 'Panigale V4 S',
-        generation: 'Gen 3 (Aero Winglets)',
-        year: 2024,
-        variant: 'Corse Edition',
-        propulsionType: PropulsionType.internalCombustion,
-        engineOrMotorCode: 'Desmosedici Stradale 90° V4',
-        fuelType: FuelType.petrol98,
-        transmission: TransmissionType.sequentialQuickshifter,
-        displacementCc: 1103,
-        maxPowerHp: 214.0,
-        maxTorqueNm: 124.0,
-        tankOrBatteryCapacity: 16.0,
-        ecuProfileId: 'DUCATI_MARELLI_BBS_V4',
-        diagnosticProfileId: 'ISO_14229_UDS_CAN',
-        supportedTransports: [transport, PhysicalTransportType.bluetoothClassicSpp],
-        supportedProtocols: const [DiagnosticProtocolType.iso14229_1_UdsOverCan, DiagnosticProtocolType.iso15765_4_Can_11bit_500k],
-        capabilities: const UniversalVehicleCapabilities(
-          diagnostics: VehicleCapabilitySupport.supported,
-          liveTelemetry: VehicleCapabilitySupport.supported,
-          turnByTurnNavigation: VehicleCapabilitySupport.supported,
-          clusterScreenProjection: VehicleCapabilitySupport.supported,
-          handsFreeCalling: VehicleCapabilitySupport.supported,
-        ),
-        maintenanceProfile: const {
-          'desmoServiceIntervalKm': 24000,
-          'oilServiceIntervalKm': 12000,
-          'brakeFluidIntervalMonths': 24,
-        },
-        model3dAssetPath: 'assets/3d/ducati_v4s.glb',
-        identificationConfidence: decodeResult.isValid
-            ? UniversalIdentificationConfidence.vinPlusEcuMatch
-            : UniversalIdentificationConfidence.modelYearPlusEcuMatch,
-        identificationSource: mode == SmartScanExecutionMode.realHardware
-            ? IdentificationSource.obdEcuQuery
-            : IdentificationSource.simulatedTestBench,
-        isVerified: true,
-        identifiedAt: DateTime.now(),
-      );
-    }
-
-    // Default Yamaha YZF-R1M
+    // Default Generic Profile when true hardware is not resolving specific models
     return UniversalVehicleProfile(
-      vehicleId: 'veh_yamaha_r1m_auth_01',
+      vehicleId: 'veh_generic_obd_01',
       vin: vin,
-      domain: VehicleDomainType.motorcycle,
-      manufacturer: 'Yamaha',
-      model: 'YZF-R1M',
-      generation: 'Gen 5 (Carbon/ERS)',
-      year: 2024,
-      variant: 'Carbon Performance',
+      domain: VehicleDomainType.unknown,
+      manufacturer: 'Unknown Manufacturer',
+      model: 'Generic OBDII Vehicle',
+      generation: 'Standard',
+      year: DateTime.now().year,
+      variant: 'Standard',
       propulsionType: PropulsionType.internalCombustion,
-      engineOrMotorCode: 'CP4 Crossplane 998cc',
+      engineOrMotorCode: 'Generic',
       fuelType: FuelType.petrol98,
-      transmission: TransmissionType.sequentialQuickshifter,
-      displacementCc: 998,
-      maxPowerHp: 200.0,
-      maxTorqueNm: 113.3,
-      tankOrBatteryCapacity: 17.0,
-      ecuProfileId: 'YAMAHA_DENSO_CP4_OBD2',
+      transmission: TransmissionType.automatic,
+      displacementCc: 0,
+      maxPowerHp: 0,
+      maxTorqueNm: 0,
+      tankOrBatteryCapacity: 0,
+      ecuProfileId: 'GENERIC_OBD2',
       diagnosticProfileId: 'ISO_15765_CAN_500K',
       supportedTransports: [transport, PhysicalTransportType.bluetoothClassicSpp],
       supportedProtocols: const [DiagnosticProtocolType.iso15765_4_Can_11bit_500k],
@@ -282,12 +238,8 @@ class SmartScanOrchestrator {
         clusterScreenProjection: VehicleCapabilitySupport.supported,
         handsFreeCalling: VehicleCapabilitySupport.supported,
       ),
-      maintenanceProfile: const {
-        'valveClearanceIntervalKm': 40000,
-        'oilServiceIntervalKm': 6000,
-        'sparkPlugIntervalKm': 12000,
-      },
-      model3dAssetPath: 'assets/3d/yamaha_r1m.glb',
+      maintenanceProfile: const {},
+      model3dAssetPath: '',
       identificationConfidence: decodeResult.isValid
           ? UniversalIdentificationConfidence.exactVinMatch
           : UniversalIdentificationConfidence.modelYearPlusEcuMatch,

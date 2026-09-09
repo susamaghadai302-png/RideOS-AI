@@ -72,6 +72,11 @@ class _MockAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> requestPhoneOtp(String phone) async {
+    if (shouldFail) throw Exception(failureMessage);
+  }
+
+  @override
   Future<RiderEntity> loginWithPhoneOtp({
     required String phone,
     required String otpCode,

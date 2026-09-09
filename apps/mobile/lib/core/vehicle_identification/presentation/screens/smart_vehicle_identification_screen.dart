@@ -62,7 +62,6 @@ class _SmartVehicleIdentificationScreenState extends State<SmartVehicleIdentific
     final profile = await _orchestrator.executeSmartScan(
       mode: _currentExecutionMode,
       preferredTransport: _selectedTransport,
-      mockModelTarget: targetModel,
     );
 
     setState(() {

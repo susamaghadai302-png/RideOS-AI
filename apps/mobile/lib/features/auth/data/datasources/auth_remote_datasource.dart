@@ -9,6 +9,8 @@ abstract class AuthRemoteDatasource {
   Future<RiderModel> getProfile();
   Future<RiderModel> loginWithOAuthGoogle({required String email, required String fullName, String? idToken, String? accessToken});
   Future<RiderModel> loginWithOAuthApple({String? email, String? fullName, String? identityToken, String? authorizationCode});
+  Future<void> requestPhoneOtp(String phone);
+  Future<RiderModel> loginWithPhoneOtp(String phone, String otpCode);
   Future<RiderModel> addBike(String make, String model, int year, int engineCC, double? maxLeanAngleLimit);
   Future<RiderModel> deleteBike(String bikeId);
   Future<RiderModel> setPrimaryBike(String bikeId);
@@ -104,6 +106,33 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
         if (fullName != null) 'fullName': fullName,
         if (identityToken != null) 'identityToken': identityToken,
         if (authorizationCode != null) 'authorizationCode': authorizationCode,
+      },
+    );
+
+    final tokens = response.data['tokens'];
+    await tokenStorage.saveTokens(
+      accessToken: tokens['accessToken'],
+      refreshToken: tokens['refreshToken'],
+    );
+
+    return RiderModel.fromJson(response.data['rider']);
+  }
+
+  @override
+  Future<void> requestPhoneOtp(String phone) async {
+    await apiClient.dio.post(
+      '/auth/otp',
+      data: {'phone': phone},
+    );
+  }
+
+  @override
+  Future<RiderModel> loginWithPhoneOtp(String phone, String otpCode) async {
+    final response = await apiClient.dio.post(
+      '/auth/otp',
+      data: {
+        'phone': phone,
+        'code': otpCode,
       },
     );
 
