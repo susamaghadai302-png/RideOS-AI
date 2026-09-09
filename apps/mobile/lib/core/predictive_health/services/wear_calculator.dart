@@ -2,7 +2,6 @@ import '../../telemetry/models/telemetry_snapshot.dart';
 import '../../telemetry/models/metric_types.dart';
 import '../models/component_wear.dart';
 
-// Test automation checkpoint
 class WearCalculator {
   // Configurable thresholds for wear accumulation
   static const double maxRpmThreshold = 8000.0;
