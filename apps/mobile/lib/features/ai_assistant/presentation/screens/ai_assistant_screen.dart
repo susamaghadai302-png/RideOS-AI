@@ -229,7 +229,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
   }
 
   Widget _buildCommandChip(String label) {
-    return GestureDetector(onTap: () => _handleUserPrompt(label), child: Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.55), width: 1.2)), child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF8B5CF6))));
+    return GestureDetector(onTap: () => _handleUserPrompt(label), child: Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.55), width: 1.2)), child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF8B5CF6)))));
   }
 
   Widget _buildMaintenanceTab() => SingleChildScrollView(physics: const BouncingScrollPhysics(), padding: const EdgeInsets.all(16), child: PredictiveMaintenanceGridWidget());
