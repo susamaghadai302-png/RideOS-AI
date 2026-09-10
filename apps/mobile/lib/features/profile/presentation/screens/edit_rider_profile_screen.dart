@@ -15,14 +15,14 @@ class EditRiderProfileScreen extends StatefulWidget {
 class _EditRiderProfileScreenState extends State<EditRiderProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _nameController = TextEditingController(text: 'Hitanshu G.');
-  final _phoneController = TextEditingController(text: '+1 (555) 019-2834');
-  final _emailController = TextEditingController(text: 'hitanshu@rideos.ai');
-  final _dobController = TextEditingController(text: '1998-05-14');
-  final _bloodGroupController = TextEditingController(text: 'O-Positive (O+)');
-  final _addressController = TextEditingController(text: '742 Evergreen Terrace, San Francisco, CA');
-  final _emergencyContactController = TextEditingController(text: 'Sarah G. (+1 555-019-9988) | Spouse');
-  final _medicalNotesController = TextEditingController(text: 'No known drug allergies. Wearing contact lenses.');
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _dobController = TextEditingController();
+  final _bloodGroupController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _emergencyContactController = TextEditingController();
+  final _medicalNotesController = TextEditingController();
 
   bool _isSaving = false;
 

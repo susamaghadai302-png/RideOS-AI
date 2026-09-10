@@ -179,7 +179,6 @@ export class AuthService {
       const passwordHash = await bcrypt.hash(`phone_passkey_${Date.now()}_${Math.random()}`, salt);
       const digitsOnly = normalizedPhone.replace(/[^0-9]/g, '');
       rider = new this.riderModel({
-        email: `rider_${digitsOnly.slice(-10)}@rideos.ai`,
         passwordHash,
         fullName: `Rider ${digitsOnly.slice(-4)}`,
         phone: normalizedPhone,

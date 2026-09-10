@@ -19,7 +19,7 @@ void main() {
   group('Phase 16: Complete Application-Wide Integration & High-Value User Flows', () {
     // FLOW 1: Install → Open → Register → Login → Dashboard State
     test('FLOW 1: Auth Lifecycle (Register, Login, Session Token & Dashboard Binding)', () async {
-      const riderEmail = 'pro_rider@rideos.ai';
+      const riderEmail = 'pro_rider@example.com';
       const sessionToken = 'jwt_mock_token_verified_777';
 
       expect(riderEmail, isNotEmpty);

@@ -393,11 +393,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                           const SizedBox(height: 14),
 
-                          // Quick-Fill Demo Rider
-                          _buildQuickFillChip(),
-
-                          const SizedBox(height: 20),
-
                           // Legal footer
                           _buildLegalFooter(),
 
@@ -733,50 +728,6 @@ class _LoginScreenState extends State<LoginScreen>
       ],
     );
   }
-
-  Widget _buildQuickFillChip() {
-    return GestureDetector(
-      onTap: () {
-        LuxAudioHapticsService.selectionClick();
-        _emailController.text = 'rider@rideos.ai';
-        _passwordController.text = 'Password123!';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Test credentials populated: rider@rideos.ai'),
-            backgroundColor: const Color(0xFF1E293B),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: RoadOSColors.neonViolet.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: RoadOSColors.neonViolet.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.flash_on_rounded, color: RoadOSColors.neonViolet, size: 13),
-            const SizedBox(width: 5),
-            Text(
-              'QUICK-FILL TEST RIDER',
-              style: GoogleFonts.outfit(
-                color: RoadOSColors.neonViolet,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ─── Server Badge ─────────────────────────────────────────────────────────
   Widget _buildServerBadge() {
     return GestureDetector(

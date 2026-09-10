@@ -67,7 +67,7 @@ describe('AuthService', () => {
     mockRiderModel.findOne.mockResolvedValue(null);
 
     const result = await service.register({
-      email: 'alex@rideos.ai',
+      email: 'alex@example.com',
       password: 'SecurePassword123!',
       fullName: 'Alex Vance',
       phone: '+1 555-019-2834',
@@ -75,14 +75,14 @@ describe('AuthService', () => {
 
     expect(result).toBeDefined();
     expect(result.tokens.accessToken).toBe('mock-jwt-token');
-    expect(result.rider.email).toBe('alex@rideos.ai');
+    expect(result.rider.email).toBe('alex@example.com');
     expect(result.rider.fullName).toBe('Alex Vance');
   });
 
   it('should verify Google OAuth ID token cryptographically and login rider', async () => {
     mockRiderModel.findOne.mockResolvedValue(null);
     jest.spyOn(oauthVerifier, 'verifyGoogleIdToken').mockResolvedValue({
-      email: 'verified.google@rideos.ai',
+      email: 'verified.google@example.com',
       fullName: 'Google Rider Pro',
       sub: 'google-sub-12345',
       provider: 'google',
@@ -93,7 +93,7 @@ describe('AuthService', () => {
     });
 
     expect(result).toBeDefined();
-    expect(result.rider.email).toBe('verified.google@rideos.ai');
+    expect(result.rider.email).toBe('verified.google@example.com');
     expect(result.tokens.accessToken).toBe('mock-jwt-token');
   });
 

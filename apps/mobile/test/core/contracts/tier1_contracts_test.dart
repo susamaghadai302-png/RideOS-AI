@@ -25,7 +25,7 @@ class _FakeAuthRepository implements AuthRepository {
   Future<RiderEntity> getProfile() async {
     return const RiderEntity(
       id: 'rider_test',
-      email: 'test@rideos.ai',
+      email: 'test@example.com',
       fullName: 'Contract Test Rider',
       phone: '+1234567890',
       garage: [],

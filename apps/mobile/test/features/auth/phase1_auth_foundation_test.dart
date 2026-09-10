@@ -190,20 +190,20 @@ void main() {
     });
 
     test('Login success emits AuthenticatedState with valid rider', () async {
-      authBloc.add(const LoginSubmittedEvent(email: 'rider@rideos.ai', password: 'password123'));
+      authBloc.add(const LoginSubmittedEvent(email: 'rider@example.com', password: 'password123'));
 
       await expectLater(
         authBloc.stream,
         emitsInOrder([
           isA<AuthLoadingState>(),
-          predicate<AuthState>((s) => s is AuthenticatedState && s.rider.email == 'rider@rideos.ai' && s.rider.fullName == 'Speed Rider'),
+          predicate<AuthState>((s) => s is AuthenticatedState && s.rider.email == 'rider@example.com' && s.rider.fullName == 'Speed Rider'),
         ]),
       );
     });
 
     test('Login failure emits AuthFailureState with proper error message', () async {
       mockRepo.shouldThrowError = true;
-      authBloc.add(const LoginSubmittedEvent(email: 'wrong@rideos.ai', password: 'wrong'));
+      authBloc.add(const LoginSubmittedEvent(email: 'wrong@example.com', password: 'wrong'));
 
       await expectLater(
         authBloc.stream,
@@ -216,7 +216,7 @@ void main() {
 
     test('Register success emits AuthenticatedState', () async {
       authBloc.add(const RegisterSubmittedEvent(
-        email: 'newuser@rideos.ai',
+        email: 'newuser@example.com',
         password: 'securePassword123',
         fullName: 'Alex Vance',
         phone: '+15559876543',
@@ -226,7 +226,7 @@ void main() {
         authBloc.stream,
         emitsInOrder([
           isA<AuthLoadingState>(),
-          predicate<AuthState>((s) => s is AuthenticatedState && s.rider.email == 'newuser@rideos.ai' && s.rider.fullName == 'Alex Vance'),
+          predicate<AuthState>((s) => s is AuthenticatedState && s.rider.email == 'newuser@example.com' && s.rider.fullName == 'Alex Vance'),
         ]),
       );
     });
@@ -249,7 +249,7 @@ void main() {
 
     test('Logout clears authenticated session and emits UnauthenticatedState', () async {
       // First login
-      authBloc.add(const LoginSubmittedEvent(email: 'rider@rideos.ai', password: 'password123'));
+      authBloc.add(const LoginSubmittedEvent(email: 'rider@example.com', password: 'password123'));
       await expectLater(
         authBloc.stream,
         emitsThrough(isA<AuthenticatedState>()),

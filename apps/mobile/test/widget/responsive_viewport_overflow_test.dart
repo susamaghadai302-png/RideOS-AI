@@ -22,7 +22,7 @@ class TestAuthBloc extends AuthBloc {
       const AuthenticatedState(
         rider: RiderModel(
           id: 'test-1',
-          email: 'rider@rideos.ai',
+          email: 'rider@example.com',
           fullName: 'Alex Mercer',
           phone: '+1 555-019-2834',
           garage: [],

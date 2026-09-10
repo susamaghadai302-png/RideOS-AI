@@ -43,13 +43,7 @@ class ProductionClosedBetaLaunchEngine {
 
   BetaTesterProfile validateBetaInvitationCode({required String invitationCode}) {
     developer.log('Validating Closed Beta Invitation Code [$invitationCode]...', name: 'RideOS.ClosedBeta');
-    return const BetaTesterProfile(
-      testerId: 'tester_alpha_9942',
-      email: 'beta.rider@rideos.ai',
-      invitationCode: 'RIDEOS-BETA-2026',
-      betaTrackGroup: 'Pioneer_Riders_Group',
-      isAccessApproved: true,
-    );
+    throw Exception('CONFIGURATION REQUIRED: Backend invitation validation required.');
   }
 
   BetaFeedbackReport submitBetaFeedback({

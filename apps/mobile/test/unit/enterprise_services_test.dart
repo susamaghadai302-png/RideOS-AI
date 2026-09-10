@@ -21,7 +21,7 @@ void main() {
     });
 
     test('InputSanitizer validates email and password correctly', () {
-      expect(InputSanitizer.isValidEmail('rider@rideos.ai'), isTrue);
+      expect(InputSanitizer.isValidEmail('rider@example.com'), isTrue);
       expect(InputSanitizer.isValidEmail('invalid-email'), isFalse);
 
       expect(InputSanitizer.isStrongPassword('superSecret123'), isTrue);

@@ -62,7 +62,7 @@ const RiderPreferencesSchema = SchemaFactory.createForClass(RiderPreferences);
 
 @Schema({ timestamps: true })
 export class Rider {
-  @Prop({ required: true, unique: true, index: true })
+  @Prop({ required: false, unique: true, sparse: true, index: true })
   email: string;
 
   @Prop({ required: true })

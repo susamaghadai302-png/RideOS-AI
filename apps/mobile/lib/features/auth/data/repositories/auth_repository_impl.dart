@@ -20,10 +20,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<RiderEntity> loginWithGoogle() async {
-    return await remoteDatasource.loginWithOAuthGoogle(
-      email: 'google.rider@rideos.ai',
-      fullName: 'Google Rider',
-    );
+    throw UnimplementedError('CONFIGURATION REQUIRED: Genuine OAuth provider integration missing.');
   }
 
   @override
@@ -43,10 +40,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<RiderEntity> loginWithApple() async {
-    return await remoteDatasource.loginWithOAuthApple(
-      email: 'apple.rider@rideos.ai',
-      fullName: 'Apple Rider',
-    );
+    throw UnimplementedError('CONFIGURATION REQUIRED: Genuine OAuth provider integration missing.');
   }
 
   @override

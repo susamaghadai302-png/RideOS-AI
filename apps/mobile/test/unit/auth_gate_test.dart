@@ -25,7 +25,7 @@ class _MockAuthRepository implements AuthRepository {
 
   static const _rider = RiderEntity(
     id: 'rider-001',
-    email: 'rider@rideos.ai',
+    email: 'rider@example.com',
     fullName: 'Aria Storm',
     phone: '+447700900001',
     garage: [],
@@ -193,7 +193,7 @@ void main() {
     );
 
     bloc.add(const LoginSubmittedEvent(
-      email: 'rider@rideos.ai',
+      email: 'rider@example.com',
       password: 'securePass123',
     ));
 
@@ -260,7 +260,7 @@ void main() {
     );
 
     bloc.add(const RegisterSubmittedEvent(
-      email: 'new@rideos.ai',
+      email: 'new@example.com',
       password: 'ultraSecure!1',
       fullName: 'Nova Rider',
       phone: '+447700900002',
@@ -282,7 +282,7 @@ void main() {
     );
 
     bloc.add(const RegisterSubmittedEvent(
-      email: 'existing@rideos.ai',
+      email: 'existing@example.com',
       password: 'ultraSecure!1',
       fullName: 'Dupe Rider',
       phone: '+447700900003',
@@ -413,7 +413,7 @@ void main() {
     final subscription = bloc.stream.listen(states.add);
 
     bloc.add(const LoginSubmittedEvent(
-      email: 'rider@rideos.ai',
+      email: 'rider@example.com',
       password: 'pass123',
     ));
 
@@ -470,7 +470,7 @@ void main() {
 
     // Step 2: Re-login
     bloc.add(const LoginSubmittedEvent(
-      email: 'rider@rideos.ai',
+      email: 'rider@example.com',
       password: 'securePass',
     ));
     await Future.delayed(const Duration(milliseconds: 200));
@@ -492,7 +492,7 @@ void main() {
       bloc.stream,
       emitsInOrder([isA<AuthLoadingState>(), isA<ForgotPasswordSentState>()]),
     );
-    bloc.add(const ForgotPasswordSubmittedEvent(email: 'rider@rideos.ai'));
+    bloc.add(const ForgotPasswordSubmittedEvent(email: 'rider@example.com'));
     addTearDown(bloc.close);
   });
 
@@ -505,7 +505,7 @@ void main() {
       bloc.stream,
       emitsInOrder([isA<AuthLoadingState>(), isA<AuthFailureState>()]),
     );
-    bloc.add(const ForgotPasswordSubmittedEvent(email: 'notexist@rideos.ai'));
+    bloc.add(const ForgotPasswordSubmittedEvent(email: 'notexist@example.com'));
     addTearDown(bloc.close);
   });
 
@@ -516,7 +516,7 @@ void main() {
     final bloc = _bloc(repo);
     final states = <AuthState>[];
     final sub = bloc.stream.listen(states.add);
-    bloc.add(const ForgotPasswordSubmittedEvent(email: 'notexist@rideos.ai'));
+    bloc.add(const ForgotPasswordSubmittedEvent(email: 'notexist@example.com'));
     await Future.delayed(const Duration(milliseconds: 200));
     final failure = states.whereType<AuthFailureState>().first;
     expect(failure.errorMessage, contains('No account found'));
@@ -561,7 +561,7 @@ void main() {
     final states = <AuthState>[];
     final sub = bloc.stream.listen(states.add);
     bloc.add(const RegisterSubmittedEvent(
-      email: 'dup@rideos.ai',
+      email: 'dup@example.com',
       password: 'pass12345',
       fullName: 'Dup Rider',
       phone: '+447700900004',
