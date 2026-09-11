@@ -95,7 +95,7 @@ class OrderModel extends OrderEntity {
     return {
       'orderId': orderId,
       'customerId': customerId,
-      'items': (items as List<OrderItemModel>).map((i) => i.toJson()).toList(),
+      'items': items.map((i) => (i as OrderItemModel).toJson()).toList(),
       'totalAmount': totalAmount,
       'currency': currency,
       'status': status.name,

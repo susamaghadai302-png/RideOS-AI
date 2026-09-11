@@ -57,9 +57,17 @@
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config">
         
+        <!-- 
+            androidx.car.app.CarAppMetadataHolderService is a dummy service used by the 
+            AndroidX Car App library strictly for manifest merging of meta-data. 
+            The class does not actually exist in the compiled codebase, so the Android 
+            'Instantiatable' lint check fails. We suppress it here because this is the 
+            official way to resolve the metadata merger conflict between app-projected and app-automotive.
+        -->
         <service android:name="androidx.car.app.CarAppMetadataHolderService"
             android:enabled="false"
             android:exported="false"
+            tools:ignore="Instantiatable"
             tools:node="merge">
             <!-- Resolve merger conflict between app-projected and app-automotive -->
             <meta-data

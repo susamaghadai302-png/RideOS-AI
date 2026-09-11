@@ -17,7 +17,7 @@ export class OrdersService {
     }
 
     let totalAmount = 0;
-    const validatedItems = [];
+    const validatedItems: any[] = [];
 
     for (const item of createOrderDto.items) {
       const product = await this.catalogService.getProductById(item.itemId);
