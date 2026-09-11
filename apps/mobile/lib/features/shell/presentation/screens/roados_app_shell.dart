@@ -9,8 +9,6 @@ import '../../../../core/widgets/cinematic_background.dart';
 import '../../../../core/vehicle_mode/vehicle_mode.dart';
 import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
 import '../../../../core/vehicle_resolution/models/active_vehicle_context.dart';
-import '../../../../core/vehicle_resolution/models/vehicle_display_capability.dart';
-import '../../../../core/vehicle_resolution/services/vehicle_connection_manager.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../dashcam/presentation/screens/ai_vision_dashcam_screen.dart';
@@ -282,25 +280,7 @@ class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTick
           }
           ref.read(vehicleModeProvider.notifier).setMode(newMode);
           
-          // Phase 12: Capability Layer Update
-          const capability = VehicleDisplayCapability(
-            protocol: ConnectionProtocol.ble, // Default base protocol for profile resolution
-            status: ConnectionStatus.ready,
-            hasAudio: true,
-            hasMicrophone: true,
-            hasCalling: true,
-            hasNavigation: true,
-            hasTouch: true,
-            hasVoice: true,
-          );
-          ref.read(vehicleConnectionManagerProvider.notifier).updateConnection(capability, '${p.manufacturer} ${p.model}');
-          ref.read(vehicleConnectionManagerProvider.notifier).setNavigationReady(true);
-          ref.read(vehicleConnectionManagerProvider.notifier).setGpsReady(true);
-          ref.read(vehicleConnectionManagerProvider.notifier).setCallingAvailable(true);
         }
-      } else if (next.connectionStatus == VehicleConnectionStatus.disconnected) {
-        ref.read(vehicleConnectionManagerProvider.notifier).updateConnection(VehicleDisplayCapability.unsupported(), 'None');
-        ref.read(vehicleConnectionManagerProvider.notifier).setNavigationReady(false);
       }
     });
 
@@ -604,7 +584,7 @@ class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTick
                       final name = state is AuthenticatedState ? state.rider.fullName : 'Rider';
                       return GestureDetector(
                         onTap: () {
-                          _onSelectNav(9); // Profile Vault
+                          _onSelectNav(14); // Profile Vault
                         },
                         child: Container(
                           width: 30,

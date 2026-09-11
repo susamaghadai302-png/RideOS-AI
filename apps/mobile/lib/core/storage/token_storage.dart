@@ -16,10 +16,8 @@ class TokenStorage {
     try {
       await _storage.write(key: StorageKeys.accessToken, value: accessToken);
       await _storage.write(key: StorageKeys.refreshToken, value: refreshToken);
-    } catch (_) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(StorageKeys.accessToken, accessToken);
-      await prefs.setString(StorageKeys.refreshToken, refreshToken);
+    } catch (e) {
+      throw Exception('Secure storage write failed: $e');
     }
   }
 
@@ -30,9 +28,8 @@ class TokenStorage {
     }
     try {
       return await _storage.read(key: StorageKeys.accessToken);
-    } catch (_) {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(StorageKeys.accessToken);
+    } catch (e) {
+      throw Exception('Secure storage read failed: $e');
     }
   }
 
@@ -43,9 +40,8 @@ class TokenStorage {
     }
     try {
       return await _storage.read(key: StorageKeys.refreshToken);
-    } catch (_) {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(StorageKeys.refreshToken);
+    } catch (e) {
+      throw Exception('Secure storage read failed: $e');
     }
   }
 
@@ -59,10 +55,8 @@ class TokenStorage {
     try {
       await _storage.delete(key: StorageKeys.accessToken);
       await _storage.delete(key: StorageKeys.refreshToken);
-    } catch (_) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(StorageKeys.accessToken);
-      await prefs.remove(StorageKeys.refreshToken);
+    } catch (e) {
+      throw Exception('Secure storage delete failed: $e');
     }
   }
 }

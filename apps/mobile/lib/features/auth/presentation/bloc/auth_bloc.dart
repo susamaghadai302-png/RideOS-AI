@@ -48,6 +48,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final rider = await authRepository.getProfile();
       emit(AuthenticatedState(rider: rider));
     } catch (_) {
+      await authRepository.logout();
       emit(UnauthenticatedState());
     }
   }
