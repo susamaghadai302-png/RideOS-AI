@@ -32,29 +32,8 @@ class ProductionFleetDispatchEngine {
   Stream<List<FleetRiderVehicleState>> get fleetStream => _fleetStreamController.stream;
 
   List<FleetRiderVehicleState> fetchActiveSquadFleet() {
-    developer.log('Fetching live fleet squad telematics and geofence status...', name: 'RideOS.FleetDispatch');
-    const squad = [
-      FleetRiderVehicleState(
-        riderId: 'rider_squad_01',
-        riderName: 'Alex Mercer (Lead)',
-        vehicleVin: '1HD1KAM11KB019942',
-        currentLatitude: 37.7749,
-        currentLongitude: -122.4194,
-        speedKmh: 78.5,
-        batteryPct: 94.0,
-        geofenceZoneStatus: 'INSIDE_SAFE_ZONE',
-      ),
-      FleetRiderVehicleState(
-        riderId: 'rider_squad_02',
-        riderName: 'Elena Rostova (Sweep)',
-        vehicleVin: 'JKAZX600FFA088214',
-        currentLatitude: 37.7752,
-        currentLongitude: -122.4189,
-        speedKmh: 76.2,
-        batteryPct: 88.5,
-        geofenceZoneStatus: 'INSIDE_SAFE_ZONE',
-      ),
-    ];
+    developer.log('Fleet telemetry backend not configured. Returning empty fleet state.', name: 'RideOS.FleetDispatch');
+    const List<FleetRiderVehicleState> squad = [];
     _fleetStreamController.add(squad);
     return squad;
   }

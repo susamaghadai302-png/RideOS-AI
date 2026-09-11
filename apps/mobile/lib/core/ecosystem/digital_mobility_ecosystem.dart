@@ -38,12 +38,12 @@ class DigitalMobilityEcosystem {
 
   UnifiedRiderProfile getUnifiedProfile() {
     return const UnifiedRiderProfile(
-      riderId: 'rider_nexus_77',
-      name: 'Alex Mercer',
-      activeVehiclesCount: 3,
-      totalRidesCompleted: 142,
-      subscriptionTier: 'PRO_ENTERPRISE',
-      rewardPoints: 24500,
+      riderId: 'unconfigured',
+      name: 'Not Configured',
+      activeVehiclesCount: 0,
+      totalRidesCompleted: 0,
+      subscriptionTier: 'NONE',
+      rewardPoints: 0,
     );
   }
 

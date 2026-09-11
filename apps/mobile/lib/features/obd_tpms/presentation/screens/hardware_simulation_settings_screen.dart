@@ -89,7 +89,7 @@ class _HardwareSimulationSettingsScreenState extends State<HardwareSimulationSet
               // TPMS Switch Card
               _buildModuleCard(
                 title: 'TIRE PRESSURE (TPMS)',
-                subtitle: _useTpmsSimulation ? 'Provider: Simulated 36/42 PSI Thermal Drift' : 'Provider: Direct BLE Valve Cap Sensors',
+                subtitle: _useTpmsSimulation ? 'Provider: Simulated Thermal Drift' : 'Provider: Direct BLE Valve Cap Sensors',
                 icon: Icons.tire_repair_rounded,
                 value: _useTpmsSimulation,
                 onChanged: (val) {

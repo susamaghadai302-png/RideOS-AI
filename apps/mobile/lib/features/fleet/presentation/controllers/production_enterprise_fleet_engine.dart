@@ -72,42 +72,21 @@ class ProductionEnterpriseFleetEngine {
   EnterpriseFleetOrganizationProfile getOrganizationProfile(String tenantId) {
     return EnterpriseFleetOrganizationProfile(
       tenantId: tenantId,
-      organizationName: 'Global Logistics & Delivery Corp',
-      tierLevel: 'ENTERPRISE_GLOBAL',
-      totalManagedVehiclesCount: 450,
-      activeDriversCount: 380,
-      rbacEnforced: true,
+      organizationName: 'Not Configured',
+      tierLevel: 'UNAVAILABLE',
+      totalManagedVehiclesCount: 0,
+      activeDriversCount: 0,
+      rbacEnforced: false,
     );
   }
 
   /// Streams real-time positions and geofence alerts for commercial fleet squad.
   List<CommercialFleetVehicleState> fetchActiveFleetVehicles(String tenantId) {
-    const vehicles = [
-      CommercialFleetVehicleState(
-        vehicleId: 'FLEET_EV_001',
-        makeModel: 'Ather 450X Enterprise',
-        assignedDriverName: 'Marcus Vance',
-        currentLatitude: 37.7749,
-        currentLongitude: -122.4194,
-        speedKmh: 42.5,
-        fuelBatteryLevelPct: 88.0,
-        geofenceZoneStatus: 'INSIDE_SAFE_ZONE',
-      ),
-      CommercialFleetVehicleState(
-        vehicleId: 'FLEET_EV_002',
-        makeModel: 'TVS iQube Commercial',
-        assignedDriverName: 'Sarah Jenkins',
-        currentLatitude: 37.7752,
-        currentLongitude: -122.4189,
-        speedKmh: 38.0,
-        fuelBatteryLevelPct: 92.5,
-        geofenceZoneStatus: 'INSIDE_SAFE_ZONE',
-      ),
-    ];
+    const List<CommercialFleetVehicleState> vehicles = [];
 
     _fleetStreamController.add(vehicles);
     developer.log(
-      'ENTERPRISE FLEET: Tenant [$tenantId] | Active Vehicles Streamed: ${vehicles.length}',
+      'ENTERPRISE FLEET: Tenant [$tenantId] not configured. Returning empty fleet.',
       name: 'RideOS.EnterpriseFleet',
     );
     return vehicles;

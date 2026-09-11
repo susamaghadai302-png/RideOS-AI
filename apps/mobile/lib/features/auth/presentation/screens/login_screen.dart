@@ -106,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
       context.read<AuthBloc>().add(GoogleSignInWithCredentialEvent(
             email: account.email,
-            fullName: account.displayName,
+            fullName: account.displayName ?? '',
             idToken: auth.idToken,
             accessToken: auth.accessToken,
           ));

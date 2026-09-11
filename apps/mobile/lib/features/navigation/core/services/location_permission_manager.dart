@@ -68,7 +68,7 @@ class LocationPermissionManager {
     try {
       return await Geolocator.isLocationServiceEnabled();
     } catch (_) {
-      return true;
+      return false;
     }
   }
 }

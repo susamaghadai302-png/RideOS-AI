@@ -776,9 +776,7 @@ class RiderProfileLeaderboardWidget extends StatelessWidget {
           const SizedBox(height: 14),
           const Text('GLOBAL RIDER LEADERBOARD', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: RoadOSColors.textMuted)),
           const SizedBox(height: 8),
-          _buildLeaderboardRow('#1', 'Alex Vance (Ducati Panigale V4)', '9,420 XP', true),
-          _buildLeaderboardRow('#2', 'Elena Rostova (BMW S1000RR)', '8,950 XP', false),
-          _buildLeaderboardRow('#3', 'Rider (You) (Kawasaki Ninja ZX-10R)', '8,420 XP', false, isYou: true),
+          _buildLeaderboardRow('#1', 'Rider (You)', '8,420 XP', false, isYou: true),
         ],
       ),
     );

@@ -135,12 +135,12 @@ class ProductionAiCopilotEngine {
     LlmProviderBackend provider = LlmProviderBackend.googleGemini,
   }) {
     return ProductionAiCopilotResponse(
-      textResponse: 'Jarvis: Optimal line generated for canyon twisties. TPMS pressure is balanced at 36/42 PSI.',
-      executedToolName: 'tool_telemetry_route_optimizer',
-      confidenceScore: 0.994,
+      textResponse: 'AI service not configured/unavailable.',
+      executedToolName: '',
+      confidenceScore: 0.0,
       contextParameters: {
         'provider': provider.name,
-        'helmet_voice_active': true,
+        'status': 'unconfigured',
       },
     );
   }

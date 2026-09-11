@@ -51,79 +51,17 @@ class MultiVehicleFleetEngine {
       totalFleetRides: totalRides,
       distanceDistribution: distMap,
       healthScoreDistribution: healthMap,
-      mostRiddenVehicle: 'Yamaha MT-09 SP',
+      mostRiddenVehicle: 'None',
     );
   }
 
   /// Aggregates smart maintenance roadmap across all motorcycles
   List<FleetServicePriorityItem> getFleetServicePriorities() {
-    return [
-      const FleetServicePriorityItem(
-        vehicleId: 'v_yamaha_mt09_sp',
-        vehicleName: 'Yamaha MT-09 SP',
-        taskType: 'OIL_CHANGE',
-        priorityLabel: 'HIGH',
-        currentKm: 6200,
-        dueKm: 6500,
-        remainingKm: 300,
-        reason: 'Recommended 6,500 km routine oil & filter inspection approaching.',
-      ),
-      const FleetServicePriorityItem(
-        vehicleId: 'v_yamaha_r1m',
-        vehicleName: 'Yamaha YZF-R1M',
-        taskType: 'CHAIN_LUBE',
-        priorityLabel: 'NORMAL',
-        currentKm: 4600,
-        dueKm: 5100,
-        remainingKm: 500,
-        reason: '500 km chain tension and lubrication check.',
-      ),
-      const FleetServicePriorityItem(
-        vehicleId: 'v_ducati_v4s',
-        vehicleName: 'Ducati Panigale V4 S',
-        taskType: 'BRAKE_PADS',
-        priorityLabel: 'NORMAL',
-        currentKm: 2800,
-        dueKm: 6000,
-        remainingKm: 3200,
-        reason: 'Front Brembo Stylema pad wear thickness inspection.',
-      ),
-    ];
+    return [];
   }
 
   /// Answers vehicle-specific and fleet comparison natural-language queries
   String processVehicleSpecificAiQuery(String query) {
-    final lower = query.toLowerCase();
-    final vehicles = getFleetVehicles();
-    final comparison = getCrossVehicleComparison();
-
-    if (lower.contains('compare') || lower.contains('comparison')) {
-      return 'Fleet Comparison: R1M (4,600 km, 98% Health) vs Panigale V4S (2,800 km, 94% Health) vs M 1000 RR (1,540 km, 99% Health) vs MT-09 SP (6,200 km, 89% Health).';
-    }
-
-    if (lower.contains('which bike needs attention') || lower.contains('needs attention') || lower.contains('service soon')) {
-      final attention = vehicles.where((v) => v.status == FleetVehicleStatus.attentionRequired || v.status == FleetVehicleStatus.serviceSoon).toList();
-      if (attention.isEmpty) {
-        return 'All fleet motorcycles are in optimal health!';
-      }
-      final names = attention.map((b) => '${b.make} ${b.model} (${b.status.label})').join(', ');
-      return 'Fleet Attention Notice: $names requires service attention soon.';
-    }
-
-    if (lower.contains('which motorcycle did i ride the most') || lower.contains('most ridden') || lower.contains('most distance')) {
-      return 'Your most-ridden motorcycle is the ${comparison.mostRiddenVehicle} with 6,200 km recorded in your digital log.';
-    }
-
-    if (lower.contains('r1m') || lower.contains('yamaha r1')) {
-      final r1m = vehicles.firstWhere((v) => v.vehicleId == 'v_yamaha_r1m');
-      return 'Yamaha YZF-R1M Status: Health ${r1m.healthScore}% (${r1m.status.label}). Odometer: ${r1m.currentOdometerKm} km. Next service: Chain lube in 500 km. Currently connected via BLE.';
-    }
-
-    if (lower.contains('ducati') || lower.contains('panigale')) {
-      final ducati = vehicles.firstWhere((v) => v.vehicleId == 'v_ducati_v4s');
-      return 'Ducati Panigale V4S Status: Health ${ducati.healthScore}% (${ducati.status.label}). Odometer: ${ducati.currentOdometerKm} km. Next service: Brake inspection in 3,200 km.';
-    }
-
-    return 'Fleet AI Assistant: Managing ${vehicles.length} registered motorcycles with separated telemetry, maintenance, and 3D registries.';
+    return 'AI service not configured/unavailable.';
   }
 }

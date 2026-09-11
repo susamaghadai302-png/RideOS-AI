@@ -10,21 +10,27 @@ void main() {
       vaultService = VehicleDocumentVaultService();
     });
 
-    test('Initializes with default required motorcycle documents', () {
-      expect(vaultService.documents.isNotEmpty, isTrue);
-      expect(vaultService.documents.any((d) => d.category == DocumentCategory.drivingLicense), isTrue);
-      expect(vaultService.documents.any((d) => d.category == DocumentCategory.registrationCertificate), isTrue);
-      expect(vaultService.documents.any((d) => d.category == DocumentCategory.insurancePolicy), isTrue);
+    test('Initializes with empty document list', () {
+      expect(vaultService.documents.isEmpty, isTrue);
     });
 
     test('Calculates expiring documents within 30-day threshold accurately', () {
+      final now = DateTime.now();
+      vaultService.addDocument(VehicleDocumentEntity(
+        id: 'doc_expiring_01',
+        title: 'Expiring Insurance',
+        documentNumber: 'INS-001',
+        category: DocumentCategory.insurancePolicy,
+        expiryDate: now.add(const Duration(days: 15)),
+        filePath: '/vault/encrypted/ins.pdf',
+        uploadDate: now,
+      ));
+
       final expiring = vaultService.getExpiringDocuments(daysThreshold: 30);
       expect(expiring.isNotEmpty, isTrue);
-      for (final doc in expiring) {
-        expect(doc.daysUntilExpiry, lessThanOrEqualTo(30));
-        expect(doc.daysUntilExpiry, greaterThanOrEqualTo(0));
-        expect(doc.status, equals(DocumentStatus.renewSoon));
-      }
+      expect(expiring.first.daysUntilExpiry, lessThanOrEqualTo(30));
+      expect(expiring.first.daysUntilExpiry, greaterThanOrEqualTo(0));
+      expect(expiring.first.status, equals(DocumentStatus.renewSoon));
     });
 
     test('Adds and removes encrypted documents seamlessly', () {

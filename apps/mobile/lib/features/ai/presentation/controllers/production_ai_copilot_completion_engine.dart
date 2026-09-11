@@ -41,11 +41,11 @@ class ProductionAiCopilotCompletionEngine {
     developer.log('Processing Rider Voice Prompt [$voicePrompt] via [$provider] ($languageCode)...', name: 'RideOS.AiCopilotEngine');
 
     final response = CopilotInteractionResponse(
-      responseText: 'Jarvis: Optimal curvy route calculated avoiding rain. TPMS pressures nominal at 36/42 PSI.',
+      responseText: 'AI service not configured/unavailable.',
       detectedLanguage: languageCode,
-      executedTools: ['tool_curvy_route_optimizer', 'tool_tpms_telemetry', 'tool_weather_radar'],
-      responseLatencyMs: 184.2,
-      isVoiceResponseEnabled: true,
+      executedTools: const [],
+      responseLatencyMs: 0.0,
+      isVoiceResponseEnabled: false,
     );
 
     _copilotStreamController.add(response);

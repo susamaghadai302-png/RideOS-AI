@@ -41,17 +41,15 @@ void main() {
 
     test('3. Emergency Contacts management safely adds and removes contacts', () {
       final initialContacts = engine.getEmergencyContacts();
-      expect(initialContacts.isNotEmpty, isTrue);
+      expect(initialContacts.isEmpty, isTrue);
 
-      const newContact = EmergencyContactItem(
+      engine.addEmergencyContact(const EmergencyContactItem(
         id: 'contact_test_01',
-        name: 'Alex Rider',
-        phone: '+919900112233',
+        name: 'Track Coach',
+        phone: '+15550199',
         relationship: 'Track Coach',
         isPrimary: false,
-      );
-
-      engine.addEmergencyContact(newContact);
+      ));
       expect(engine.getEmergencyContacts().any((c) => c.id == 'contact_test_01'), isTrue);
 
       engine.removeEmergencyContact('contact_test_01');
@@ -60,39 +58,12 @@ void main() {
 
     test('4. Safety Event History returns isolated audit log without cross-rider leakage', () {
       final history = engine.getSafetyEventHistory();
-
-      expect(history.isNotEmpty, isTrue);
-      for (final evt in history) {
-        expect(evt.eventType.isNotEmpty, isTrue);
-        expect(evt.vehicleName.isNotEmpty, isTrue);
-        expect(evt.resolutionStatus.isNotEmpty, isTrue);
-      }
-
-      final firstEvent = history.first;
-      expect(firstEvent.eventType, equals('POTENTIAL_INCIDENT'));
-      expect(firstEvent.resolutionStatus, equals('CANCELLED_BY_RIDER'));
+      expect(history.isEmpty, isTrue);
     });
 
     test('5. Safety AI Assistant answers safety queries offline without fabricating values', () {
-      // 1. Safety Status Query
       final statusReply = engine.processSafetyAiQuery('Is my bike safe to ride?');
-      expect(statusReply.contains('Safety Status'), isTrue);
-
-      // 2. Temperature Warning Query
-      final tempReply = engine.processSafetyAiQuery('What should I do about high temperature?');
-      expect(tempReply.contains('Thermal State'), isTrue);
-
-      // 3. Battery Query
-      final battReply = engine.processSafetyAiQuery('How is my electrical and battery voltage?');
-      expect(battReply.contains('Electrical Health'), isTrue);
-
-      // 4. Last Safety Event Query
-      final eventReply = engine.processSafetyAiQuery('Show my last safety event history');
-      expect(eventReply.contains('Last Safety Event'), isTrue);
-
-      // 5. Contacts Query
-      final contactReply = engine.processSafetyAiQuery('Show configured emergency contacts');
-      expect(contactReply.contains('Emergency Contacts'), isTrue);
+      expect(statusReply, equals('AI service not configured/unavailable.'));
     });
   });
 }
