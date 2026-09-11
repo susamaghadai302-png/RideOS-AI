@@ -52,7 +52,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    )..forward();
   }
 
   void _toggleSimulatorMode(bool enable) {
@@ -168,7 +168,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   child: RideOS3DModelViewer(
                     vehicleProfile: activeVehicle,
                     cameraOrbit: '30deg 75deg 105%',
-                    autoRotate: false,
                     cameraControls: false, // Disabled to allow scrolling the UI on top
                     exposure: 1.2,
                   ),

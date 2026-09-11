@@ -23,7 +23,7 @@ class Generic3DRenderer extends StatelessWidget {
             src: assetPath,
             alt: "A generic 3D model of the vehicle category",
             ar: false,
-            autoRotate: true,
+            autoRotate: false,
             cameraControls: true,
             disableZoom: true,
             environmentImage: 'neutral',

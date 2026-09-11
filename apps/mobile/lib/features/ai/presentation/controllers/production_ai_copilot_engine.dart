@@ -32,7 +32,7 @@ class _JarvisAiOrbWidgetState extends State<JarvisAiOrbWidget> with SingleTicker
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
+    )..forward();
   }
 
   @override

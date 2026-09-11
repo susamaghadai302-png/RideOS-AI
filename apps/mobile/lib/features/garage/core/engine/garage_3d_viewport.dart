@@ -62,7 +62,6 @@ class Garage3dViewport extends StatefulWidget {
   final bool isLeftIndicatorOn;
   final bool isRightIndicatorOn;
   final bool isHazardOn;
-  final bool isAutoRotate;
   final bool showHotspots;
   final bool isExplodedView;
   final Function(String componentKey)? onHotspotTapped;
@@ -84,7 +83,6 @@ class Garage3dViewport extends StatefulWidget {
     this.isLeftIndicatorOn = false,
     this.isRightIndicatorOn = false,
     this.isHazardOn = false,
-    this.isAutoRotate = false,
     this.showHotspots = true,
     this.isExplodedView = false,
     this.onHotspotTapped,
@@ -122,7 +120,6 @@ class Garage3dViewportState extends State<Garage3dViewport> {
               child: WebGl3dGarageView(
                 vehicle: widget.vehicle,
                 lightingMode: widget.lightingMode,
-                isAutoRotate: widget.isAutoRotate,
                 isEngineRunning: widget.isEngineRunning,
                 engineRpm: widget.engineRpm,
                 isHeadlightOn: widget.isHeadlightOn,

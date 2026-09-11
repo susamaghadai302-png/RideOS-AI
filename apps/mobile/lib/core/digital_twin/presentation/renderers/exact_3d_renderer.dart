@@ -23,7 +23,7 @@ class Exact3DRenderer extends StatelessWidget {
             src: assetPath,
             alt: "A 3D model of the exact vehicle",
             ar: false,
-            autoRotate: true,
+            autoRotate: false,
             cameraControls: true,
             disableZoom: true,
             environmentImage: 'neutral', // Optional

@@ -26,7 +26,7 @@ class _Motorcycle3dAvatarWidgetState extends State<Motorcycle3dAvatarWidget> wit
     _wheelController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    )..repeat();
+    )..forward();
   }
 
   @override

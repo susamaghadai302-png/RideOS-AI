@@ -38,7 +38,7 @@ class _DiagnosticsCenterScreenState extends ConsumerState<DiagnosticsCenterScree
   void initState() {
     super.initState();
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat(reverse: true);
+      ..forward();
     _subscribeToTelemetry();
   }
 

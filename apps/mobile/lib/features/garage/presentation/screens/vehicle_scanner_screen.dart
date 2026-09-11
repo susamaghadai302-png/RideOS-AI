@@ -57,7 +57,7 @@ class _VehicleScannerScreenState extends State<VehicleScannerScreen> with Single
     _radarController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    )..repeat();
+    )..forward();
     _recomputeReport();
   }
 

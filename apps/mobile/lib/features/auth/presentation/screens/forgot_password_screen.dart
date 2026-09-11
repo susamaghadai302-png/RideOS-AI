@@ -51,7 +51,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
+    )..forward();
 
     _fadeAnim = CurvedAnimation(
       parent: _entryController,

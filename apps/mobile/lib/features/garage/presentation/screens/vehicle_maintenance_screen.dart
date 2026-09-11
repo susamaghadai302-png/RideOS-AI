@@ -389,7 +389,6 @@ class _VehicleMaintenanceScreenState
             RideOS3DModelViewer(
               vehicleProfile: vehicle,
               cameraOrbit: '45deg 70deg 95%',
-              autoRotate: false,
               exposure: 1.15,
             ),
             Positioned(

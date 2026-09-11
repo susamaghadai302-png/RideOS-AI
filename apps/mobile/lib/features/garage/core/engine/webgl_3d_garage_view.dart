@@ -9,7 +9,6 @@ import 'webgl_3d_garage_view_stub.dart'
 class WebGl3dGarageView extends StatelessWidget {
   final VehicleProfile vehicle;
   final GarageLightingMode lightingMode;
-  final bool isAutoRotate;
   final bool isEngineRunning;
   final double engineRpm;
   final bool isHeadlightOn;
@@ -25,7 +24,6 @@ class WebGl3dGarageView extends StatelessWidget {
     super.key,
     required this.vehicle,
     required this.lightingMode,
-    required this.isAutoRotate,
     required this.isEngineRunning,
     required this.engineRpm,
     required this.isHeadlightOn,
@@ -55,7 +53,6 @@ class WebGl3dGarageView extends StatelessWidget {
     return WebGl3dGarageViewPlatform(
       vehicle: vehicle,
       lightingMode: lightingMode,
-      isAutoRotate: isAutoRotate,
       isEngineRunning: isEngineRunning,
       engineRpm: engineRpm,
       isHeadlightOn: isHeadlightOn,

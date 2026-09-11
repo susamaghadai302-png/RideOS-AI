@@ -181,7 +181,6 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                       child: RideOS3DModelViewer(
                         vehicleProfile: vehicle,
                         cameraOrbit: isActive ? '45deg 75deg 90%' : '90deg 75deg 90%',
-                        autoRotate: false,
                         exposure: 1.2,
                       ),
                     ),

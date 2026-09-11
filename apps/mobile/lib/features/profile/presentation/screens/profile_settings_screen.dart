@@ -43,7 +43,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
     _avatarGlowController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
+    )..forward();
   }
 
   @override

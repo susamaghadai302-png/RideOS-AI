@@ -233,7 +233,7 @@ class _NeuralVoiceOrbWidgetState extends State<NeuralVoiceOrbWidget> with Single
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    )..forward();
   }
 
   @override

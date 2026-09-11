@@ -16,7 +16,6 @@ class RideOS3DModelViewer extends StatelessWidget {
   final String? vehicleName;
   final String? manufacturer;
   final String? validationStatus; // 'VERIFIED_REAL_MODEL', 'MODEL_VALIDATION_PENDING', 'MODEL_NOT_AVAILABLE', 'MODEL_LOAD_ERROR'
-  final bool autoRotate;
   final bool cameraControls;
   final String cameraOrbit;
   final String fieldOfView;
@@ -36,7 +35,6 @@ class RideOS3DModelViewer extends StatelessWidget {
     this.vehicleName,
     this.manufacturer,
     this.validationStatus,
-    this.autoRotate = false,
     this.cameraControls = true,
     this.cameraOrbit = '35deg 75deg 100%',
     this.fieldOfView = '30deg',
@@ -122,7 +120,7 @@ class RideOS3DModelViewer extends StatelessWidget {
                     key: ValueKey(resolvedGlb),
                     src: resolvedGlb,
                     alt: 'RideOS 3D Vehicle',
-                    autoRotate: autoRotate,
+                    autoRotate: false,
                     autoRotateDelay: 1000,
                     rotationPerSecond: '20deg',
                     cameraControls: cameraControls,

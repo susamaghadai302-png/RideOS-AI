@@ -29,7 +29,7 @@ class _LiveVehicleDashboardModalState extends State<LiveVehicleDashboardModal>
   void initState() {
     super.initState();
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
-      ..repeat(reverse: true);
+      ..forward();
   }
 
   @override

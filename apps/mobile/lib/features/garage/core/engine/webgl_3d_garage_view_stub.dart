@@ -5,7 +5,6 @@ import 'garage_3d_viewport.dart';
 class WebGl3dGarageViewPlatform extends StatefulWidget {
   final VehicleProfile vehicle;
   final GarageLightingMode lightingMode;
-  final bool isAutoRotate;
   final bool isEngineRunning;
   final double engineRpm;
   final bool isHeadlightOn;
@@ -21,7 +20,6 @@ class WebGl3dGarageViewPlatform extends StatefulWidget {
     super.key,
     required this.vehicle,
     required this.lightingMode,
-    required this.isAutoRotate,
     required this.isEngineRunning,
     required this.engineRpm,
     required this.isHeadlightOn,

@@ -281,7 +281,6 @@ class _TelemetryDashboardScreenState
             RideOS3DModelViewer(
               vehicleProfile: vehicle,
               cameraOrbit: '0deg 75deg 90%',
-              autoRotate: false,
               exposure: 1.1,
             ),
             Positioned(

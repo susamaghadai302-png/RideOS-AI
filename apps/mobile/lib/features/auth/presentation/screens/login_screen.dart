@@ -57,13 +57,13 @@ class _LoginScreenState extends State<LoginScreen>
     _orbController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 18),
-    )..repeat();
+    )..forward();
 
     // Breathing glow: 3 s pulse
     _breatheController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
-    )..repeat();
+    )..forward();
   }
 
   @override

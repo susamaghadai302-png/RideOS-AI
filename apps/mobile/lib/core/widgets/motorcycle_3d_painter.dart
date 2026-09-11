@@ -55,7 +55,6 @@ class _Motorcycle3dWidgetState extends State<Motorcycle3dWidget> with SingleTick
   double _scale = 1.0;
   double _baseScale = 1.0;
   bool _engineActive = true;
-  bool _isAutoRotating = false;
   bool _isLoading = true;
   Timer? _loadingTimer;
 
@@ -103,12 +102,7 @@ class _Motorcycle3dWidgetState extends State<Motorcycle3dWidget> with SingleTick
         setState(() {
           _scale = 1.0;
           _userAngleOffset = -0.45;
-          _isAutoRotating = !_isAutoRotating;
-          if (_isAutoRotating) {
-            _rotationController.repeat();
-          } else {
-            _rotationController.stop();
-          }
+          _rotationController.stop();
         });
       },
       child: Column(
@@ -173,7 +167,7 @@ class _Motorcycle3dWidgetState extends State<Motorcycle3dWidget> with SingleTick
                       child: AnimatedBuilder(
                         animation: _rotationController,
                         builder: (context, child) {
-                          final currentAngle = (_isAutoRotating ? (_rotationController.value * 2 * math.pi) : 0.0) + _userAngleOffset;
+                          final currentAngle = _userAngleOffset;
                           return CustomPaint(
                             size: Size(widget.size, widget.size * 0.78),
                             painter: RealisticMotorcycle3DPainter(

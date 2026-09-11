@@ -22,7 +22,7 @@ class _ArNavigationHudScreenState extends State<ArNavigationHudScreen> with Sing
     _arPulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    )..forward();
   }
 
   @override

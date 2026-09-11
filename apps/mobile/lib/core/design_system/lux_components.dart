@@ -287,7 +287,7 @@ class _RoadOSButtonState extends State<RoadOSButton>
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
+    )..forward();
   }
 
   @override
@@ -884,7 +884,7 @@ class _LuxPulseAnimationState extends State<LuxPulseAnimation>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration)..repeat(reverse: true);
+    _controller = AnimationController(vsync: this, duration: widget.duration)..forward();
     _animation = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );

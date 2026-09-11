@@ -32,7 +32,7 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
+    )..forward();
 
     _pulseAnimation = Tween<double>(begin: 0.85, end: 1.15).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),

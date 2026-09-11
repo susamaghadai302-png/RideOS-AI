@@ -104,19 +104,19 @@ class _ConnectVehicleScreenState extends ConsumerState<ConnectVehicleScreen>
     _radarCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2800),
-    )..repeat();
+    )..forward();
 
     // Pulse — 1.4 s loop
     _pulseCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
+    )..forward();
 
     // Scanning glow border — 1.8 s loop
     _scanBorderCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
+    )..forward();
 
     if (kIsWeb) {
       _initWebBluetooth();

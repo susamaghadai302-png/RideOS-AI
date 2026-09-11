@@ -24,7 +24,6 @@ class _Advanced3dGarageScreenState extends State<Advanced3dGarageScreen> {
   String _selectedVehicleId = 'v_unconfigured';
   CameraPreset _selectedCamera = CameraPreset.isometric;
   LightingPreset _selectedLighting = LightingPreset.showroomStudio;
-  double _rotationAngle = 0.0;
   String _aiOutput = '';
   final TextEditingController _queryController = TextEditingController();
 
@@ -79,7 +78,6 @@ class _Advanced3dGarageScreenState extends State<Advanced3dGarageScreen> {
                   child: RideOS3DModelViewer(
                     modelPath: bike.isAssetAvailable ? bike.assetGlbPath : '',
                     vehicleName: '${bike.manufacturer} ${bike.modelName}',
-                    autoRotate: false,
                     cameraControls: true,
                   ),
                 ),
@@ -304,7 +302,6 @@ class _Advanced3dGarageScreenState extends State<Advanced3dGarageScreen> {
         LuxAudioHapticsService.lightImpact();
         setState(() {
           _selectedVehicleId = m.id;
-          _rotationAngle = 0.0;
           _aiOutput = '';
         });
       },

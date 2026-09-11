@@ -56,9 +56,9 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
 
     _seq   = AnimationController(vsync: this, duration: _total);
-    _radar = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))..repeat();
-    _road  = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat();
-    _orb   = AnimationController(vsync: this, duration: const Duration(milliseconds: 3600))..repeat(reverse: true);
+    _radar = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))..forward();
+    _road  = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..forward();
+    _orb   = AnimationController(vsync: this, duration: const Duration(milliseconds: 3600))..forward();
 
     _atmAnim  = _interval(0.00, 0.18, Curves.easeOutCubic);
     _orbAnim  = _interval(0.07, 0.32, Curves.easeOut);

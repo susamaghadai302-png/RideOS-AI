@@ -55,7 +55,6 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
   int _selectedVehicleIndex = 0;
   String _activeCameraOrbit = '35deg 75deg 100%';
   ShowroomLightingMode _lightingMode = ShowroomLightingMode.studio;
-  bool _autoRotate = false;
   bool _showTelemetricsOverlay = false;
   bool _showHotspots = false;
   bool _isFullscreenShowcase = false;
@@ -115,7 +114,6 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
               child: RideOS3DModelViewer(
                 key: ValueKey('${currentVehicle.id}_${currentVehicle.model3DUrl}_$_activeCameraOrbit}_${_lightingMode.name}'),
                 vehicleProfile: currentVehicle,
-                autoRotate: _autoRotate,
                 cameraControls: true,
                 cameraOrbit: _activeCameraOrbit,
                 exposure: _lightingMode.exposure,
@@ -346,16 +344,6 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
                             context,
                             premiumRoute(const VehicleCatalogScreen()),
                           );
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      // 3D Auto-Rotate Animation Toggle
-                      _buildHeaderIconBtn(
-                        icon: _autoRotate ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                        isActive: _autoRotate,
-                        tooltip: 'Toggle 3D Orbit Animation',
-                        onTap: () {
-                          setState(() => _autoRotate = !_autoRotate);
                         },
                       ),
                     ],

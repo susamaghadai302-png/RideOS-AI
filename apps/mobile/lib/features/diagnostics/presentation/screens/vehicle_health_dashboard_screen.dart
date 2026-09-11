@@ -295,7 +295,6 @@ class _VehicleHealthDashboardScreenState
             RideOS3DModelViewer(
               vehicleProfile: vehicle,
               cameraOrbit: '45deg 65deg 90%',
-              autoRotate: false,
               exposure: 1.15,
             ),
             Positioned(

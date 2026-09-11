@@ -26,12 +26,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     _radarController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    )..repeat();
+    )..forward();
 
     _breatheController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    )..forward();
 
     _breatheAnim = Tween<double>(begin: 0.55, end: 1.0).animate(
       CurvedAnimation(parent: _breatheController, curve: Curves.easeInOut),

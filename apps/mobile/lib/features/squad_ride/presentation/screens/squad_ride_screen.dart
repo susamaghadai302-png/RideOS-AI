@@ -31,7 +31,7 @@ class _SquadRideScreenState extends State<SquadRideScreen> with SingleTickerProv
     _radarController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    )..repeat();
+    )..forward();
   }
 
   @override

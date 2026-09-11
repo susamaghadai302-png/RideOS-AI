@@ -30,7 +30,7 @@ class _CockpitCommandCenterScreenState extends State<CockpitCommandCenterScreen>
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    )..repeat(reverse: true);
+    )..forward();
   }
 
   @override

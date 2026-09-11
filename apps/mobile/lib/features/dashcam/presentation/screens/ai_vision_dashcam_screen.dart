@@ -29,15 +29,15 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
     _driveController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    )..repeat();
+    )..forward();
     _scanController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat();
+    )..forward();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
+    )..forward();
   }
 
   @override
