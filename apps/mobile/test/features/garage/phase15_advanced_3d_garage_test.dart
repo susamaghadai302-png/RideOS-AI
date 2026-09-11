@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/features/garage/domain/models/advanced_garage_models.dart';
 import 'package:rideos_mobile/features/garage/core/services/advanced_3d_garage_engine.dart';
 import 'package:rideos_mobile/features/garage/presentation/screens/advanced_3d_garage_screen.dart';
+import 'package:rideos_mobile/core/widgets/rideos_3d_model_viewer.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -82,6 +83,46 @@ void main() {
 
       // Verify Camera Presets header
       expect(find.text('CAMERA PRESETS'), findsOneWidget);
+    });
+
+    testWidgets('Camera Preset buttons update RideOS3DModelViewer cameraOrbit', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.dark(),
+          home: Advanced3dGarageScreen(engine: garageEngine),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      String? getOrbit() {
+        final viewerFinder = find.byType(RideOS3DModelViewer);
+        expect(viewerFinder, findsOneWidget);
+        final viewer = tester.widget<RideOS3DModelViewer>(viewerFinder);
+        return viewer.cameraOrbit;
+      }
+
+      // Initial state (isometric)
+      expect(getOrbit(), equals('45deg 70deg 90%'));
+
+      // Tap front (arrow_upward)
+      await tester.tap(find.byIcon(Icons.arrow_upward));
+      await tester.pumpAndSettle();
+      expect(getOrbit(), equals('0deg 85deg 90%'));
+
+      // Tap sideProfile (arrow_forward)
+      await tester.tap(find.byIcon(Icons.arrow_forward));
+      await tester.pumpAndSettle();
+      expect(getOrbit(), equals('90deg 85deg 90%'));
+
+      // Tap rear (arrow_downward)
+      await tester.tap(find.byIcon(Icons.arrow_downward));
+      await tester.pumpAndSettle();
+      expect(getOrbit(), equals('180deg 85deg 90%'));
+
+      // Tap topInspection (layers_rounded)
+      await tester.tap(find.byIcon(Icons.layers_rounded));
+      await tester.pumpAndSettle();
+      expect(getOrbit(), equals('0deg 0deg 90%'));
     });
   });
 }

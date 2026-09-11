@@ -36,6 +36,21 @@ class _Advanced3dGarageScreenState extends State<Advanced3dGarageScreen> {
     });
   }
 
+  String _getCameraOrbitString() {
+    switch (_selectedCamera) {
+      case CameraPreset.isometric:
+        return '45deg 70deg 90%';
+      case CameraPreset.front:
+        return '0deg 85deg 90%';
+      case CameraPreset.sideProfile:
+        return '90deg 85deg 90%';
+      case CameraPreset.rear:
+        return '180deg 85deg 90%';
+      case CameraPreset.topInspection:
+        return '0deg 0deg 90%';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final motorcycles = _garageEngine.getRegisteredMotorcycles();
@@ -76,9 +91,12 @@ class _Advanced3dGarageScreenState extends State<Advanced3dGarageScreen> {
                 // Real 3D Model Viewer or Truthful Pending Validation Viewport
                 Positioned.fill(
                   child: RideOS3DModelViewer(
+                    // Pass the active cameraOrbit key so it forces an update if necessary, though model_viewer_plus supports updating camera-orbit directly
+                    key: ValueKey('${bike.id}_$_selectedCamera'),
                     modelPath: bike.isAssetAvailable ? bike.assetGlbPath : '',
                     vehicleName: '${bike.manufacturer} ${bike.modelName}',
                     cameraControls: true,
+                    cameraOrbit: _getCameraOrbitString(),
                   ),
                 ),
 
