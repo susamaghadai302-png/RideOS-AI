@@ -66,43 +66,8 @@ class SquadMeshRadarEngine {
   List<SquadPeerRider> get activePeers => List.unmodifiable(_activeSquadPeers);
 
   void initializeSquadMesh({required String roomCode}) {
-    final now = DateTime.now();
     _activeSquadPeers.clear();
-    _activeSquadPeers.addAll([
-      SquadPeerRider(
-        riderId: 'rider_lead_01',
-        displayName: 'Marcus (Lead)',
-        motorcycleModel: 'Yamaha YZF-R1M',
-        role: SquadRiderRole.rideLeader,
-        distanceMeters: 45.0,
-        bearingDegrees: 12.0,
-        currentSpeedKmh: 82.0,
-        connectionStatus: PeerConnectionStatus.activePinging,
-        lastPingTimestamp: now,
-      ),
-      SquadPeerRider(
-        riderId: 'rider_wing_02',
-        displayName: 'Elena (Wingman)',
-        motorcycleModel: 'Ducati Panigale V4S',
-        role: SquadRiderRole.navigator,
-        distanceMeters: 28.0,
-        bearingDegrees: 345.0,
-        currentSpeedKmh: 81.5,
-        connectionStatus: PeerConnectionStatus.activePinging,
-        lastPingTimestamp: now,
-      ),
-      SquadPeerRider(
-        riderId: 'rider_tail_03',
-        displayName: 'Dave (Sweeper)',
-        motorcycleModel: 'BMW M1000RR',
-        role: SquadRiderRole.sweeperTail,
-        distanceMeters: 110.0,
-        bearingDegrees: 180.0,
-        currentSpeedKmh: 79.0,
-        connectionStatus: PeerConnectionStatus.activePinging,
-        lastPingTimestamp: now,
-      ),
-    ]);
+    // In production, this should connect to a real mesh network backend.
     _radarStreamController.add(List.unmodifiable(_activeSquadPeers));
   }
 

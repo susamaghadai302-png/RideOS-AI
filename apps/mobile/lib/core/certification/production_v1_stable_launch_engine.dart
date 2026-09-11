@@ -52,12 +52,12 @@ class ProductionV1StableLaunchEngine {
   /// Executes global production launch for RideOS AI v1.0 Stable.
   V1StableLaunchCertificate executeGlobalV1Launch() {
     final certificate = V1StableLaunchCertificate(
-      versionTag: 'v1.0.0-STABLE',
-      buildNumber: 14000,
-      launchStatus: 'GLOBAL_PRODUCTION_LIVE',
-      launchReadinessPct: 100.0,
-      crashFreeSessionsPct: 99.95,
-      sloAvailabilityPct: 99.99,
+      versionTag: 'v1.0.0-UNAVAILABLE',
+      buildNumber: 0,
+      launchStatus: 'OFFLINE',
+      launchReadinessPct: 0.0,
+      crashFreeSessionsPct: 0.0,
+      sloAvailabilityPct: 0.0,
       launchTimestamp: DateTime.now().toUtc().toIso8601String(),
     );
 
@@ -72,11 +72,11 @@ class ProductionV1StableLaunchEngine {
   /// Returns real-time SRE operational dashboard metrics.
   SreOperationsDashboard getSreOperationsDashboard() {
     return const SreOperationsDashboard(
-      primaryClusterState: 'HEALTHY_ACTIVE',
-      activeErrorBudgetRemainingPct: 99.8,
+      primaryClusterState: 'UNAVAILABLE',
+      activeErrorBudgetRemainingPct: 0.0,
       activeIncidentsCount: 0,
-      globalAverageLatencyMs: 18.4,
-      disasterRecoveryReadiness: 'STANDBY_READY',
+      globalAverageLatencyMs: 0.0,
+      disasterRecoveryReadiness: 'OFFLINE',
     );
   }
 

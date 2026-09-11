@@ -104,9 +104,10 @@ class ProductionAiPlatformEngine {
   Future<Map<String, dynamic>> evaluateRoadVisionFrame({required String base64ImageFrame}) async {
     developer.log('Analyzing road vision frame for motorcycle hazards...', name: 'RideOS.VisionAI');
     return {
-      'detected_hazards': ['Debris on right shoulder', 'Wet asphalt in 200m'],
-      'confidence_score': 0.98,
-      'recommended_speed_mph': 45,
+      'error': 'Vision AI service is not configured.',
+      'detected_hazards': [],
+      'confidence_score': 0.0,
+      'recommended_speed_mph': null,
     };
   }
 }

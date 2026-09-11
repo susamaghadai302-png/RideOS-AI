@@ -25,12 +25,12 @@ class ProductionPerformanceEngine {
   PerformanceMetricsReport collectPerformanceMetrics() {
     developer.log('Collecting Runtime Performance Metrics & Frame Diagnostics...', name: 'RideOS.PerformanceEngine');
     return const PerformanceMetricsReport(
-      coldStartDurationMs: 1420.0, // < 2.5s requirement
-      averageFps: 60.0,
-      memoryUsageMb: 84.5,
-      batteryConsumptionPctPerHour: 2.1,
-      networkLatencyMs: 14.2,
-      isSelfHealingActive: true,
+      coldStartDurationMs: 0.0,
+      averageFps: 0.0,
+      memoryUsageMb: 0.0,
+      batteryConsumptionPctPerHour: 0.0,
+      networkLatencyMs: 0.0,
+      isSelfHealingActive: false,
     );
   }
 

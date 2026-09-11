@@ -45,16 +45,18 @@ class CommercialFleetVehicleState {
 
 /// AI fleet route & predictive maintenance optimization summary.
 class AiFleetOptimizationSummary {
-  final double fleetUtilizationRatePct; // e.g. 89.4%
-  final double monthlyFuelSavingsPct; // e.g. 18.5%
-  final int predictedMaintenanceAlertsCount; // e.g. 3 vehicles requiring brake pad change
-  final double overallFleetSafetyScore; // 0.0 to 100.0
+  final double? fleetUtilizationRatePct; // e.g. 89.4%
+  final double? monthlyFuelSavingsPct; // e.g. 18.5%
+  final int? predictedMaintenanceAlertsCount; // e.g. 3 vehicles requiring brake pad change
+  final double? overallFleetSafetyScore; // 0.0 to 100.0
+  final String status;
 
   const AiFleetOptimizationSummary({
-    required this.fleetUtilizationRatePct,
-    required this.monthlyFuelSavingsPct,
-    required this.predictedMaintenanceAlertsCount,
-    required this.overallFleetSafetyScore,
+    this.fleetUtilizationRatePct,
+    this.monthlyFuelSavingsPct,
+    this.predictedMaintenanceAlertsCount,
+    this.overallFleetSafetyScore,
+    this.status = 'CONFIGURED',
   });
 }
 
@@ -95,10 +97,7 @@ class ProductionEnterpriseFleetEngine {
   /// Returns AI fleet optimization and predictive maintenance summary.
   AiFleetOptimizationSummary evaluateFleetOptimization(String tenantId) {
     return const AiFleetOptimizationSummary(
-      fleetUtilizationRatePct: 89.4,
-      monthlyFuelSavingsPct: 18.5,
-      predictedMaintenanceAlertsCount: 3,
-      overallFleetSafetyScore: 97.6,
+      status: 'UNAVAILABLE: Fleet optimization AI is not configured.',
     );
   }
 

@@ -21,7 +21,7 @@ class _Advanced3dGarageScreenState extends State<Advanced3dGarageScreen> {
     super.initState();
     _garageEngine = widget.engine ?? Advanced3dGarageEngine();
   }
-  String _selectedVehicleId = 'v_yamaha_r1m';
+  String _selectedVehicleId = 'v_unconfigured';
   CameraPreset _selectedCamera = CameraPreset.isometric;
   LightingPreset _selectedLighting = LightingPreset.showroomStudio;
   double _rotationAngle = 0.0;

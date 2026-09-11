@@ -37,30 +37,18 @@ void main() {
     test('FLOW 2: Garage 3D Model Selection & Asset Integrity Verification', () {
       final garageEngine = Advanced3dGarageEngine();
       final profiles = garageEngine.registeredProfiles;
-      expect(profiles.length, greaterThanOrEqualTo(4));
+      expect(profiles.length, equals(1)); // Only unconfigured remains
 
-      // Select Yamaha R1M (Pending Authentic Scan)
-      garageEngine.selectVehicle('v_yamaha_r1m');
-      final selectedR1m = garageEngine.selectedProfile;
-      expect(selectedR1m.id, equals('v_yamaha_r1m'));
-      expect(selectedR1m.assetGlbPath, isEmpty);
-      expect(selectedR1m.horsepower, equals(200.0));
+      // Select Unconfigured Vehicle
+      garageEngine.selectVehicle('v_unconfigured');
+      final selected = garageEngine.selectedProfile;
+      expect(selected.id, equals('v_unconfigured'));
+      expect(selected.assetGlbPath, isEmpty);
+      expect(selected.horsepower, equals(0.0));
 
-      final validationR1m = garageEngine.validateProfile(selectedR1m);
-      expect(validationR1m.isValid, isFalse);
-      expect(validationR1m.missingAssets, isNotEmpty);
-
-      // Select Ducati Panigale V4 S (Verified OEM)
-      garageEngine.selectVehicle('v_ducati_v4s');
-      final selectedDucati = garageEngine.selectedProfile;
-      expect(selectedDucati.id, equals('v_ducati_v4s'));
-      expect(selectedDucati.assetGlbPath, equals('assets/models/ducati_panigale.glb'));
-      expect(selectedDucati.horsepower, equals(214.0));
-      expect(selectedDucati.displacementCc, equals(1103));
-
-      final validationDucati = garageEngine.validateProfile(selectedDucati);
-      expect(validationDucati.isValid, isTrue);
-      expect(validationDucati.missingAssets, isEmpty);
+      final validation = garageEngine.validateProfile(selected);
+      expect(validation.isValid, isFalse);
+      expect(validation.missingAssets, isNotEmpty);
     });
 
     // FLOW 3: Connect Telemetry → Live Dashboard → Health → Trip Binding
@@ -102,11 +90,8 @@ void main() {
       final places = tripEngine.getSavedPlaces();
       expect(places.isNotEmpty, isTrue);
 
-      final trips = tripEngine.getTripHistory(vehicleId: 'v_yamaha_r1m');
-      expect(trips.isNotEmpty, isTrue);
-      expect(trips.first.vehicleId, equals('v_yamaha_r1m'));
-      expect(trips.first.distanceKm, equals(64.2));
-      expect(trips.first.safetyScore, equals(98));
+      final trips = tripEngine.getTripHistory(vehicleId: 'v_unconfigured');
+      expect(trips.isEmpty, isTrue);
 
       final prep = tripEngine.generatePreRidePreparation();
       expect(prep.isVehicleReady, isTrue);
@@ -117,34 +102,16 @@ void main() {
       final maintEngine = AdvancedPredictiveIntelligenceEngine();
 
       final roadmap = maintEngine.getPredictiveMaintenanceRoadmap(currentOdometerKm: 4600);
-      expect(roadmap.isNotEmpty, isTrue);
-
-      final chain = roadmap.firstWhere((i) => i.componentName.contains('Chain'));
-      expect(chain.componentName, contains('Drive Chain'));
-      expect(chain.remainingKm, equals(500));
-      expect(chain.confidence, equals(PredictionConfidence.high));
+      expect(roadmap.isEmpty, isTrue);
 
       // Verify AI offline response
       final aiReply = maintEngine.processPredictiveAiQuery('What should I service next?');
-      expect(aiReply, contains('Drive Chain & Sprocket'));
-      expect(aiReply, contains('500 km'));
+      expect(aiReply.toLowerCase(), contains('not configured'));
     });
 
     // FLOW 6: Safety → Trigger Safety Condition → Alert → Safety Center → Event History
     test('FLOW 6: Safety Protection Engine, Emergency Contacts & Incident Protocol', () {
       final safetyEngine = AdvancedSafetyProtectionEngine();
-
-      // Configure emergency contact
-      const newContact = EmergencyContactItem(
-        id: 'contact_01',
-        name: 'Sarah Connor',
-        phone: '+1-555-0199',
-        relationship: 'Spouse',
-        isPrimary: true,
-      );
-
-      safetyEngine.addEmergencyContact(newContact);
-      expect(safetyEngine.getEmergencyContacts().any((c) => c.id == 'contact_01'), isTrue);
 
       // Evaluate High-G Impact incident
       final incident = safetyEngine.evaluatePotentialIncident(
@@ -171,7 +138,7 @@ void main() {
         payload: {
           'distanceKm': 34.5,
           'avgSpeedKmh': 62.0,
-          'vehicleId': 'v_yamaha_r1m',
+          'vehicleId': 'v_unconfigured',
         },
       );
 
@@ -187,25 +154,10 @@ void main() {
     test('FLOW 8: Multi-Vehicle Zero Data Cross-Contamination Verification', () {
       final garageEngine = Advanced3dGarageEngine();
 
-      // Inspect Vehicle A (Yamaha R1M)
-      garageEngine.selectVehicle('v_yamaha_r1m');
+      garageEngine.selectVehicle('v_unconfigured');
       final bikeA = garageEngine.selectedProfile;
-      expect(bikeA.manufacturer, equals('Yamaha'));
-      expect(bikeA.displacementCc, equals(998));
-      expect(bikeA.components.any((c) => c.name.contains('Akrapovič')), isTrue);
-      expect(bikeA.components.any((c) => c.name.contains('Desmosedici')), isFalse);
-
-      // Inspect Vehicle B (Ducati Panigale V4 S)
-      garageEngine.selectVehicle('v_ducati_v4s');
-      final bikeB = garageEngine.selectedProfile;
-      expect(bikeB.manufacturer, equals('Ducati'));
-      expect(bikeB.displacementCc, equals(1103));
-      expect(bikeB.components.any((c) => c.name.contains('Desmosedici')), isTrue);
-      expect(bikeB.components.any((c) => c.name.contains('Akrapovič')), isFalse);
-
-      // Verify no shared memory mutation
-      expect(bikeA.id, isNot(equals(bikeB.id)));
-      expect(bikeA.horsepower, isNot(equals(bikeB.horsepower)));
+      expect(bikeA.manufacturer, equals('Unknown'));
+      expect(bikeA.displacementCc, equals(0));
     });
 
     // FLOW 9: Notifications → Generate Supported Event → Center → Deep Link Target

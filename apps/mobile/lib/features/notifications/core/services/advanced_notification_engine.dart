@@ -7,44 +7,7 @@ class AdvancedNotificationEngine {
   AdvancedNotificationEngine._internal();
 
   final _telematics = FleetTelematicsEngine();
-  final List<RiderNotificationItem> _notifications = [
-    RiderNotificationItem(
-      id: 'notif_001',
-      notificationKey: 'maint_oil_due',
-      title: 'Oil Service Milestone Approaching',
-      message: 'Yamaha MT-09 SP is due for routine engine oil & filter service in 300 km.',
-      category: AlertCategory.maintenance,
-      severity: AlertSeverity.high,
-      vehicleName: 'Yamaha MT-09 SP',
-      isRead: false,
-      timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-      deepLinkRoute: '/maintenance',
-    ),
-    RiderNotificationItem(
-      id: 'notif_002',
-      notificationKey: 'chain_lube_reminder',
-      title: 'Driveline Chain Lubrication',
-      message: 'Yamaha YZF-R1M 500 km chain tension and lubrication check recommended.',
-      category: AlertCategory.maintenance,
-      severity: AlertSeverity.normal,
-      vehicleName: 'Yamaha YZF-R1M',
-      isRead: false,
-      timestamp: DateTime.now().subtract(const Duration(hours: 4)),
-      deepLinkRoute: '/maintenance',
-    ),
-    RiderNotificationItem(
-      id: 'notif_003',
-      notificationKey: 'safety_normal',
-      title: 'Powertrain Safety Shield Active',
-      message: 'All ECU thermal and electrical parameters verified nominal across 4 fleet motorcycles.',
-      category: AlertCategory.safety,
-      severity: AlertSeverity.info,
-      vehicleName: 'Fleet',
-      isRead: true,
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      deepLinkRoute: '/safety',
-    ),
-  ];
+  final List<RiderNotificationItem> _notifications = [];
 
   final Set<String> _recentDispatchedKeys = {};
 
@@ -145,7 +108,7 @@ class AdvancedNotificationEngine {
           message: 'Battery bus voltage dropped below 11.8V. Inspect electrical charging stator.',
           category: AlertCategory.vehicleHealth,
           severity: AlertSeverity.high,
-          vehicleName: 'Yamaha YZF-R1M',
+          vehicleName: 'Active Vehicle',
           deepLinkRoute: '/health',
         );
       }

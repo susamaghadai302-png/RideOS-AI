@@ -11,71 +11,7 @@ class VehicleDocumentsScreen extends StatefulWidget {
 }
 
 class _VehicleDocumentsScreenState extends State<VehicleDocumentsScreen> {
-  final List<Map<String, dynamic>> _documents = [
-    {
-      'title': 'Driving License (DL)',
-      'number': 'DL-9820-2024-CA',
-      'category': 'License',
-      'expiry': '2028-12-31',
-      'daysLeft': 878,
-      'status': 'Valid',
-      'type': 'PDF / Scan',
-    },
-    {
-      'title': 'Vehicle Insurance Policy',
-      'number': 'Allianz Policy #8820-91A',
-      'category': 'Insurance',
-      'expiry': '2026-11-15',
-      'daysLeft': 102,
-      'status': 'Renew Soon',
-      'type': 'PDF Document',
-    },
-    {
-      'title': 'RC Book Registration',
-      'number': 'CA-9201-R1M',
-      'category': 'RC',
-      'expiry': '2039-05-14',
-      'daysLeft': 4664,
-      'status': 'Valid',
-      'type': 'Image Scan',
-    },
-    {
-      'title': 'PUC Emission Certificate',
-      'number': 'PUC-LEVEL1-982',
-      'category': 'PUC',
-      'expiry': '2026-10-01',
-      'daysLeft': 57,
-      'status': 'Renew Soon',
-      'type': 'PDF Document',
-    },
-    {
-      'title': 'Purchase Invoice',
-      'number': 'INV-YAM-2024-091',
-      'category': 'Invoice',
-      'expiry': 'N/A (Lifetime)',
-      'daysLeft': 9999,
-      'status': 'Archived',
-      'type': 'PDF Document',
-    },
-    {
-      'title': 'Official Service Booklet',
-      'number': 'SRV-BOOK-9982',
-      'category': 'Service Book',
-      'expiry': '2027-01-01',
-      'daysLeft': 331,
-      'status': 'Valid',
-      'type': 'Digital History',
-    },
-    {
-      'title': 'Factory Warranty Pass',
-      'number': 'WAR-YAM-3YR-881',
-      'category': 'Warranty',
-      'expiry': '2027-05-14',
-      'daysLeft': 464,
-      'status': 'Valid',
-      'type': 'PDF Document',
-    },
-  ];
+  final List<Map<String, dynamic>> _documents = [];
 
   void _uploadDocument() {
     LuxAudioHapticsService.mediumImpact();
