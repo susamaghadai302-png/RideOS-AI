@@ -11,13 +11,6 @@ void main() {
     });
 
     test('Evaluates overall health report and marks data classification accurately', () {
-      ObdFullTelemetryService().isSimulatorMode = true;
-      final simReport = engine.evaluateHealthReport();
-      expect(simReport.dataClassification, equals('SIMULATED DATA'));
-      expect(simReport.overallHealthScore, greaterThan(70));
-      expect(simReport.subsystems.length, equals(3)); // Powertrain, Battery, TPMS
-
-      ObdFullTelemetryService().isSimulatorMode = false;
       final offlineReport = engine.evaluateHealthReport(isBleConnected: false);
       expect(offlineReport.dataClassification, equals('HARDWARE_NOT_CONNECTED'));
 
@@ -26,7 +19,6 @@ void main() {
     });
 
     test('Generates predictive recommendations when health parameters deviate', () {
-      ObdFullTelemetryService().isSimulatorMode = true;
       final report = engine.evaluateHealthReport();
       expect(report.subsystems.every((s) => s.healthScore >= 0 && s.healthScore <= 100), isTrue);
       expect(report.overallStatus, isNotEmpty);

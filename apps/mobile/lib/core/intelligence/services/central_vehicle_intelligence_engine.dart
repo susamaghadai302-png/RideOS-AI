@@ -14,10 +14,8 @@ final vehicleIntelligenceProvider = Provider<VehicleIntelligenceSnapshot>((ref) 
   final ownedVehicles = ref.watch(myVehiclesProvider);
   final bleState = ref.watch(bluetoothStateProvider);
 
-  final isSimulator = ObdFullTelemetryService().isSimulatorMode;
-  final isRealBleConnected = bleState == BleState.BluetoothConnectionState.live ||
+  final isConnected = bleState == BleState.BluetoothConnectionState.live ||
       bleState == BleState.BluetoothConnectionState.connected;
-  final isConnected = isSimulator || isRealBleConnected;
 
   final vehicle = activeContext.hasActiveVehicle
       ? activeContext.profile!
@@ -30,10 +28,7 @@ final vehicleIntelligenceProvider = Provider<VehicleIntelligenceSnapshot>((ref) 
   AiState aiState;
   String stateExplanation;
 
-  if (isSimulator) {
-    aiState = AiState.analyzing;
-    stateExplanation = 'Simulator telemetry active. Sensor mock pipeline streaming at 10Hz.';
-  } else if (isRealBleConnected) {
+  if (isConnected) {
     final hasWarnings = healthSummary.activeDtcCount > 0 || healthSummary.activeAlertCount > 0;
     if (hasWarnings) {
       aiState = AiState.attention;
@@ -57,10 +52,8 @@ final vehicleIntelligenceProvider = Provider<VehicleIntelligenceSnapshot>((ref) 
     insights.add(
       AiInsight(
         id: 'ins_link_stable',
-        title: isSimulator ? 'Simulated Telemetry Bridge' : 'Hardware Telemetry Synchronized',
-        explanation: isSimulator
-            ? 'Running emulator mode with synthetic speed, RPM, and lean telemetry.'
-            : 'BLE GATT telemetry link stable with 0 frame drops over current session.',
+        title: 'Hardware Telemetry Synchronized',
+        explanation: 'BLE GATT telemetry link stable with 0 frame drops over current session.',
         whyItMatters: 'Ensures real-time crash detection, ECU telemetry, and trip logging work reliably.',
         severity: InsightSeverity.success,
         timestamp: DateTime.now(),
@@ -145,7 +138,7 @@ final vehicleIntelligenceProvider = Provider<VehicleIntelligenceSnapshot>((ref) 
     aiState: aiState,
     stateExplanation: stateExplanation,
     isConnected: isConnected,
-    isSimulator: isSimulator,
+    isSimulator: false,
     activeInsights: insights,
     recommendations: recommendations,
     rideReadinessPercent: isConnected ? 98.0 : 75.0,

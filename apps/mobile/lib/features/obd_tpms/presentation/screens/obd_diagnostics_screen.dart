@@ -14,14 +14,7 @@ class ObdDiagnosticsScreen extends StatefulWidget {
 }
 
 class _ObdDiagnosticsScreenState extends State<ObdDiagnosticsScreen> {
-  late bool _isSimulated;
   bool _isConnected = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _isSimulated = ObdFullTelemetryService().isSimulatorMode;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,34 +45,6 @@ class _ObdDiagnosticsScreenState extends State<ObdDiagnosticsScreen> {
             child: LuxResponsiveContainer(
               child: Column(
                 children: [
-                  // Data Source Banner
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 14),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: _isSimulated ? Colors.amber.withValues(alpha: 0.15) : RoadOSColors.cyberCyan.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _isSimulated ? Colors.amberAccent.withValues(alpha: 0.4) : RoadOSColors.cyberCyan.withValues(alpha: 0.4)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(_isSimulated ? Icons.tune_rounded : Icons.sensors_rounded, color: _isSimulated ? Colors.amberAccent : RoadOSColors.cyberCyan, size: 18),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _isSimulated ? 'DATA SOURCE: SYNTHETIC ISO 15765 SIMULATOR' : 'DATA SOURCE: PHYSICAL ELM327 BLE HARDWARE',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.bold,
-                              color: _isSimulated ? Colors.amberAccent : RoadOSColors.cyberCyan,
-                              letterSpacing: 0.9,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
                   // CAN-BUS Connection Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -167,3 +132,4 @@ class _ObdDiagnosticsScreenState extends State<ObdDiagnosticsScreen> {
     );
   }
 }
+

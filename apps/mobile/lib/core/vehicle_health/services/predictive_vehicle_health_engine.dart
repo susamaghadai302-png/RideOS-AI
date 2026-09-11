@@ -49,7 +49,7 @@ class PredictiveVehicleHealthEngine {
     NormalizedTelemetry? normalizedTelemetry,
   }) {
     final obd = ObdFullTelemetryService().getLatestTelemetry();
-    final isSimulated = ObdFullTelemetryService().isSimulatorMode;
+    final isSimulated = false;
 
     String classification = 'HISTORICAL / OFFLINE';
     if (isSimulated) {

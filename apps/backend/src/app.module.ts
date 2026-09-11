@@ -11,7 +11,7 @@ import { TelematicsModule } from './modules/telematics/telematics.module';
 import { AiAssistantModule } from './modules/ai_assistant/ai_assistant.module';
 import { SafetySosModule } from './modules/safety_sos/safety_sos.module';
 import { SquadModule } from './modules/squad/squad.module';
-import { ObdDiagnosticsModule } from './modules/obd_diagnostics/obd_diagnostics.module';
+import { DiagnosticsModule } from './modules/diagnostics/diagnostics.module';
 import { WeatherModule } from './modules/weather/weather.module';
 import { PushNotificationsModule } from './modules/push-notifications/push-notifications.module';
 import { CloudSyncModule } from './modules/cloud-sync/cloud-sync.module';
@@ -54,7 +54,7 @@ import { TelemetryGateway } from './websocket/telemetry.gateway';
     AiAssistantModule,
     SafetySosModule,
     SquadModule,
-    ObdDiagnosticsModule,
+    DiagnosticsModule,
     WeatherModule,
     PushNotificationsModule,
     CloudSyncModule,

@@ -6,8 +6,7 @@ enum IdentificationSource {
   vinManualInput('VIN MANUAL INPUT'),
   obdEcuQuery('OBD-II / CAN ECU MODE 09'),
   bleGattSignature('BLE GATT SIGNATURE'),
-  manualCatalogSelection('MANUAL CATALOG SELECTION'),
-  simulatedTestBench('SIMULATOR BENCH');
+  manualCatalogSelection('MANUAL CATALOG SELECTION');
 
   final String label;
   const IdentificationSource(this.label);

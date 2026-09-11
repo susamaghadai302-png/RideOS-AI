@@ -12,16 +12,8 @@ void main() {
       copilot.clearAlerts();
     });
 
-    test('Assembles current riding context accurately in Real BLE vs Simulator mode', () {
-      // In simulator mode
-      ObdFullTelemetryService().isSimulatorMode = true;
-      final simContext = copilot.getCurrentContext();
-      expect(simContext.isSimulated, isTrue);
-      expect(simContext.dataSource, equals(TelemetryDataSource.simulatorDemo));
-      expect(simContext.summaryDescription, contains('[SIMULATED]'));
-
+    test('Assembles current riding context accurately', () {
       // In real BLE mode (disconnected)
-      ObdFullTelemetryService().isSimulatorMode = false;
       final realContext = copilot.getCurrentContext(isBleConnected: false);
       expect(realContext.isSimulated, isFalse);
       expect(realContext.isConnected, isFalse);
@@ -34,7 +26,7 @@ void main() {
         currentSpeedKmH: 80.0,
         batteryVoltage: 13.6,
         engineRpm: 6000,
-        dataSource: TelemetryDataSource.simulatorDemo,
+        dataSource: TelemetryDataSource.unconnectedOffline,
         isConnected: true,
         activeVehicleName: 'Yamaha YZF-R1M',
         timestamp: DateTime.now(),
@@ -56,7 +48,7 @@ void main() {
         batteryVoltage: 11.2,
         currentSpeedKmH: 0.0,
         engineRpm: 0,
-        dataSource: TelemetryDataSource.simulatorDemo,
+        dataSource: TelemetryDataSource.unconnectedOffline,
         isConnected: true,
         activeVehicleName: 'Yamaha YZF-R1M',
         timestamp: DateTime.now(),
@@ -68,13 +60,11 @@ void main() {
     });
 
     test('Generates sensible telemetry responses without fabricating missing values', () {
-      ObdFullTelemetryService().isSimulatorMode = true;
       final speedResp = copilot.generateTelemetryQueryResponse('speed');
-      expect(speedResp, contains('km/h'));
-      expect(speedResp, contains('(Simulated)'));
+      expect(speedResp, contains('unavailable'));
 
       final batteryResp = copilot.generateTelemetryQueryResponse('battery');
-      expect(batteryResp, contains('Volts'));
+      expect(batteryResp, contains('unavailable'));
 
       final alertsResp = copilot.generateTelemetryQueryResponse('alerts');
       expect(alertsResp, isNotEmpty);

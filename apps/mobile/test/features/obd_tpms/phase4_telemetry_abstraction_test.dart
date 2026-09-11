@@ -9,18 +9,7 @@ void main() {
       service = ObdFullTelemetryService();
     });
 
-    test('Simulator mode emits simulatorDemo telemetry with isSimulated = true', () {
-      service.isSimulatorMode = true;
-      final telemetry = service.getLatestTelemetry();
-
-      expect(telemetry.source, TelemetryDataSource.simulatorDemo);
-      expect(telemetry.isSimulated, isTrue);
-      expect(telemetry.engineRpm, 4850);
-      expect(telemetry.coolantTempC, 88.5);
-    });
-
     test('Offline mode emits unconnectedOffline telemetry with null metrics', () {
-      service.isSimulatorMode = false;
       service.updateTelemetry(ObdFullTelemetryData(
         source: TelemetryDataSource.unconnectedOffline,
         timestamp: DateTime.now(),

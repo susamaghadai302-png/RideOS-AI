@@ -84,6 +84,11 @@ class Obd2CommandBuilder {
     return bytes;
   }
 
+  /// Converts a byte list to a space-separated ASCII hex string (e.g., "41 0D 00").
+  static String bytesToAsciiHex(List<int> bytes) {
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase()).join(' ');
+  }
+
   /// Parses Mode $01 response bytes into a [DecodedPidMeasurement].
   static DecodedPidMeasurement? parseMode01Response(List<int> responseBytes, DiagnosticPid pid) {
     if (responseBytes.length < 2) return null;
@@ -105,6 +110,7 @@ class Obd2CommandBuilder {
         unit: pid.unit,
         timestamp: DateTime.now(),
         isValid: true,
+        rawValue: responseBytes,
       );
     } catch (_) {
       return null;

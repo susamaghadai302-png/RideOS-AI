@@ -12,7 +12,7 @@ class SmartVehicleIdentificationScreen extends StatefulWidget {
 
   const SmartVehicleIdentificationScreen({
     super.key,
-    this.initialMode = SmartScanExecutionMode.simulator,
+    this.initialMode = SmartScanExecutionMode.realHardware,
   });
 
   @override
@@ -28,7 +28,7 @@ class _SmartVehicleIdentificationScreenState extends State<SmartVehicleIdentific
   final VinIdentificationEngine _vinEngine = VinIdentificationEngine.instance;
   final VinOcrScannerEngine _ocrEngine = VinOcrScannerEngine.instance;
 
-  SmartScanExecutionMode _currentExecutionMode = SmartScanExecutionMode.simulator;
+  SmartScanExecutionMode _currentExecutionMode = SmartScanExecutionMode.realHardware;
   final PhysicalTransportType _selectedTransport = PhysicalTransportType.bluetoothLowEnergy;
 
   bool _isScanning = false;
@@ -186,7 +186,6 @@ class _SmartVehicleIdentificationScreenState extends State<SmartVehicleIdentific
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildExecutionModeHeader(),
             const SizedBox(height: 16),
             if (_errorMessage != null) ...[
               Container(
@@ -220,54 +219,7 @@ class _SmartVehicleIdentificationScreenState extends State<SmartVehicleIdentific
     );
   }
 
-  Widget _buildExecutionModeHeader() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: RoadOSColors.cardSurface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: _currentExecutionMode == SmartScanExecutionMode.realHardware
-                      ? RoadOSColors.apexEmerald
-                      : RoadOSColors.warningAmber,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _currentExecutionMode.code,
-                style: RoadOSTypography.cardTitle.copyWith(fontSize: 13, color: Colors.white),
-              ),
-            ],
-          ),
-          DropdownButton<SmartScanExecutionMode>(
-            value: _currentExecutionMode,
-            dropdownColor: RoadOSColors.cardSurface,
-            underline: const SizedBox(),
-            items: SmartScanExecutionMode.values.map((mode) {
-              return DropdownMenuItem(
-                value: mode,
-                child: Text(mode.code, style: const TextStyle(color: Colors.white, fontSize: 12)),
-              );
-            }).toList(),
-            onChanged: (val) {
-              if (val != null) setState(() => _currentExecutionMode = val);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildSmartScanTab() {
     return Container(

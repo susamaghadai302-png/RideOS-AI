@@ -6,12 +6,11 @@ import '../models/dtc_record.dart';
 import '../models/pid_definition.dart';
 import '../protocol/obd2_command_builder.dart';
 import '../protocol/iso_tp_handler.dart';
-import 'diagnostic_database.dart';
 import '../../transport/services/transport_manager.dart';
-import '../../vehicle_identification/services/smart_scan_orchestrator.dart';
 import '../../vehicle_commands/models/vehicle_command.dart';
 import '../../vehicle_commands/models/command_result.dart';
 import '../../vehicle_commands/services/vehicle_command_pipeline.dart';
+import '../repositories/diagnostic_repository.dart';
 
 /// Active Diagnostic Session Status.
 enum DiagnosticSessionState {
@@ -57,7 +56,6 @@ class EcuDiagnosticManager {
   EcuDiagnosticManager._internal();
 
   final TransportManager _transportManager = TransportManager.instance;
-  final DiagnosticDatabase _database = DiagnosticDatabase.instance;
   final IsoTpHandler _isoTpHandler = IsoTpHandler();
   IsoTpHandler get isoTpHandler => _isoTpHandler;
 
@@ -108,6 +106,7 @@ class EcuDiagnosticManager {
   /// Scans all primary vehicle ECUs (ECM, ABS, BMS, TCU, IPC, BCM) for faults.
   Future<List<DiagnosticFaultRecord>> performFullEcuScan({
     List<EcuModule>? targetModules,
+    String? vehicleId,
   }) async {
     _setState(DiagnosticSessionState.scanningModules);
     _moduleResults.clear();
@@ -123,69 +122,77 @@ class EcuDiagnosticManager {
           EcuModule.bodyControlModule_BCM,
         ];
 
-    final isSimulator = _transportManager.executionMode == SmartScanExecutionMode.simulator ||
-        _transportManager.executionMode == SmartScanExecutionMode.testBench;
+    final List<String> allRawPayloads = [];
 
     for (final module in modules) {
       final stopwatch = Stopwatch()..start();
 
-      if (isSimulator) {
-        // Deterministic simulated multi-ECU responses
-        final faults = _generateSimulatedFaultsForModule(module);
-        _moduleResults[module] = EcuModuleScanResult(
-          module: module,
-          isResponding: true,
-          ecuName: '${module.name}_SIM_V2.1',
-          calibrationId: 'CAL_${module.name}_2026',
-          faults: faults,
-          activeDtcCount: faults.length,
-          roundTripLatency: Duration(milliseconds: 15 + (module.index * 5)),
-        );
-        _allActiveFaults.addAll(faults);
-      } else {
-        // Real hardware path: query via TransportManager
-        try {
-          if (!_transportManager.managerState.isActive) {
-            _moduleResults[module] = EcuModuleScanResult(
-              module: module,
-              isResponding: false,
-              activeDtcCount: 0,
-              roundTripLatency: stopwatch.elapsed,
-            );
-            continue;
-          }
-
-          // Format OBD-II Mode $03 request to target module address
-          final cmd = Obd2CommandBuilder.requestConfirmedDtcs();
-          await _transportManager.write(utf8.encode(cmd));
-          final packet = await _transportManager.read(timeout: const Duration(seconds: 3));
-          final rawBytes = Obd2CommandBuilder.parseAsciiHexToBytes(
-            utf8.decode(packet.payload, allowMalformed: true),
-          );
-
-          final rawFaults = Obd2CommandBuilder.parseDtcResponse(rawBytes, module: module);
-          final enrichedFaults = rawFaults.map((f) => _database.lookup(f.code, module: module)).toList();
-
-          _moduleResults[module] = EcuModuleScanResult(
-            module: module,
-            isResponding: true,
-            faults: enrichedFaults,
-            activeDtcCount: enrichedFaults.length,
-            roundTripLatency: stopwatch.elapsed,
-          );
-          _allActiveFaults.addAll(enrichedFaults);
-        } catch (e) {
+      // Real hardware path: query via TransportManager
+      try {
+        if (!_transportManager.managerState.isActive) {
           _moduleResults[module] = EcuModuleScanResult(
             module: module,
             isResponding: false,
             activeDtcCount: 0,
             roundTripLatency: stopwatch.elapsed,
           );
+          continue;
         }
+
+        // Format OBD-II Mode $03 request to target module address
+        final cmd = Obd2CommandBuilder.requestConfirmedDtcs();
+        await _transportManager.write(utf8.encode(cmd));
+        final packet = await _transportManager.read(timeout: const Duration(seconds: 3));
+        final rawAsciiHex = utf8.decode(packet.payload, allowMalformed: true);
+        allRawPayloads.add(rawAsciiHex);
+
+        _moduleResults[module] = EcuModuleScanResult(
+          module: module,
+          isResponding: true,
+          activeDtcCount: 0, // Will be updated when backend decodes
+          roundTripLatency: stopwatch.elapsed,
+        );
+      } catch (e) {
+        _moduleResults[module] = EcuModuleScanResult(
+          module: module,
+          isResponding: false,
+          activeDtcCount: 0,
+          roundTripLatency: stopwatch.elapsed,
+        );
       }
     }
 
-    _faultsController.add(_allActiveFaults);
+    if (vehicleId != null) {
+      try {
+        final backendFaults = await DiagnosticRepository().submitScan(
+          vehicleId,
+          rawPayloads: allRawPayloads,
+          protocol: _activeProtocol.name,
+          transportType: _transportManager.activeConnection?.device.transportType.name ?? 'UNKNOWN',
+        );
+
+        _allActiveFaults.addAll(backendFaults);
+        
+        for (final module in modules) {
+          final existing = _moduleResults[module];
+          if (existing != null && existing.isResponding) {
+             final moduleFaults = backendFaults.where((f) => f.module == module).toList();
+             _moduleResults[module] = EcuModuleScanResult(
+               module: module,
+               isResponding: true,
+               faults: moduleFaults,
+               activeDtcCount: moduleFaults.length,
+               roundTripLatency: existing.roundTripLatency,
+             );
+          }
+        }
+      } catch (e) {
+        _setState(DiagnosticSessionState.error);
+        throw Exception('Failed to decode diagnostics with backend: $e');
+      }
+    }
+
+    _faultsController.add(List.unmodifiable(_allActiveFaults));
     _setState(DiagnosticSessionState.idle);
     return List.unmodifiable(_allActiveFaults);
   }
@@ -219,20 +226,7 @@ class EcuDiagnosticManager {
   }
 
   Future<void> _pollPidCycle(List<DiagnosticPid> pids) async {
-    final isSimulator = _transportManager.executionMode == SmartScanExecutionMode.simulator ||
-        _transportManager.executionMode == SmartScanExecutionMode.testBench;
-
     for (final pid in pids) {
-      if (isSimulator) {
-        final mockValue = _generateSimulatedPidValue(pid);
-        _latestPidValues[pid.pid] = DecodedPidMeasurement(
-          pid: pid,
-          value: mockValue,
-          unit: pid.unit,
-          timestamp: DateTime.now(),
-          isValid: true,
-        );
-      } else {
         if (!_transportManager.managerState.isActive) continue;
         try {
           final cmd = Obd2CommandBuilder.requestLivePid(pid);
@@ -249,7 +243,6 @@ class EcuDiagnosticManager {
           // Keep prior measurement if poll misses single frame
         }
       }
-    }
     _pidController.add(Map.unmodifiable(_latestPidValues));
   }
 
@@ -263,6 +256,7 @@ class EcuDiagnosticManager {
   /// Clearing while in motion will throw a [StateError].
   Future<bool> clearAllDiagnosticFaults({
     bool forceConfirmation = false,
+    String? vehicleId,
   }) async {
     if (!forceConfirmation) {
       throw ArgumentError('User confirmation required to clear DTC memory.');
@@ -286,18 +280,6 @@ class EcuDiagnosticManager {
 
     _setState(DiagnosticSessionState.clearingFaults);
 
-    final isSimulator = _transportManager.executionMode == SmartScanExecutionMode.simulator ||
-        _transportManager.executionMode == SmartScanExecutionMode.testBench;
-
-    if (isSimulator) {
-      await Future.delayed(const Duration(milliseconds: 150));
-      _allActiveFaults.clear();
-      _moduleResults.clear();
-      _faultsController.add(const []);
-      _setState(DiagnosticSessionState.idle);
-      return true;
-    }
-
     try {
       if (!_transportManager.managerState.isActive) {
         throw StateError('Cannot clear DTCs: Transport adapter is not connected.');
@@ -311,68 +293,24 @@ class EcuDiagnosticManager {
       if (success) {
         _allActiveFaults.clear();
         _faultsController.add(const []);
+        if (vehicleId != null) {
+          final speedHex = Obd2CommandBuilder.bytesToAsciiHex(speedMeasurement.rawValue);
+          final ackHex = result.rawResponse != null ? Obd2CommandBuilder.bytesToAsciiHex(result.rawResponse!) : '44';
+          
+          await DiagnosticRepository().clearDtcs(
+            vehicleId,
+            protocol: _activeProtocol.name,
+            transportType: _transportManager.activeConnection?.device.transportType.name ?? 'UNKNOWN',
+            speedPayload: speedHex,
+            clearAckPayload: ackHex,
+          );
+        }
       }
       _setState(DiagnosticSessionState.idle);
       return success;
     } catch (e) {
       _setState(DiagnosticSessionState.error);
       rethrow;
-    }
-  }
-
-  // =========================================================================
-  // Simulator Data Generators
-  // =========================================================================
-
-  List<DiagnosticFaultRecord> _generateSimulatedFaultsForModule(EcuModule module) {
-    switch (module) {
-      case EcuModule.engineControlModule_ECM:
-        return [
-          _database.lookup('P0115', module: module), // Engine Coolant Temp
-          _database.lookup('P0300', module: module), // Random Misfire (Critical)
-        ];
-      case EcuModule.antiLockBraking_ABS:
-        return [
-          _database.lookup('C0035', module: module), // Front Wheel Speed
-        ];
-      case EcuModule.batteryManagementSystem_BMS:
-        return [
-          _database.lookup('P0562', module: module), // Low System Voltage
-        ];
-      case EcuModule.transmissionControlUnit_TCU:
-        return [];
-      case EcuModule.instrumentCluster_IPC:
-        return [];
-      case EcuModule.bodyControlModule_BCM:
-        return [];
-      case EcuModule.electronicSuspension_DES:
-      case EcuModule.tractionControl_IMU:
-      case EcuModule.telematicsBox_TCU:
-        return [];
-    }
-  }
-
-  double _generateSimulatedPidValue(DiagnosticPid pid) {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    switch (pid.code) {
-      case '0C': // RPM
-        return 2800.0 + (500.0 * ((now ~/ 500) % 6));
-      case '0D': // Speed
-        return 65.0 + (5.0 * ((now ~/ 1000) % 4));
-      case '05': // Coolant Temp
-        return 88.0;
-      case '11': // Throttle
-        return 24.5;
-      case '42': // Voltage
-        return 14.3;
-      case '2F': // Fuel Level
-        return 78.0;
-      case '10': // MAF
-        return 18.2;
-      case '0F': // IAT
-        return 26.0;
-      default:
-        return 50.0;
     }
   }
 

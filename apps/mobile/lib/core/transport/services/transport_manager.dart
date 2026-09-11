@@ -7,7 +7,6 @@ import '../adapters/ble_gatt_adapter.dart';
 import '../adapters/bluetooth_spp_adapter.dart';
 import '../adapters/usb_serial_adapter.dart';
 import '../adapters/wifi_tcp_adapter.dart';
-import '../adapters/simulator_transport_adapter.dart';
 import '../../vehicle_identification/services/smart_scan_orchestrator.dart';
 
 /// Unified Multi-Transport Connectivity Manager.
@@ -37,7 +36,7 @@ class TransportManager {
   final Map<TransportType, TransportAdapter> _adapters = {};
 
   /// Current execution mode (inherits from SmartScanOrchestrator).
-  SmartScanExecutionMode _executionMode = SmartScanExecutionMode.simulator;
+  SmartScanExecutionMode _executionMode = SmartScanExecutionMode.realHardware;
   SmartScanExecutionMode get executionMode => _executionMode;
 
   /// Active connection, if any.
@@ -99,18 +98,8 @@ class TransportManager {
     _emitState();
   }
 
-  /// Cached simulator adapters (one per transport type).
-  final Map<TransportType, SimulatorTransportAdapter> _simulatorAdapters = {};
-
   /// Get the adapter for a specific transport type.
   TransportAdapter? getAdapter(TransportType type) {
-    if (_executionMode == SmartScanExecutionMode.simulator ||
-        _executionMode == SmartScanExecutionMode.testBench) {
-      return _simulatorAdapters.putIfAbsent(
-        type,
-        () => SimulatorTransportAdapter(simulatedTransportType: type),
-      );
-    }
     return _adapters[type];
   }
 

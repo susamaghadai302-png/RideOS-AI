@@ -6,7 +6,6 @@ enum ObdConnectionType {
   wifiSocket,
   usbSerial,
   canBusRaw,
-  simulationFallback,
 }
 
 enum ObdProtocolType {
@@ -42,31 +41,6 @@ abstract class IObdHardwareAdapter {
   Future<void> disconnect();
 }
 
-class SimulationObdAdapter implements IObdHardwareAdapter {
-  @override
-  ObdConnectionType get connectionType => ObdConnectionType.simulationFallback;
-
-  @override
-  Future<bool> connectAdapter({required String deviceId}) async => true;
-
-  @override
-  Stream<ObdLiveMetrics> streamTelemetryPids() async* {
-    for (int i = 0; i < 100; i++) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      yield ObdLiveMetrics(
-        engineRpm: 4200 + (i * 10),
-        vehicleSpeedKmh: 84.5 + (i * 0.2),
-        throttlePositionPct: 42.0,
-        coolantTempCelsius: 88.5,
-        batteryVoltage: 14.2,
-        engineLoadPct: 38.4,
-      );
-    }
-  }
-
-  @override
-  Future<void> disconnect() async {}
-}
 
 class ProductionEnterpriseObdEngine {
   static final ProductionEnterpriseObdEngine instance = ProductionEnterpriseObdEngine._internal();

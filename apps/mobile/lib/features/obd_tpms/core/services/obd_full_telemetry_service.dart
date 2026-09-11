@@ -2,7 +2,6 @@ import 'dart:async';
 
 enum TelemetryDataSource {
   realHardwareBle,
-  simulatorDemo,
   unconnectedOffline,
 }
 
@@ -49,7 +48,7 @@ class ObdFullTelemetryData {
     this.lowPressureWarning = false,
   });
 
-  bool get isSimulated => source == TelemetryDataSource.simulatorDemo;
+  bool get isSimulated => false;
 
   bool isStale({Duration maxAge = const Duration(seconds: 3)}) {
     return DateTime.now().difference(timestamp) > maxAge;
@@ -69,34 +68,10 @@ class ObdFullTelemetryService {
   final _controller = StreamController<ObdFullTelemetryData>.broadcast();
   Stream<ObdFullTelemetryData> get telemetryStream => _controller.stream;
 
-  bool isSimulatorMode = false;
   ObdFullTelemetryData? _latestTelemetry;
 
   ObdFullTelemetryData getLatestTelemetry() {
     if (_latestTelemetry != null) return _latestTelemetry!;
-
-    if (isSimulatorMode) {
-      return ObdFullTelemetryData(
-        source: TelemetryDataSource.simulatorDemo,
-        timestamp: DateTime.now(),
-        engineRpm: 4850,
-        coolantTempC: 88.5,
-        batteryVoltage: 13.8,
-        throttlePositionPct: 42.0,
-        fuelLevelPct: 78.0,
-        fuelConsumptionLitersPer100Km: 4.8,
-        engineLoadPct: 56.0,
-        oilTempC: 92.0,
-        airIntakeTempC: 24.5,
-        oxygenSensorVolts: 0.85,
-        checkEngineLight: false,
-        dtcCodes: const [],
-        frontTirePsi: 36.0,
-        rearTirePsi: 42.0,
-        tireTempC: 32.0,
-        lowPressureWarning: false,
-      );
-    }
 
     return ObdFullTelemetryData(
       source: TelemetryDataSource.unconnectedOffline,

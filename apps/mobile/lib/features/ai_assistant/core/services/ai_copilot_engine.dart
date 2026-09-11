@@ -27,7 +27,7 @@ class AiCopilotRidingContext {
     required this.timestamp,
   });
 
-  bool get isSimulated => dataSource == TelemetryDataSource.simulatorDemo;
+  bool get isSimulated => false;
 
   String get summaryDescription {
     final modeLabel = isSimulated ? '[SIMULATED]' : (isConnected ? '[REAL BLE]' : '[OFFLINE]');
@@ -58,7 +58,7 @@ class AiCopilotEngine {
     bool isBleConnected = false,
   }) {
     final telemetry = ObdFullTelemetryService().getLatestTelemetry();
-    final isSimulated = ObdFullTelemetryService().isSimulatorMode;
+    final isSimulated = false;
 
     final derivedSpeed = telemetry.engineRpm != null ? (telemetry.engineRpm! / 65.0).clamp(0.0, 299.0) : null;
     final intRpm = telemetry.engineRpm?.round();

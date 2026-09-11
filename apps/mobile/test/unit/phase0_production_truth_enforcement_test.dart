@@ -13,7 +13,6 @@ void main() {
   group('Phase 0: Telemetry Production-Truth', () {
     test('1. Default telemetry state is unconnectedOffline', () {
       final service = ObdFullTelemetryService();
-      service.isSimulatorMode = false;
       final data = service.getLatestTelemetry();
       expect(data.source, equals(TelemetryDataSource.unconnectedOffline));
       expect(data.engineRpm, isNull);
@@ -21,23 +20,12 @@ void main() {
 
     test('2. Unconnected telemetry is NOT simulated', () {
       final service = ObdFullTelemetryService();
-      service.isSimulatorMode = false;
       final data = service.getLatestTelemetry();
       expect(data.isSimulated, isFalse);
     });
 
-    test('3. Simulator mode is explicitly user-activated only', () {
-      final service = ObdFullTelemetryService();
-      service.isSimulatorMode = true;
-      final simData = service.getLatestTelemetry();
-      expect(simData.source, equals(TelemetryDataSource.simulatorDemo));
-      expect(simData.isSimulated, isTrue);
-      service.isSimulatorMode = false;
-    });
-
     test('4. Predictive health engine returns hardware_not_connected classification without hardware', () {
       final service = ObdFullTelemetryService();
-      service.isSimulatorMode = false;
       final engine = PredictiveVehicleHealthEngine();
       final report = engine.evaluateHealthReport();
       expect(report, isNotNull);

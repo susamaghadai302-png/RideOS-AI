@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../design_system/roados_tokens.dart';
 import '../../models/diagnostic_types.dart';
 import '../../models/dtc_record.dart';
 import '../../models/pid_definition.dart';
 import '../../services/ecu_diagnostic_manager.dart';
+import '../../../vehicle_resolution/providers/active_vehicle_context_provider.dart';
 
 /// Phase 18: RoadOS Multi-ECU Diagnostic Console Screen.
-class EcuDiagnosticConsoleScreen extends StatefulWidget {
+class EcuDiagnosticConsoleScreen extends ConsumerStatefulWidget {
   const EcuDiagnosticConsoleScreen({super.key});
 
   @override
-  State<EcuDiagnosticConsoleScreen> createState() => _EcuDiagnosticConsoleScreenState();
+  ConsumerState<EcuDiagnosticConsoleScreen> createState() => _EcuDiagnosticConsoleScreenState();
 }
 
-class _EcuDiagnosticConsoleScreenState extends State<EcuDiagnosticConsoleScreen>
+class _EcuDiagnosticConsoleScreenState extends ConsumerState<EcuDiagnosticConsoleScreen>
     with SingleTickerProviderStateMixin {
   final EcuDiagnosticManager _diagManager = EcuDiagnosticManager.instance;
 
@@ -38,7 +40,8 @@ class _EcuDiagnosticConsoleScreenState extends State<EcuDiagnosticConsoleScreen>
 
   Future<void> _runFullScan() async {
     setState(() => _isScanning = true);
-    await _diagManager.performFullEcuScan();
+    final activeVehicle = ref.read(activeVehicleContextProvider).profile;
+    await _diagManager.performFullEcuScan(vehicleId: activeVehicle?.id);
     if (mounted) setState(() => _isScanning = false);
   }
 
@@ -81,8 +84,12 @@ class _EcuDiagnosticConsoleScreenState extends State<EcuDiagnosticConsoleScreen>
 
     if (confirmed == true && mounted) {
       setState(() => _isClearing = true);
+      final activeVehicle = ref.read(activeVehicleContextProvider).profile;
       try {
-        await _diagManager.clearAllDiagnosticFaults(forceConfirmation: true);
+        await _diagManager.clearAllDiagnosticFaults(
+          forceConfirmation: true,
+          vehicleId: activeVehicle?.id,
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

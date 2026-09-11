@@ -213,6 +213,7 @@ class DecodedPidMeasurement {
   final String unit;
   final DateTime timestamp;
   final bool isValid;
+  final List<int> rawValue;
 
   const DecodedPidMeasurement({
     required this.pid,
@@ -220,6 +221,7 @@ class DecodedPidMeasurement {
     required this.unit,
     required this.timestamp,
     this.isValid = true,
+    this.rawValue = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -229,6 +231,7 @@ class DecodedPidMeasurement {
         'unit': unit,
         'timestamp': timestamp.toIso8601String(),
         'isValid': isValid,
+        'rawValue': rawValue,
       };
 
   @override

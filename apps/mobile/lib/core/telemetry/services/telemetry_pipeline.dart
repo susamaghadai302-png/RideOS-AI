@@ -114,8 +114,7 @@ class TelemetryPipeline {
   }
 
   void _handleDiagnosticPidBatch(Map<int, DecodedPidMeasurement> batch) {
-    final isSim = TransportManager.instance.executionMode == SmartScanExecutionMode.simulator ||
-        TransportManager.instance.executionMode == SmartScanExecutionMode.testBench;
+    final isSim = false;
 
     for (final measurement in batch.values) {
       ingestPidMeasurement(

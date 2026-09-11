@@ -24,7 +24,7 @@ class _MultiTransportConnectivityScreenState
 
   late TabController _tabController;
   bool _isScanning = false;
-  SmartScanExecutionMode _executionMode = SmartScanExecutionMode.simulator;
+  SmartScanExecutionMode _executionMode = SmartScanExecutionMode.realHardware;
 
   @override
   void initState() {
@@ -81,10 +81,7 @@ class _MultiTransportConnectivityScreenState
               color: Colors.white,
             )),
         centerTitle: true,
-        actions: [
-          _buildExecutionModeBadge(),
-          const SizedBox(width: 8),
-        ],
+
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: RoadOSColors.roadCyan,
@@ -119,26 +116,7 @@ class _MultiTransportConnectivityScreenState
     );
   }
 
-  Widget _buildExecutionModeBadge() {
-    final color = switch (_executionMode) {
-      SmartScanExecutionMode.realHardware => RoadOSColors.apexEmerald,
-      SmartScanExecutionMode.simulator => RoadOSColors.warningAmber,
-      SmartScanExecutionMode.testBench => RoadOSColors.cyberCyan,
-      SmartScanExecutionMode.unavailable => RoadOSColors.errorCrimson,
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color, width: 0.5),
-      ),
-      child: Text(
-        _executionMode.code,
-        style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.0),
-      ),
-    );
-  }
+
 
   Widget _buildActiveConnectionBanner() {
     final conn = _manager.activeConnection;

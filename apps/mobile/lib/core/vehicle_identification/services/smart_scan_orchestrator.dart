@@ -6,8 +6,6 @@ import '../../ecosystem/rideos_master_architecture.dart';
 
 enum SmartScanExecutionMode {
   realHardware('REAL_HARDWARE', 'Connected to Physical Automotive Hardware Gateway'),
-  simulator('SIMULATOR', 'Connected to Virtual Engine Simulation Bench'),
-  testBench('TEST_BENCH', 'Hardware-in-the-Loop (HIL) Automated Verification Bench'),
   unavailable('UNAVAILABLE', 'No Physical or Virtual Diagnostic Gateway Detected');
 
   final String code;
@@ -77,7 +75,7 @@ class SmartScanProgressState {
   static SmartScanProgressState initial() => const SmartScanProgressState(
         currentStep: SmartScanStep.idle,
         progressFraction: 0.0,
-        executionMode: SmartScanExecutionMode.simulator,
+        executionMode: SmartScanExecutionMode.realHardware,
         detectedTransport: PhysicalTransportType.bluetoothLowEnergy,
         detectedProtocol: DiagnosticProtocolType.iso15765_4_Can_11bit_500k,
       );
@@ -100,9 +98,9 @@ class SmartScanOrchestrator {
     _stateController.add(state);
   }
 
-  /// Executes the Smart Scan pipeline across hardware, simulator, or manual inputs.
+  /// Executes the Smart Scan pipeline across hardware.
   Future<UniversalVehicleProfile?> executeSmartScan({
-    SmartScanExecutionMode mode = SmartScanExecutionMode.simulator,
+    SmartScanExecutionMode mode = SmartScanExecutionMode.realHardware,
     PhysicalTransportType preferredTransport = PhysicalTransportType.bluetoothLowEnergy,
     String? knownVin,
   }) async {
@@ -247,7 +245,7 @@ class SmartScanOrchestrator {
           : UniversalIdentificationConfidence.modelYearPlusEcuMatch,
       identificationSource: mode == SmartScanExecutionMode.realHardware
           ? IdentificationSource.obdEcuQuery
-          : IdentificationSource.simulatedTestBench,
+          : IdentificationSource.manualCatalogSelection,
       isVerified: true,
       identifiedAt: DateTime.now(),
     );

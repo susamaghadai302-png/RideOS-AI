@@ -35,11 +35,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with TickerProviderStateMixin {
-  bool _isSimulatorMode = false;
-  Timer? _simTimer;
-  double _simSpeed = 74.0;
-  int _simRpm = 5420;
-  int _simTick = 0;
+  // No simulator logic in production
 
   late AnimationController _pulseController;
 
@@ -55,35 +51,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     )..forward();
   }
 
-  void _toggleSimulatorMode(bool enable) {
-    LuxAudioHapticsService.selectionClick();
-    setState(() {
-      _isSimulatorMode = enable;
-      ObdFullTelemetryService().isSimulatorMode = enable;
-    });
-
-    if (enable) {
-      _simTimer?.cancel();
-      _simTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!mounted || !_isSimulatorMode) {
-          timer.cancel();
-          return;
-        }
-        setState(() {
-          _simTick++;
-          _simSpeed = (70.0 + (_simTick % 15) * 1.2).clamp(0.0, 299.0);
-          _simRpm = (5200 + (_simTick % 12) * 180).clamp(0, 14000);
-        });
-      });
-    } else {
-      _simTimer?.cancel();
-      _simTimer = null;
-    }
-  }
+  // Sim mode removed
 
   @override
   void dispose() {
-    _simTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
   }
@@ -94,7 +65,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final isRealBleConnected =
         bleState == ble_state.BluetoothConnectionState.live ||
             bleState == ble_state.BluetoothConnectionState.connected;
-    final isConnected = _isSimulatorMode || isRealBleConnected;
+    final isConnected = isRealBleConnected;
 
     final activeContext = ref.watch(activeVehicleContextProvider);
     final ownedVehicles = ref.watch(myVehiclesProvider);
@@ -108,29 +79,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final telemetry = activeContext.telemetry;
 
-    final speedVal = _isSimulatorMode
-        ? '${_simSpeed.round()}'
-        : (telemetry.speed.hasValue
-            ? '${telemetry.speed.value!.round()}'
-            : (isRealBleConnected ? '0' : '--'));
+    final speedVal = telemetry.speed.hasValue
+        ? '${telemetry.speed.value!.round()}'
+        : (isRealBleConnected ? '0' : '--');
 
-    final rpmVal = _isSimulatorMode
-        ? '$_simRpm'
-        : (telemetry.rpm.hasValue
-            ? '${telemetry.rpm.value}'
-            : (isRealBleConnected ? '1100' : '--'));
+    final rpmVal = telemetry.rpm.hasValue
+        ? '${telemetry.rpm.value}'
+        : (isRealBleConnected ? '1100' : '--');
 
-    final battVal = _isSimulatorMode
-        ? '13.8'
-        : (telemetry.batteryVoltage.hasValue
-            ? telemetry.batteryVoltage.value!.toStringAsFixed(1)
-            : (isRealBleConnected ? '13.6' : '--'));
+    final battVal = telemetry.batteryVoltage.hasValue
+        ? telemetry.batteryVoltage.value!.toStringAsFixed(1)
+        : (isRealBleConnected ? '13.6' : '--');
 
-    final tempVal = _isSimulatorMode
-        ? '89'
-        : (telemetry.engineTemperature.hasValue
-            ? '${telemetry.engineTemperature.value}'
-            : (isRealBleConnected ? '85' : '--'));
+    final tempVal = telemetry.engineTemperature.hasValue
+        ? '${telemetry.engineTemperature.value}'
+        : (isRealBleConnected ? '85' : '--');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Global3DStateBridge().setCameraPreset('home');
@@ -138,12 +101,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         Global3DStateBridge().loadVehicle(activeVehicle);
       }
       Global3DStateBridge().updateTelemetry(
-        speedKmh: _isSimulatorMode
-            ? _simSpeed
-            : (telemetry.speed.value?.toDouble() ?? 0.0),
-        rpm: _isSimulatorMode
-            ? _simRpm.toDouble()
-            : (telemetry.rpm.value?.toDouble() ?? 0.0),
+        speedKmh: telemetry.speed.value?.toDouble() ?? 0.0,
+        rpm: telemetry.rpm.value?.toDouble() ?? 0.0,
         isIgnitionOn: isConnected,
       );
     });
@@ -215,12 +174,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                         // ── 2. Floating Spatial Telemetry Bubbles ──────────
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             // Left Wing
-                            SpatialFloatingWidget(
-                              tiltY: 0.0,
-                              zDepth: 0.0,
+                            Expanded(
+                              child: SpatialFloatingWidget(
+                                tiltY: 0.0,
+                                zDepth: 0.0,
                               child: Column(
                                 children: [
                                   FloatingHudBubble(
@@ -240,30 +199,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                   ),
                                 ],
                               ),
+                             ),
                             ),
                             
                             // Right Wing
-                            SpatialFloatingWidget(
-                              tiltY: 0.0,
-                              zDepth: 0.0,
-                              child: Column(
-                                children: [
-                                  FloatingHudBubble(
-                                    icon: Icons.battery_charging_full_rounded,
-                                    label: 'Battery',
-                                    value: battVal,
-                                    unit: 'V',
-                                    accentColor: RoadOSColors.apexEmerald,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  FloatingHudBubble(
-                                    icon: Icons.thermostat_rounded,
-                                    label: 'Temp',
-                                    value: tempVal,
-                                    unit: ' degC',
-                                    accentColor: RoadOSColors.hyperOrange,
-                                  ),
-                                ],
+                            Expanded(
+                              child: SpatialFloatingWidget(
+                                tiltY: 0.0,
+                                zDepth: 0.0,
+                                child: Column(
+                                  children: [
+                                    FloatingHudBubble(
+                                      icon: Icons.battery_charging_full_rounded,
+                                      label: 'Battery',
+                                      value: battVal,
+                                      unit: 'V',
+                                      accentColor: RoadOSColors.apexEmerald,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    FloatingHudBubble(
+                                      icon: Icons.thermostat_rounded,
+                                      label: 'Temp',
+                                      value: tempVal,
+                                      unit: ' degC',
+                                      accentColor: RoadOSColors.hyperOrange,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -355,51 +317,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ],
             ),
           ),
-          // Live Simulator Toggle for Testing Telematics
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _isSimulatorMode
-                  ? RoadOSColors.cyberCyan.withValues(alpha: 0.15)
-                  : const Color(0x20101A38),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _isSimulatorMode
-                    ? RoadOSColors.cyberCyan.withValues(alpha: 0.5)
-                    : RoadOSColors.borderSubtle,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.sensors_rounded,
-                  size: 14,
-                  color: _isSimulatorMode
-                      ? RoadOSColors.cyberCyan
-                      : RoadOSColors.textMuted,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'SIMULATOR',
-                  style: TextStyle(
-                    color: _isSimulatorMode
-                        ? RoadOSColors.cyberCyan
-                        : RoadOSColors.textMuted,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Switch(
-                  value: _isSimulatorMode,
-                  activeThumbColor: RoadOSColors.cyberCyan,
-                  onChanged: _toggleSimulatorMode,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ],
-            ),
-          ),
+          // Simulator toggle removed from production header
         ],
       ),
     );
