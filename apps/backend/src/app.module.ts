@@ -21,7 +21,7 @@ import { DiscoveryModule } from './modules/discovery/discovery.module';
 import { RideHistoryModule } from './modules/ride_history/ride_history.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { HealthModule } from './modules/health/health.module';
-import { GarageModule } from './modules/garage/garage.module';
+import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { VehicleRegistryModule } from './modules/vehicle_registry/vehicle_registry.module';
 import { TelemetryModule } from './modules/telemetry/telemetry.module';
 import { TripsModule } from './modules/trips/trips.module';
@@ -63,7 +63,7 @@ import { TelemetryGateway } from './websocket/telemetry.gateway';
     DiscoveryModule,
     RideHistoryModule,
     AnalyticsModule,
-    GarageModule,
+    VehiclesModule,
     VehicleRegistryModule,
     TelemetryModule,
     TripsModule,

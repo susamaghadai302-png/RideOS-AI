@@ -108,11 +108,7 @@ class _GarageCustomizerPanelState extends State<GarageCustomizerPanel>
   Future<void> _resetToFactory() async {
     LuxAudioHapticsService.mediumImpact();
     await GarageStorageService().resetCustomization(widget.vehicle.id);
-    final defaultModel = GarageVehicleModel.initialProductionCatalog.firstWhere(
-      (m) => m.id == widget.vehicle.id,
-      orElse: () => widget.vehicle,
-    );
-    _updateState(defaultModel.customization);
+    _updateState(widget.vehicle.customization);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

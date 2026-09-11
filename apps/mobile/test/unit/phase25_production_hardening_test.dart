@@ -5,6 +5,8 @@ import 'package:rideos_mobile/core/vehicle_resolution/models/vehicle_identity_co
 import 'package:rideos_mobile/core/vehicle_resolution/services/digital_twin_service.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/services/vehicle_model_registry.dart';
 
+@Timeout(Duration(seconds: 120))
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

@@ -12,6 +12,7 @@ import '../../../../core/vehicle_resolution/providers/my_vehicles_provider.dart'
 import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
 import '../../../../core/graphics/global_3d_state_bridge.dart';
 import '../../../garage/presentation/screens/luxury_garage_showroom_screen.dart';
+import 'add_vehicle_screen.dart';
 
 class MyVehiclesScreen extends ConsumerStatefulWidget {
   const MyVehiclesScreen({super.key});
@@ -72,33 +73,54 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
           ),
 
           // LAYER 2: Spatial 3D Carousel
-          Positioned.fill(
-            top: 120,
-            bottom: 60,
-            child: PageView.builder(
-              controller: _pageController,
-              physics: const BouncingScrollPhysics(),
-              itemCount: ownedVehicles.length,
-              itemBuilder: (context, index) {
-                final vehicle = ownedVehicles[index];
-                
-                // Calculate transformation properties based on scroll position
-                double relativePosition = index - _currentPageValue;
-                double scale = 1.0 - (relativePosition.abs() * 0.2).clamp(0.0, 0.4);
-                double opacity = 1.0 - (relativePosition.abs() * 0.5).clamp(0.0, 0.8);
+          if (ownedVehicles.isEmpty)
+            Positioned.fill(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.directions_car_rounded, size: 64, color: RoadOSColors.borderTranslucent),
+                    const SizedBox(height: 16),
+                    const Text('No Vehicles Found', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text('Register your vehicle to get started.', style: TextStyle(color: RoadOSColors.borderTranslucent)),
+                    const SizedBox(height: 24),
+                    RoadOSButton(
+                      label: 'ADD VEHICLE',
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddVehicleScreen())),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Positioned.fill(
+              top: 120,
+              bottom: 60,
+              child: PageView.builder(
+                controller: _pageController,
+                physics: const BouncingScrollPhysics(),
+                itemCount: ownedVehicles.length,
+                itemBuilder: (context, index) {
+                  final vehicle = ownedVehicles[index];
+                  
+                  // Calculate transformation properties based on scroll position
+                  double relativePosition = index - _currentPageValue;
+                  double scale = 1.0 - (relativePosition.abs() * 0.2).clamp(0.0, 0.4);
+                  double opacity = 1.0 - (relativePosition.abs() * 0.5).clamp(0.0, 0.8);
 
-                return Transform(
-                  transform: Matrix4.identity()
-                    ..scale(scale),
-                  alignment: FractionalOffset.center,
-                  child: Opacity(
-                    opacity: opacity,
-                    child: _build3DVehicleCard(context, vehicle, index == _currentPageValue.round()),
-                  ),
-                );
-              },
+                  return Transform(
+                    transform: Matrix4.identity()
+                      ..scale(scale),
+                    alignment: FractionalOffset.center,
+                    child: Opacity(
+                      opacity: opacity,
+                      child: _build3DVehicleCard(context, vehicle, index == _currentPageValue.round()),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -131,7 +153,18 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
               letterSpacing: 2.0,
             ),
           ),
-          const SizedBox(width: 44), // Balances the back button
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddVehicleScreen())),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+                border: Border.all(color: RoadOSColors.cyberCyan.withValues(alpha: 0.5)),
+              ),
+              child: const Icon(Icons.add, color: Colors.white, size: 20),
+            ),
+          ),
         ],
       ),
     );

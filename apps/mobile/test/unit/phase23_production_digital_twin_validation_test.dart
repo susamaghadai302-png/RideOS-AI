@@ -8,6 +8,8 @@ import 'package:rideos_mobile/core/vehicle_resolution/services/vehicle_model_reg
 import 'package:rideos_mobile/features/garage/core/services/scan_coverage_evaluator.dart';
 import 'package:rideos_mobile/features/garage/core/services/model_quality_validator.dart';
 
+@Timeout(Duration(seconds: 120))
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

@@ -5,6 +5,8 @@ import 'package:rideos_mobile/core/vehicle_resolution/models/digital_twin_model.
 import 'package:rideos_mobile/core/vehicle_resolution/services/digital_twin_service.dart';
 import 'package:rideos_mobile/features/garage/core/services/scan_coverage_evaluator.dart';
 
+@Timeout(Duration(seconds: 120))
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

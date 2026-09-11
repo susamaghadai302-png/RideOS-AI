@@ -46,8 +46,9 @@ void main() {
     confidence: IdentityConfidence.exactMatch,
   );
 
-  setUp(() {
+  setUp(() async {
     repository = MyVehiclesRepository();
+    await repository.addOwnedVehicle(testProfile);
     vehicleBloc = VehicleBloc(
       repository: repository,
       autoSubscribeBluetooth: false,

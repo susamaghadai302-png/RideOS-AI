@@ -90,7 +90,7 @@ class GarageStorageService {
     } catch (e) {
       print('Error fetching garage from backend: $e');
       // Fallback to local
-      return List<GarageVehicleModel>.from(GarageVehicleModel.initialProductionCatalog);
+      return [];
     }
   }
 

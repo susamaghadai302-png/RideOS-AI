@@ -336,6 +336,64 @@ export class VehicleRegistryService {
         }
       },
 
+      // --- EV CAR ---
+      {
+        manufacturer: 'Tesla',
+        model: 'Model 3',
+        variant: 'Long Range Dual Motor',
+        year: 2024,
+        category: 'Car',
+        fuelType: 'Electric',
+        powertrainType: 'AWD',
+        bluetoothIdentifiers: ['TESLA-MODEL3'],
+        protocolAdapter: 'tesla_api',
+        supportedFunctions: ['read_battery', 'read_range', 'read_soc', 'unlock_doors', 'start_hvac'],
+        model3DUrl: 'assets/models/tesla_model3.glb',
+        thumbnailUrl: 'assets/garage/thumbs/tesla_model3.png',
+        specifications: {
+          batteryCapacityKwh: 82,
+          rangeKm: 540,
+          powerBhp: 490.0,
+          torqueNm: 493.0,
+          topSpeedKmh: 233,
+          curbWeightKg: 1844,
+          chargingType: 'CCS2 / Supercharger',
+        },
+        maintenanceIntervals: {
+          tire_rotation: { km: 10000, months: 12, description: 'Tire Rotation and Inspection' },
+          brake_fluid: { km: 40000, months: 24, description: 'Brake Fluid Check' },
+          cabin_filter: { km: 20000, months: 24, description: 'Cabin Air Filter Replacement' }
+        }
+      },
+      // --- ICE CAR ---
+      {
+        manufacturer: 'Porsche',
+        model: '911',
+        variant: 'Carrera S',
+        year: 2024,
+        category: 'Car',
+        fuelType: 'Petrol',
+        powertrainType: 'RWD',
+        bluetoothIdentifiers: ['PORSCHE-911', 'PORSCHE-PCM'],
+        protocolAdapter: 'porsche_connect',
+        supportedFunctions: ['read_speed', 'read_rpm', 'read_fuel', 'read_oil_temp'],
+        model3DUrl: 'assets/models/porsche_911.glb',
+        thumbnailUrl: 'assets/garage/thumbs/porsche_911.png',
+        specifications: {
+          engineCc: 2981,
+          powerBhp: 443.0,
+          torqueNm: 530.0,
+          topSpeedKmh: 308,
+          curbWeightKg: 1515,
+          fuelCapacityL: 64,
+          transmission: '8-speed PDK Dual-Clutch',
+        },
+        maintenanceIntervals: {
+          oil_service: { km: 15000, months: 12, description: 'Mobil 1 Engine Oil & Filter' },
+          spark_plugs: { km: 30000, months: 48, description: 'Spark Plugs Replacement' },
+        }
+      },
+
       // --- DIAGNOSTIC GATEWAY ---
       {
         manufacturer: 'Generic Gateway',
