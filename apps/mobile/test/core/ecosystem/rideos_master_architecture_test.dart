@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/ecosystem/rideos_master_architecture.dart';
+import 'package:rideos_mobile/features/orders/domain/entities/order_entity.dart';
+import 'package:rideos_mobile/features/orders/data/models/order_model.dart';
 
 void main() {
   group('Phase 15 Master Architecture Ecosystem Unit Tests', () {
@@ -142,7 +144,7 @@ void main() {
     });
 
     test('5. Customer Commerce & Order Lifecycle model verifies accurately', () {
-      const orderItem = CustomerOrderItem(
+      const orderItem = OrderItemModel(
         itemId: 'prod_obd_dongle_01',
         title: 'RideOS High-Speed CAN OBD-II Bluetooth Dongle',
         category: OrderItemCategory.hardwareAdapter,
@@ -150,7 +152,7 @@ void main() {
         quantity: 1,
       );
 
-      final order = CustomerOrder(
+      final order = OrderModel(
         orderId: 'ord_2026_9942',
         customerId: 'cust_alex_mercer_77',
         items: const [orderItem],

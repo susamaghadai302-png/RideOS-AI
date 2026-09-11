@@ -1,4 +1,5 @@
 import '../../domain/entities/rider_entity.dart';
+import '../../../orders/data/models/order_model.dart';
 
 class MotorcycleModel extends MotorcycleEntity {
   const MotorcycleModel({
@@ -67,6 +68,7 @@ class RiderModel extends RiderEntity {
     required super.fullName,
     required super.phone,
     required super.garage,
+    super.savedAddresses,
   });
 
   factory RiderModel.fromJson(Map<String, dynamic> json) {
@@ -78,6 +80,9 @@ class RiderModel extends RiderEntity {
       garage: json['garage'] != null
           ? (json['garage'] as List).map((b) => MotorcycleModel.fromJson(b)).toList()
           : [],
+      savedAddresses: json['savedAddresses'] != null
+          ? (json['savedAddresses'] as List).map((a) => OrderAddressModel.fromJson(a)).toList()
+          : [],
     );
   }
 
@@ -88,6 +93,7 @@ class RiderModel extends RiderEntity {
       'fullName': fullName,
       'phone': phone,
       'garage': (garage as List<MotorcycleModel>).map((b) => b.toJson()).toList(),
+      'savedAddresses': (savedAddresses as List<OrderAddressModel>).map((a) => a.toJson()).toList(),
     };
   }
 }

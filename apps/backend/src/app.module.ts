@@ -28,6 +28,8 @@ import { TripsModule } from './modules/trips/trips.module';
 import { VehicleHealthModule } from './modules/vehicle_health/vehicle_health.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { DigitalTwinModule } from './modules/digital_twin/digital_twin.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
 import { TelemetryGateway } from './websocket/telemetry.gateway';
 
 @Module({
@@ -68,6 +70,8 @@ import { TelemetryGateway } from './websocket/telemetry.gateway';
     VehicleHealthModule,
     DevicesModule,
     DigitalTwinModule,
+    CatalogModule,
+    OrdersModule,
   ],
   providers: [TelemetryGateway],
 })

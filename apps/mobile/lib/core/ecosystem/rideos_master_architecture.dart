@@ -509,79 +509,9 @@ abstract class IVehicleDigitalTwinManager {
 // 7. CUSTOMER, COMMERCE & SERVICE HISTORY DOMAIN
 // ============================================================================
 
-enum OrderStatus {
-  pendingPayment,
-  processing,
-  shipped,
-  completed,
-  cancelled,
-  refunded;
-}
+// OrderStatus and OrderItemCategory have been migrated to lib/features/orders/domain/entities/order_entity.dart
 
-enum OrderItemCategory {
-  hardwareAdapter,
-  replacementPart,
-  ridingGear,
-  workshopService,
-  softwareUnlock,
-  cloudSubscription;
-}
-
-@immutable
-class CustomerOrderItem {
-  final String itemId;
-  final String title;
-  final OrderItemCategory category;
-  final double unitPrice;
-  final int quantity;
-
-  const CustomerOrderItem({
-    required this.itemId,
-    required this.title,
-    required this.category,
-    required this.unitPrice,
-    required this.quantity,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'itemId': itemId,
-        'title': title,
-        'category': category.name,
-        'unitPrice': unitPrice,
-        'quantity': quantity,
-      };
-}
-
-@immutable
-class CustomerOrder {
-  final String orderId;
-  final String customerId;
-  final List<CustomerOrderItem> items;
-  final double totalAmount;
-  final String currency;
-  final OrderStatus status;
-  final DateTime createdAt;
-
-  const CustomerOrder({
-    required this.orderId,
-    required this.customerId,
-    required this.items,
-    required this.totalAmount,
-    required this.currency,
-    required this.status,
-    required this.createdAt,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'orderId': orderId,
-        'customerId': customerId,
-        'items': items.map((e) => e.toJson()).toList(),
-        'totalAmount': totalAmount,
-        'currency': currency,
-        'status': status.name,
-        'createdAt': createdAt.toIso8601String(),
-      };
-}
+// CustomerOrderItem and CustomerOrder have been migrated to lib/features/orders/domain/entities/order_entity.dart
 
 @immutable
 class ServiceHistoryRecord {

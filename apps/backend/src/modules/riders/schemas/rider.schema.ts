@@ -82,6 +82,16 @@ export class Rider {
 
   @Prop({ type: RiderPreferencesSchema, default: () => ({}) })
   preferences: RiderPreferences;
+
+  @Prop({ type: [{
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    zipCode: { type: String, required: true },
+    country: { type: String, required: true },
+    isDefault: { type: Boolean, default: false }
+  }], default: [] })
+  savedAddresses: any[];
 }
 
 export const RiderSchema = SchemaFactory.createForClass(Rider);

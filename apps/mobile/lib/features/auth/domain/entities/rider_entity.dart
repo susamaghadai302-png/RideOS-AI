@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../orders/domain/entities/order_entity.dart';
 
 class MotorcycleEntity extends Equatable {
   final String bikeId;
@@ -97,6 +98,7 @@ class RiderEntity extends Equatable {
   final String fullName;
   final String phone;
   final List<MotorcycleEntity> garage;
+  final List<OrderAddressEntity> savedAddresses;
 
   const RiderEntity({
     required this.id,
@@ -104,8 +106,9 @@ class RiderEntity extends Equatable {
     required this.fullName,
     required this.phone,
     required this.garage,
+    this.savedAddresses = const [],
   });
 
   @override
-  List<Object?> get props => [id, email, fullName, phone, garage];
+  List<Object?> get props => [id, email, fullName, phone, garage, savedAddresses];
 }

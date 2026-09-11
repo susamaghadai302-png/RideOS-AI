@@ -1,4 +1,6 @@
 import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
+import 'package:rideos_mobile/features/orders/presentation/screens/order_history_screen.dart';
+import 'package:rideos_mobile/features/orders/presentation/screens/create_order_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -350,6 +352,37 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                     onChanged: (val) {
                       LuxAudioHapticsService.selectionClick();
                       setState(() => _anonymousTelemetrySharing = val);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildSectionHeader('COMMERCE & ORDERS'),
+            const SizedBox(height: 8),
+            RoadOSCard(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.shopping_bag_outlined, color: RoadOSColors.hyperOrange),
+                    title: const Text('Order History', style: TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold, fontSize: 13)),
+                    subtitle: const Text('View and track your previous orders', style: TextStyle(color: RoadOSColors.textMuted, fontSize: 11)),
+                    trailing: const Icon(Icons.chevron_right, color: RoadOSColors.textMuted),
+                    onTap: () {
+                      LuxAudioHapticsService.selectionClick();
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
+                    },
+                  ),
+                  const Divider(color: RoadOSColors.obsidianSurface, height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.shopping_cart_outlined, color: RoadOSColors.hyperOrange),
+                    title: const Text('Create New Order', style: TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold, fontSize: 13)),
+                    subtitle: const Text('Buy RideOS hardware or subscriptions', style: TextStyle(color: RoadOSColors.textMuted, fontSize: 11)),
+                    trailing: const Icon(Icons.chevron_right, color: RoadOSColors.textMuted),
+                    onTap: () {
+                      LuxAudioHapticsService.selectionClick();
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateOrderScreen()));
                     },
                   ),
                 ],
