@@ -39,7 +39,7 @@ class LocationPermissionManager {
       }
       return _status;
     } catch (_) {
-      _status = LocationPermissionStatus.granted; // Safe fallback
+      _status = LocationPermissionStatus.denied;
       return _status;
     }
   }
@@ -59,7 +59,7 @@ class LocationPermissionManager {
       }
       return _status;
     } catch (_) {
-      _status = LocationPermissionStatus.backgroundGranted;
+      _status = LocationPermissionStatus.denied;
       return _status;
     }
   }

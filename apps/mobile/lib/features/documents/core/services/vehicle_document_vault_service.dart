@@ -16,45 +16,7 @@ class VehicleDocumentVaultService {
   List<VehicleDocumentEntity> get documents => List.unmodifiable(_documents);
 
   void _initializeDefaultDocuments() {
-    final now = DateTime.now();
-    _documents.addAll([
-      VehicleDocumentEntity(
-        id: 'doc_dl_01',
-        title: 'Driver License (Motorcycle Endorsement)',
-        documentNumber: 'DL-9820-2024-CA',
-        category: DocumentCategory.drivingLicense,
-        expiryDate: now.add(const Duration(days: 720)),
-        filePath: '/vault/encrypted/license.pdf',
-        uploadDate: now.subtract(const Duration(days: 30)),
-      ),
-      VehicleDocumentEntity(
-        id: 'doc_rc_01',
-        title: 'Vehicle Registration Certificate (RC)',
-        documentNumber: 'CA-9201-R1M',
-        category: DocumentCategory.registrationCertificate,
-        expiryDate: now.add(const Duration(days: 1800)),
-        filePath: '/vault/encrypted/rc_book.pdf',
-        uploadDate: now.subtract(const Duration(days: 30)),
-      ),
-      VehicleDocumentEntity(
-        id: 'doc_ins_01',
-        title: 'Comprehensive Superbike Insurance',
-        documentNumber: 'POL-ALLIANZ-8820',
-        category: DocumentCategory.insurancePolicy,
-        expiryDate: now.add(const Duration(days: 25)), // Renew soon (<30 days)
-        filePath: '/vault/encrypted/insurance.pdf',
-        uploadDate: now.subtract(const Duration(days: 340)),
-      ),
-      VehicleDocumentEntity(
-        id: 'doc_puc_01',
-        title: 'PUC Emission Compliance Pass',
-        documentNumber: 'PUC-LEVEL1-982',
-        category: DocumentCategory.emissionPuc,
-        expiryDate: now.add(const Duration(days: 15)), // Renew soon (<30 days)
-        filePath: '/vault/encrypted/puc.pdf',
-        uploadDate: now.subtract(const Duration(days: 165)),
-      ),
-    ]);
+    // Left empty for production. Documents must be explicitly uploaded.
   }
 
   void addDocument(VehicleDocumentEntity doc) {

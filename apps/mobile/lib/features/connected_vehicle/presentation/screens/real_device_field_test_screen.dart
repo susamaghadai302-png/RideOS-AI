@@ -20,7 +20,7 @@ class _RealDeviceFieldTestScreenState extends State<RealDeviceFieldTestScreen> {
   final _mockTransport = MockVehicleTransport();
 
   String _selectedManufacturer = 'Yamaha Motor Co.';
-  String _selectedFamily = 'R15 Series';
+
   String _selectedModel = 'YZF-R15M';
   int _selectedYear = 2024;
   String _selectedVariant = 'Top Premium TFT';
@@ -47,23 +47,23 @@ class _RealDeviceFieldTestScreenState extends State<RealDeviceFieldTestScreen> {
     setState(() {
       _selectedManufacturer = val;
       if (val == 'Yamaha Motor Co.') {
-        _selectedFamily = 'R15 Series';
+
         _selectedModel = 'YZF-R15M';
         _selectedVariant = 'Top Premium TFT';
       } else if (val == 'Royal Enfield') {
-        _selectedFamily = 'Himalayan';
+
         _selectedModel = 'Himalayan 450';
         _selectedVariant = 'Tripper TFT';
       } else if (val == 'Ather Energy') {
-        _selectedFamily = '450 Series';
+
         _selectedModel = '450X Gen 3';
         _selectedVariant = 'Pro Pack 3.7 kWh';
       } else if (val == 'TVS Motor Company') {
-        _selectedFamily = 'Apache Series';
+
         _selectedModel = 'Apache RTR 310';
         _selectedVariant = 'SmartXonnect TFT';
       } else {
-        _selectedFamily = 'Universal OBD';
+
         _selectedModel = 'Generic OBD-II Gateway';
         _selectedVariant = 'ISO 15765-4 CAN Gateway';
       }

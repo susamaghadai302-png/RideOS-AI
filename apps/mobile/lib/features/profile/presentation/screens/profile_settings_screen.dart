@@ -70,7 +70,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                 final isAuthenticated = state is AuthenticatedState;
                 final name = isAuthenticated ? state.rider.fullName : 'Guest Rider';
                 final email = isAuthenticated ? state.rider.email : 'Not signed in';
-                final phone = isAuthenticated ? state.rider.phone : 'Tap to sign in';
+
 
                 return RoadOSCard(
                   padding: const EdgeInsets.all(20),
@@ -203,27 +203,13 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
             // ── DIGITAL VAULT ─────────────────────────────────────────────
             _buildSectionHeader('DIGITAL VAULT & RIDER DOCUMENTS'),
             const SizedBox(height: 8),
-            ...[
-              ('Rider License', 'DL-9820-2024-CA | Expires Dec 2028', Icons.badge_rounded, RoadOSColors.apexEmerald, 'ACTIVE'),
-              ('Vehicle Insurance', 'Allianz CyberShield | Policy #8820-91A', Icons.shield_rounded, RoadOSColors.cyberCyan, 'VALID'),
-              ('RC Book Registration', 'CA-9201-R1M | Yamaha YZF-R1M', Icons.directions_bike_rounded, RoadOSColors.hyperOrange, 'LINKED'),
-              ('PUC Emission Cert', 'Passed Level 1 | Valid to Oct 2026', Icons.eco_rounded, RoadOSColors.apexEmerald, 'CLEAR'),
-              ('Service History', '6 Services | Next due in 2,400 km', Icons.build_circle_rounded, RoadOSColors.warningAmber, '2,400 KM'),
-              ('Emergency ICE Contact', 'Sarah G. | +1 555-019-9988', Icons.emergency_rounded, RoadOSColors.errorCrimson, 'PRIMARY'),
-            ].map((doc) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _VaultDocCard(
-                title: doc.$1,
-                subtitle: doc.$2,
-                icon: doc.$3,
-                accentColor: doc.$4,
-                statusLabel: doc.$5,
-                onTap: () {
-                  LuxAudioHapticsService.selectionClick();
-                  showLuxSnack(context, '✅ Verified: ${doc.$1}', variant: LuxSnackVariant.success);
-                },
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: Text(
+                'No documents uploaded',
+                style: TextStyle(color: RoadOSColors.textMuted, fontSize: 12),
               ),
-            )),
+            ),
             const SizedBox(height: 20),
 
 
@@ -652,94 +638,6 @@ class _ProfileStat extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  _VaultDocCard — premium document row with coloured status chip
-// ─────────────────────────────────────────────────────────────────────────────
-class _VaultDocCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color accentColor;
-  final String statusLabel;
-  final VoidCallback onTap;
-
-  const _VaultDocCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.accentColor,
-    required this.statusLabel,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: RoadOSCard(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(
-                color: accentColor.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: accentColor, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: RoadOSColors.platinumWhite,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      color: RoadOSColors.textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: accentColor.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: accentColor.withValues(alpha: 0.5)),
-              ),
-              child: Text(
-                statusLabel,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  color: accentColor,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(Icons.chevron_right_rounded,
-                color: RoadOSColors.textMuted.withValues(alpha: 0.5), size: 18),
-          ],
-        ),
       ),
     );
   }

@@ -31,22 +31,14 @@ class AiCopilotExcellenceEngine {
   }) {
     developer.log('Processing Copilot prompt in [$preferredLanguage] using provider [$provider]...', name: 'RideOS.AiCopilot');
     return const CopilotInteractionResponse(
-      responseText: 'Jarvis: Systems nominal. Weather is clear, battery at 98%, and TPMS pressures are optimal for canyon twisties.',
-      detectedIntent: 'intent_ride_readiness_check',
-      rideReadinessScore: 99.5,
-      proactiveSuggestions: [
-        'Calculate scenic route with fuel stops',
-        'Check tire pressure trends',
-      ],
+      responseText: 'AI service is not configured. Please connect a valid provider.',
+      detectedIntent: 'intent_unknown',
+      rideReadinessScore: 0.0,
+      proactiveSuggestions: [],
     );
   }
 
   Map<String, dynamic> fetchRiderContextMemory() {
-    return {
-      'rider_id': 'rider_nexus_77',
-      'favorite_routes': ['Malibu Canyon', 'Pacific Coast Highway'],
-      'preferred_language': 'en',
-      'helmet_audio_connected': true,
-    };
+    return {};
   }
 }

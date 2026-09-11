@@ -72,30 +72,23 @@ class ProductionEnterpriseObdEngine {
   static final ProductionEnterpriseObdEngine instance = ProductionEnterpriseObdEngine._internal();
   ProductionEnterpriseObdEngine._internal();
 
-  final List<IObdHardwareAdapter> _adapters = [
-    SimulationObdAdapter(),
-  ];
+
 
   ObdConnectionType activeConnectionType = ObdConnectionType.bluetoothLe;
   ObdProtocolType detectedProtocol = ObdProtocolType.iso157654Can;
 
   Stream<ObdLiveMetrics> startHighFrequencyPidStream({String deviceId = 'OBD_BLE_9942'}) async* {
     developer.log('Initiating High-Frequency PID Stream via [$activeConnectionType / $detectedProtocol]...', name: 'RideOS.ObdHAL');
-    final adapter = _adapters.firstWhere(
-      (a) => a.connectionType == ObdConnectionType.simulationFallback,
-      orElse: () => SimulationObdAdapter(),
-    );
-
-    yield* adapter.streamTelemetryPids();
+    throw Exception('OBD hardware not connected/available');
   }
 
   Map<String, dynamic> evaluateVehicleHealthDiagnostics() {
     return {
-      'health_score': 98.5,
-      'status': 'EXCELLENT',
+      'health_score': null,
+      'status': 'UNKNOWN',
       'dtc_count': 0,
-      'battery_health': 'OPTIMAL (14.2V)',
-      'maintenance_recommended': 'Oil change due in 2,400 km',
+      'battery_health': 'UNKNOWN',
+      'maintenance_recommended': 'Not available',
     };
   }
 }

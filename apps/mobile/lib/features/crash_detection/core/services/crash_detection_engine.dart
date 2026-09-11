@@ -11,12 +11,12 @@ class RiderMedicalProfile {
   final String insurancePolicyNo;
 
   const RiderMedicalProfile({
-    this.fullName = 'Jane Doe',
-    this.bloodType = 'O+ Positive',
-    this.allergies = 'Penicillin',
-    this.primaryContactPhone = '+1 (555) 019-2834',
-    this.insuranceProvider = 'Progressive Motorcycle Elite',
-    this.insurancePolicyNo = 'POL-9482019-M',
+    this.fullName = 'Not configured',
+    this.bloodType = 'Not configured',
+    this.allergies = 'Not configured',
+    this.primaryContactPhone = 'Not configured',
+    this.insuranceProvider = 'Not configured',
+    this.insurancePolicyNo = 'Not configured',
   });
 }
 

@@ -1,6 +1,5 @@
 import '../../domain/models/advanced_safety_models.dart';
 import '../../../../core/device_providers/services/fleet_telematics_engine.dart';
-import '../../../../core/vehicle_resolution/services/vehicle_registry.dart';
 
 class AdvancedSafetyProtectionEngine {
   static final AdvancedSafetyProtectionEngine _instance = AdvancedSafetyProtectionEngine._internal();
@@ -8,55 +7,10 @@ class AdvancedSafetyProtectionEngine {
   AdvancedSafetyProtectionEngine._internal();
 
   final _telematics = FleetTelematicsEngine();
-  final _registry = VehicleRegistry();
 
-  final List<EmergencyContactItem> _contacts = [
-    const EmergencyContactItem(
-      id: 'contact_01',
-      name: 'Priya Ghadai',
-      phone: '+919876543210',
-      relationship: 'Family / Spouse',
-      isPrimary: true,
-      notifyOnIncident: true,
-    ),
-    const EmergencyContactItem(
-      id: 'contact_02',
-      name: 'Rohan Sharma',
-      phone: '+919812345678',
-      relationship: 'Riding Buddy',
-      isPrimary: false,
-      notifyOnIncident: true,
-    ),
-  ];
 
-  final List<SafetyEventRecord> _eventHistory = [
-    SafetyEventRecord(
-      id: 'evt_001',
-      eventType: 'POTENTIAL_INCIDENT',
-      severity: SafetyIncidentSeverity.high,
-      vehicleName: 'Yamaha YZF-R1M',
-      timestamp: DateTime.now().subtract(const Duration(days: 4, hours: 2)),
-      latitude: 12.9716,
-      longitude: 77.5946,
-      isLocationAvailable: true,
-      telemetryMetrics: const {'impactG': 4.8, 'leanAngleDeg': 68.0, 'preSpeedKmh': 55.0},
-      resolutionStatus: 'CANCELLED_BY_RIDER',
-      description: 'Potential incident detected from sudden deceleration & lean. Rider safely cancelled countdown in 8 seconds.',
-    ),
-    SafetyEventRecord(
-      id: 'evt_002',
-      eventType: 'HIGH_COOLANT_TEMP',
-      severity: SafetyIncidentSeverity.medium,
-      vehicleName: 'Ducati Panigale V4 S',
-      timestamp: DateTime.now().subtract(const Duration(days: 9, hours: 5)),
-      latitude: 12.9352,
-      longitude: 77.6245,
-      isLocationAvailable: true,
-      telemetryMetrics: const {'coolantTempC': 104.0, 'engineRpm': 4200},
-      resolutionStatus: 'RESOLVED',
-      description: 'Elevated coolant temperature in heavy traffic. Stabilized after cruising airflow restored.',
-    ),
-  ];
+  final List<EmergencyContactItem> _contacts = [];
+  final List<SafetyEventRecord> _eventHistory = [];
 
   /// Returns current safety center status
   SafetyCenterStatus getSafetyCenterStatus() {

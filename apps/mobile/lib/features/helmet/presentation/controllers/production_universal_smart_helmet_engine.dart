@@ -80,38 +80,23 @@ class ProductionUniversalSmartHelmetEngine {
   static final ProductionUniversalSmartHelmetEngine instance = ProductionUniversalSmartHelmetEngine._internal();
   ProductionUniversalSmartHelmetEngine._internal();
 
-  final List<IUniversalSmartHelmetAdapter> _helmetAdapters = [
-    SimulationSmartHelmetAdapter(),
-  ];
+
 
   HelmetConnectionType activeConnectionType = HelmetConnectionType.bluetoothLe;
   bool isSosEmergencyActive = false;
 
   Stream<HelmetStatusMetrics> monitorHelmetHealth({String deviceAddress = 'HELMET_BLE_5541'}) async* {
     developer.log('Connecting to Universal Smart Helmet [$deviceAddress] via [$activeConnectionType]...', name: 'RideOS.HelmetEngine');
-    final adapter = _helmetAdapters.firstWhere(
-      (h) => h.connectionType == HelmetConnectionType.simulationFallback,
-      orElse: () => SimulationSmartHelmetAdapter(),
-    );
-
-    yield* adapter.streamHelmetTelemetry();
+    throw Exception('Smart Helmet not connected or unavailable');
   }
 
   Future<void> updateHelmetHudDisplay({
-    required String turnInstruction,
+    required String nextTurn,
     required double distanceMeters,
     required int speedMph,
-    required int speedLimitMph,
+    required bool isSpeedWarning,
   }) async {
-    final adapter = SimulationSmartHelmetAdapter();
-    await adapter.sendHudMetadata(
-      HelmetHudMetadata(
-        nextNavigationTurn: turnInstruction,
-        distanceToTurnMeters: distanceMeters,
-        currentSpeedMph: speedMph,
-        speedLimitMph: speedLimitMph,
-      ),
-    );
+    // No-op if no helmet connected
   }
 
   void triggerHelmetSosCountdown({required VoidCallback onSosCancelled}) {

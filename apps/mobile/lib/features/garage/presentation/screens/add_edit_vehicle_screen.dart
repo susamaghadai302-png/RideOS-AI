@@ -33,15 +33,15 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
   void initState() {
     super.initState();
     final bike = widget.initialBike;
-    _makeController = TextEditingController(text: bike?['make'] ?? 'Yamaha');
-    _modelController = TextEditingController(text: bike?['model'] ?? 'YZF-R1M');
-    _yearController = TextEditingController(text: (bike?['year'] ?? 2024).toString());
-    _ccController = TextEditingController(text: (bike?['engineCC'] ?? 998).toString());
-    _regController = TextEditingController(text: bike?['regNumber'] ?? 'CA-9201-R1M');
-    _vinController = TextEditingController(text: bike?['vin'] ?? 'JYAR1M908N1002491');
-    _colorController = TextEditingController(text: bike?['color'] ?? 'Carbon Raven Black');
+    _makeController = TextEditingController(text: bike?['make'] ?? '');
+    _modelController = TextEditingController(text: bike?['model'] ?? '');
+    _yearController = TextEditingController(text: (bike?['year'] ?? '').toString());
+    _ccController = TextEditingController(text: (bike?['engineCC'] ?? '').toString());
+    _regController = TextEditingController(text: bike?['regNumber'] ?? '');
+    _vinController = TextEditingController(text: bike?['vin'] ?? '');
+    _colorController = TextEditingController(text: bike?['color'] ?? '');
     _fuelType = bike?['fuelType'] ?? 'Petrol';
-    _isDefaultVehicle = bike?['isPrimary'] ?? true;
+    _isDefaultVehicle = bike?['isPrimary'] ?? false;
   }
 
   @override

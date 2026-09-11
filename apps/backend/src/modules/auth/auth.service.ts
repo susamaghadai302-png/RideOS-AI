@@ -1,4 +1,4 @@
-import { Injectable, Logger, ConflictException, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, ConflictException, UnauthorizedException, NotFoundException, BadRequestException, NotImplementedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -34,7 +34,7 @@ export class AuthService {
       email: normalizedEmail,
       passwordHash,
       fullName: dto.fullName.trim(),
-      phone: dto.phone ? dto.phone.trim() : '+1 555-019-0000',
+      phone: dto.phone?.trim(),
     });
 
     await newRider.save();
@@ -85,12 +85,12 @@ export class AuthService {
       // Cryptographically verify Google ID token with Google JWKS
       const verified = await this.oauthVerifier.verifyGoogleIdToken(payload.idToken);
       email = verified.email;
-      fullName = payload.fullName?.trim() || verified.fullName || 'Google Rider';
+      fullName = payload.fullName?.trim() || verified.fullName || 'Unknown';
     } else if (payload.email && payload.email.trim().length > 0) {
       // Development / Test fallback compatibility when idToken is absent
       this.logger.warn(`[OAuth Security] Google login without idToken for ${payload.email}. (Recommended: pass valid idToken from mobile SDK)`);
       email = payload.email.trim().toLowerCase();
-      fullName = payload.fullName?.trim() || 'Google Rider';
+      fullName = payload.fullName?.trim() || 'Unknown';
     } else {
       throw new BadRequestException('Google ID token or account email is required');
     }
@@ -103,7 +103,6 @@ export class AuthService {
         email,
         passwordHash,
         fullName,
-        phone: '+1 555-019-0000',
       });
       await rider.save();
     }
@@ -128,12 +127,12 @@ export class AuthService {
       // Cryptographically verify Apple Identity token with Apple JWKS
       const verified = await this.oauthVerifier.verifyAppleIdentityToken(payload.identityToken);
       email = payload.email?.trim().toLowerCase() || verified.email;
-      fullName = payload.fullName?.trim() || 'Apple Rider';
+      fullName = payload.fullName?.trim() || 'Unknown';
     } else if (payload.email && payload.email.trim().length > 0) {
       // Development / Test fallback compatibility
       this.logger.warn(`[OAuth Security] Apple login without identityToken for ${payload.email}. (Recommended: pass identityToken from Apple Sign-In SDK)`);
       email = payload.email.trim().toLowerCase();
-      fullName = payload.fullName?.trim() || 'Apple Rider';
+      fullName = payload.fullName?.trim() || 'Unknown';
     } else {
       throw new BadRequestException('Apple identity token or email is required for authentication');
     }
@@ -146,7 +145,6 @@ export class AuthService {
         email,
         passwordHash,
         fullName,
-        phone: '+1 555-019-0000',
       });
       await rider.save();
     }
@@ -205,10 +203,7 @@ export class AuthService {
     if (!rider) {
       throw new NotFoundException('Rider email not found');
     }
-    return {
-      success: true,
-      message: `Password reset instructions sent to ${email}`,
-    };
+    throw new NotImplementedException('Email delivery is not currently configured.');
   }
 
   private generateTokens(userId: string, email: string) {

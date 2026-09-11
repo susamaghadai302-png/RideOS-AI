@@ -71,8 +71,8 @@ export class Rider {
   @Prop({ required: true })
   fullName: string;
 
-  @Prop({ required: true })
-  phone: string;
+  @Prop({ required: false })
+  phone?: string;
 
   @Prop({ type: [EmergencyContactSchema], default: [] })
   emergencyContacts: EmergencyContact[];

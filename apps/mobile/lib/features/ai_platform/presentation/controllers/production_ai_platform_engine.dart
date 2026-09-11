@@ -56,18 +56,16 @@ class SimulationAiProvider implements IAiModelProvider {
   @override
   Stream<AiStreamChunk> streamResponse(AiPromptRequest request) async* {
     final tokens = [
-      'RideOS ',
-      'Copilot: ',
-      'Optimal ',
-      'motorcycle ',
-      'route ',
-      'calculated ',
-      'with ',
-      '34 deg ',
-      'twisties ',
-      'and ',
-      'zero ',
-      'hazards.'
+      'AI ',
+      'service ',
+      'is ',
+      'not ',
+      'configured. ',
+      'Please ',
+      'connect ',
+      'a ',
+      'valid ',
+      'provider.'
     ];
 
     for (int i = 0; i < tokens.length; i++) {

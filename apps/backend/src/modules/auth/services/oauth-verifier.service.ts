@@ -75,7 +75,7 @@ export class OAuthVerifierService {
             }
             return {
               email: payload.email.trim().toLowerCase(),
-              fullName: payload.name || payload.given_name || 'Google Rider',
+              fullName: payload.name || payload.given_name || null,
               sub: payload.sub,
               provider: 'google',
             };
@@ -113,7 +113,7 @@ export class OAuthVerifierService {
 
       return {
         email: data.email.trim().toLowerCase(),
-        fullName: data.name || data.given_name || 'Google Rider',
+        fullName: data.name || data.given_name || null,
         sub: data.sub || data.user_id,
         provider: 'google',
       };
@@ -187,7 +187,7 @@ export class OAuthVerifierService {
 
     return {
       email,
-      fullName: 'Apple Rider',
+      fullName: payload.name || payload.given_name || null,
       sub: payload.sub,
       provider: 'apple',
     };

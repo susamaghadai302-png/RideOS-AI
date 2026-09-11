@@ -12,15 +12,15 @@ class MultiVehicleFleetEngine {
   RiderProfileStats getRiderProfileStats() {
     final bikes = _registry.verifiedProfiles;
     return RiderProfileStats(
-      riderId: 'rider_apex_master_01',
-      riderName: 'Hitanshu Ghadai',
-      callSign: 'Apex Phoenix',
-      rank: 'Apex Master (Level 42)',
-      totalDistanceKm: 3420.5,
-      totalRides: 78,
-      totalRideDurationMinutes: 5240.0,
-      averageSpeedKmh: 54.2,
-      overallSafetyScore: 96,
+      riderId: 'Unknown',
+      riderName: 'Unknown',
+      callSign: 'Unknown',
+      rank: 'Unknown',
+      totalDistanceKm: 0.0,
+      totalRides: 0,
+      totalRideDurationMinutes: 0.0,
+      averageSpeedKmh: 0.0,
+      overallSafetyScore: 0,
       activeBikeCount: bikes.length,
       registeredBikes: bikes,
     );
@@ -28,74 +28,7 @@ class MultiVehicleFleetEngine {
 
   /// Returns separated status cards for all fleet motorcycles
   List<VehicleFleetCard> getFleetVehicles() {
-    final now = DateTime.now();
-
-    return [
-      VehicleFleetCard(
-        vehicleId: 'v_yamaha_r1m',
-        make: 'Yamaha',
-        model: 'YZF-R1M',
-        year: 2024,
-        category: 'Superbike',
-        currentOdometerKm: 4600,
-        healthScore: 98,
-        status: FleetVehicleStatus.healthy,
-        lastRideDate: now.subtract(const Duration(hours: 4)),
-        totalRides: 42,
-        activeDtcCount: 0,
-        isConnected: true,
-        bluetoothDeviceId: 'CCU-R1M-7890',
-        model3DUrl: '',
-      ),
-      VehicleFleetCard(
-        vehicleId: 'v_ducati_v4s',
-        make: 'Ducati',
-        model: 'Panigale V4 S',
-        year: 2024,
-        category: 'Superbike',
-        currentOdometerKm: 2800,
-        healthScore: 94,
-        status: FleetVehicleStatus.serviceSoon,
-        lastRideDate: now.subtract(const Duration(days: 2)),
-        totalRides: 18,
-        activeDtcCount: 0,
-        isConnected: false,
-        bluetoothDeviceId: 'DUCATI-DMS-4412',
-        model3DUrl: 'assets/models/ducati_panigale.glb',
-      ),
-      VehicleFleetCard(
-        vehicleId: 'v_bmw_m1000rr',
-        make: 'BMW Motorrad',
-        model: 'M 1000 RR',
-        year: 2024,
-        category: 'Superbike',
-        currentOdometerKm: 1540,
-        healthScore: 99,
-        status: FleetVehicleStatus.healthy,
-        lastRideDate: now.subtract(const Duration(days: 5)),
-        totalRides: 11,
-        activeDtcCount: 0,
-        isConnected: false,
-        bluetoothDeviceId: 'BMW-M-LINK-9901',
-        model3DUrl: 'assets/models/bmw_s1000rr.glb',
-      ),
-      VehicleFleetCard(
-        vehicleId: 'v_yamaha_mt09_sp',
-        make: 'Yamaha',
-        model: 'MT-09 SP',
-        year: 2024,
-        category: 'Hyper Naked',
-        currentOdometerKm: 6200,
-        healthScore: 89,
-        status: FleetVehicleStatus.attentionRequired,
-        lastRideDate: now.subtract(const Duration(days: 8)),
-        totalRides: 27,
-        activeDtcCount: 0,
-        isConnected: false,
-        bluetoothDeviceId: 'Y-CONNECT-MT09-11',
-        model3DUrl: '',
-      ),
-    ];
+    return [];
   }
 
   /// Calculates fleet-level usage and health distributions

@@ -23,7 +23,7 @@ class _UniversalVehicleSelectorSheetState extends ConsumerState<UniversalVehicle
   final _db = UniversalVehicleDatabase();
   String? _selectedBrand;
   String? _selectedFamily;
-  UniversalVehicleEntry? _selectedEntry;
+
   String _searchQuery = '';
 
   @override
@@ -104,7 +104,7 @@ class _UniversalVehicleSelectorSheetState extends ConsumerState<UniversalVehicle
                 _searchQuery = val;
                 _selectedBrand = null;
                 _selectedFamily = null;
-                _selectedEntry = null;
+
               });
             },
           ),
@@ -137,7 +137,7 @@ class _UniversalVehicleSelectorSheetState extends ConsumerState<UniversalVehicle
                       setState(() {
                         _selectedBrand = brand;
                         _selectedFamily = null;
-                        _selectedEntry = null;
+
                       });
                     },
                     borderRadius: BorderRadius.circular(12),
