@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/transport_types.dart';
 import '../models/transport_device.dart';
 import 'transport_adapter.dart';
@@ -58,12 +60,16 @@ class BleGattTransportAdapter implements TransportAdapter {
 
   @override
   Future<TransportCapabilities> getCapabilities() async {
-    final isSupported = await FlutterBluePlus.isSupported;
+    bool isSupported = false;
+    try {
+      isSupported = await FlutterBluePlus.isSupported;
+    } catch (_) {}
+    final permState = await checkPermission();
     return TransportCapabilities(
       transportType: TransportType.bluetoothLowEnergy,
       isAvailableOnPlatform: isSupported,
       isAdapterEnabled: FlutterBluePlus.adapterStateNow == BluetoothAdapterState.on,
-      hasPermission: true, // Will check via permission_handler
+      hasPermission: permState == TransportPermissionState.granted,
       maxPayloadBytes: _config.mtuSize,
       supportsReconnection: true,
       supportsSubscription: true,
@@ -73,12 +79,70 @@ class BleGattTransportAdapter implements TransportAdapter {
 
   @override
   Future<TransportPermissionState> checkPermission() async {
-    return TransportPermissionState.granted;
+    PermissionStatus status;
+    if (Platform.isAndroid) {
+      final scan = await Permission.bluetoothScan.status;
+      final connect = await Permission.bluetoothConnect.status;
+      if (scan.isGranted && connect.isGranted) {
+        status = PermissionStatus.granted;
+      } else if (scan.isPermanentlyDenied || connect.isPermanentlyDenied) {
+        status = PermissionStatus.permanentlyDenied;
+      } else if (scan.isDenied || connect.isDenied) {
+        status = PermissionStatus.denied;
+      } else {
+        status = scan;
+      }
+    } else {
+      status = await Permission.bluetooth.status;
+    }
+    
+    switch (status) {
+      case PermissionStatus.granted:
+        return TransportPermissionState.granted;
+      case PermissionStatus.denied:
+        return TransportPermissionState.denied;
+      case PermissionStatus.permanentlyDenied:
+        return TransportPermissionState.permanentlyDenied;
+      case PermissionStatus.restricted:
+        return TransportPermissionState.restricted;
+      default:
+        return TransportPermissionState.notRequested;
+    }
   }
 
   @override
   Future<TransportPermissionState> requestPermission() async {
-    return TransportPermissionState.granted;
+    if (Platform.isAndroid) {
+      final statuses = await [
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+      ].request();
+      
+      final scan = statuses[Permission.bluetoothScan]!;
+      final connect = statuses[Permission.bluetoothConnect]!;
+      
+      if (scan.isGranted && connect.isGranted) {
+        return TransportPermissionState.granted;
+      } else if (scan.isPermanentlyDenied || connect.isPermanentlyDenied) {
+        return TransportPermissionState.permanentlyDenied;
+      } else {
+        return TransportPermissionState.denied;
+      }
+    } else {
+      final status = await Permission.bluetooth.request();
+      switch (status) {
+        case PermissionStatus.granted:
+          return TransportPermissionState.granted;
+        case PermissionStatus.denied:
+          return TransportPermissionState.denied;
+        case PermissionStatus.permanentlyDenied:
+          return TransportPermissionState.permanentlyDenied;
+        case PermissionStatus.restricted:
+          return TransportPermissionState.restricted;
+        default:
+          return TransportPermissionState.notRequested;
+      }
+    }
   }
 
   @override
@@ -179,6 +243,16 @@ class BleGattTransportAdapter implements TransportAdapter {
         }
       }
 
+      if (_writeChar == null || _notifyChar == null) {
+        _cleanupConnection();
+        _transition(TransportState.error);
+        throw TransportError(
+          code: TransportErrorCode.characteristicNotFound,
+          transportType: TransportType.bluetoothLowEnergy,
+          details: 'Required GATT characteristics for write/notify not found.',
+        );
+      }
+
       if (_notifyChar != null) {
         await _notifyChar!.setNotifyValue(true);
         _charSub = _notifyChar!.onValueReceived.listen((value) {
@@ -205,8 +279,10 @@ class BleGattTransportAdapter implements TransportAdapter {
       _transition(TransportState.ready);
       return _activeConnection!;
     } catch (e) {
+      print('Caught exception in BleGattTransportAdapter.connect: $e');
       _cleanupConnection();
       _transition(TransportState.error);
+      if (e is TransportError) rethrow;
       throw TransportError(
         code: TransportErrorCode.unknown,
         transportType: TransportType.bluetoothLowEnergy,
