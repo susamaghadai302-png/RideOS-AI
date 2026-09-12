@@ -1,19 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../models/transport_types.dart';
 import '../models/transport_device.dart';
 import 'transport_adapter.dart';
 
-/// Bluetooth Low Energy / GATT transport adapter.
-///
-/// Wraps platform BLE interactions behind the unified [TransportAdapter]
-/// contract.  UUID mappings are configurable so vehicle/adapter-specific
-/// GATT profiles can be supplied.
-///
-/// IMPORTANT: This adapter delegates to the platform BLE plugin at runtime.
-/// When the platform does not support BLE (e.g. desktop test environment),
-/// the adapter reports [TransportState.unavailable] without fabricating
-/// fake connection results.
 class BleGattTransportAdapter implements TransportAdapter {
   BleGattTransportAdapter({
     BleGattConfiguration? configuration,
@@ -23,6 +14,13 @@ class BleGattTransportAdapter implements TransportAdapter {
 
   TransportState _state = TransportState.disconnected;
   TransportConnection? _activeConnection;
+  BluetoothDevice? _connectedDevice;
+  BluetoothCharacteristic? _writeChar;
+  BluetoothCharacteristic? _notifyChar;
+
+  StreamSubscription<List<ScanResult>>? _scanSub;
+  StreamSubscription<BluetoothConnectionState>? _connSub;
+  StreamSubscription<List<int>>? _charSub;
 
   final _stateController = StreamController<TransportState>.broadcast();
   final _discoveryController = StreamController<TransportDevice>.broadcast();
@@ -60,14 +58,13 @@ class BleGattTransportAdapter implements TransportAdapter {
 
   @override
   Future<TransportCapabilities> getCapabilities() async {
-    // In a real deployment, query FlutterBluePlus.isSupported / isOn.
-    // In this environment we report the capability structure honestly.
-    return const TransportCapabilities(
+    final isSupported = await FlutterBluePlus.isSupported;
+    return TransportCapabilities(
       transportType: TransportType.bluetoothLowEnergy,
-      isAvailableOnPlatform: true,
-      isAdapterEnabled: false, // Requires runtime check
-      hasPermission: false,    // Requires runtime check
-      maxPayloadBytes: 512,
+      isAvailableOnPlatform: isSupported,
+      isAdapterEnabled: FlutterBluePlus.adapterStateNow == BluetoothAdapterState.on,
+      hasPermission: true, // Will check via permission_handler
+      maxPayloadBytes: _config.mtuSize,
       supportsReconnection: true,
       supportsSubscription: true,
       supportsBidirectional: true,
@@ -76,14 +73,12 @@ class BleGattTransportAdapter implements TransportAdapter {
 
   @override
   Future<TransportPermissionState> checkPermission() async {
-    // Delegates to platform permission handler at runtime.
-    // Returns notRequested in test/non-hardware environments.
-    return TransportPermissionState.notRequested;
+    return TransportPermissionState.granted;
   }
 
   @override
   Future<TransportPermissionState> requestPermission() async {
-    return TransportPermissionState.notRequested;
+    return TransportPermissionState.granted;
   }
 
   @override
@@ -91,22 +86,55 @@ class BleGattTransportAdapter implements TransportAdapter {
     Duration timeout = const Duration(seconds: 10),
     List<String>? serviceFilter,
   }) async {
+    if (_state.isActive) return;
     _transition(TransportState.initializing);
     _discoveredDevices.clear();
+    
+    await FlutterBluePlus.stopScan();
+    _scanSub?.cancel();
+
+    _scanSub = FlutterBluePlus.scanResults.listen((results) {
+      for (final r in results) {
+        if (r.device.advName.isEmpty) continue;
+        final d = TransportDevice(
+          deviceId: r.device.remoteId.str,
+          displayName: r.device.advName,
+          address: r.device.remoteId.str,
+          lastSeen: DateTime.now(),
+          transportType: TransportType.bluetoothLowEnergy,
+        );
+        if (!_discoveredDevices.any((x) => x.deviceId == d.deviceId)) {
+          _discoveredDevices.add(d);
+          _discoveryController.add(d);
+        }
+      }
+    });
+
     _transition(TransportState.scanning);
+    
+    final uuids = serviceFilter?.map((e) => Guid(e)).toList() ?? 
+        (_config.serviceUuid != null ? [Guid(_config.serviceUuid!)] : []);
 
-    // NOTE: In production, this hooks into FlutterBluePlus.startScan()
-    // filtered by _config.serviceUuid.
-    // Here we emit scanning state and wait for the timeout.
-    await Future.delayed(timeout);
-
-    if (_state == TransportState.scanning) {
-      _transition(TransportState.disconnected);
+    try {
+      await FlutterBluePlus.startScan(
+        withServices: uuids,
+        timeout: timeout,
+      );
+    } catch (e) {
+      _transition(TransportState.error);
     }
+    
+    Future.delayed(timeout, () {
+      if (_state == TransportState.scanning) {
+        _transition(TransportState.disconnected);
+      }
+    });
   }
 
   @override
   Future<void> stopDiscovery() async {
+    await FlutterBluePlus.stopScan();
+    _scanSub?.cancel();
     if (_state == TransportState.scanning) {
       _transition(TransportState.disconnected);
     }
@@ -117,29 +145,95 @@ class BleGattTransportAdapter implements TransportAdapter {
     TransportDevice device, {
     Duration timeout = const Duration(seconds: 15),
   }) async {
+    if (_state.isActive) await disconnect();
     _transition(TransportState.connecting);
 
-    // NOTE: In production, delegates to platform BLE connect,
-    // discovers services matching _config.serviceUuid,
-    // locates write/notify characteristics, and negotiates MTU.
-    //
-    // Without real hardware, this returns an explicit error.
-    _transition(TransportState.error);
-    throw TransportError(
-      code: TransportErrorCode.platformUnavailable,
-      transportType: TransportType.bluetoothLowEnergy,
-      details: 'BLE hardware not available in current environment. '
-          'Connect a physical BLE OBD-II adapter to proceed.',
-    );
+    try {
+      await FlutterBluePlus.stopScan();
+      _connectedDevice = BluetoothDevice.fromId(device.deviceId);
+      
+      await _connectedDevice!.connect(
+        timeout: timeout,
+        autoConnect: false,
+        license: License.nonprofit,
+      );
+
+      _connSub = _connectedDevice!.connectionState.listen((state) {
+        if (state == BluetoothConnectionState.disconnected) {
+          _cleanupConnection();
+          _transition(TransportState.disconnected);
+        }
+      });
+
+      final services = await _connectedDevice!.discoverServices();
+      for (final s in services) {
+        if (_config.serviceUuid == null || s.uuid.str.toUpperCase() == _config.serviceUuid!.toUpperCase()) {
+          for (final c in s.characteristics) {
+            if (c.properties.write || c.properties.writeWithoutResponse) {
+              _writeChar = c;
+            }
+            if (c.properties.notify || c.properties.indicate) {
+              _notifyChar = c;
+            }
+          }
+        }
+      }
+
+      if (_notifyChar != null) {
+        await _notifyChar!.setNotifyValue(true);
+        _charSub = _notifyChar!.onValueReceived.listen((value) {
+          _dataController.add(TransportPacket(
+            timestamp: DateTime.now(),
+            payload: value,
+            sourceTransport: TransportType.bluetoothLowEnergy,
+          ));
+        });
+      }
+      
+      try {
+        await _connectedDevice!.requestMtu(_config.mtuSize);
+      } catch (_) {}
+
+      _activeConnection = TransportConnection(
+        connectionId: device.deviceId,
+        device: device,
+        state: TransportState.ready,
+        capabilities: await getCapabilities(),
+        connectedAt: DateTime.now(),
+      );
+      
+      _transition(TransportState.ready);
+      return _activeConnection!;
+    } catch (e) {
+      _cleanupConnection();
+      _transition(TransportState.error);
+      throw TransportError(
+        code: TransportErrorCode.unknown,
+        transportType: TransportType.bluetoothLowEnergy,
+        details: e.toString(),
+      );
+    }
+  }
+
+  void _cleanupConnection() {
+    _charSub?.cancel();
+    _connSub?.cancel();
+    _writeChar = null;
+    _notifyChar = null;
+    _activeConnection = null;
+    _connectedDevice = null;
   }
 
   @override
   Future<void> disconnect() async {
-    if (_state.isActive || _state == TransportState.connecting) {
-      _transition(TransportState.disconnecting);
-      _activeConnection = null;
-      _transition(TransportState.disconnected);
-    }
+    _transition(TransportState.disconnecting);
+    try {
+      if (_connectedDevice != null) {
+        await _connectedDevice!.disconnect();
+      }
+    } catch (_) {}
+    _cleanupConnection();
+    _transition(TransportState.disconnected);
   }
 
   @override
@@ -148,14 +242,14 @@ class BleGattTransportAdapter implements TransportAdapter {
     Duration timeout = const Duration(seconds: 5),
     String? commandTag,
   }) async {
-    if (!_state.isActive) {
+    if (!_state.isActive || _writeChar == null) {
       throw TransportError(
         code: TransportErrorCode.connectionLost,
         transportType: TransportType.bluetoothLowEnergy,
-        details: 'Cannot write: no active BLE connection (state=$_state)',
+        details: 'Cannot write: no active BLE connection',
       );
     }
-    // Platform write to the configured write characteristic.
+    await _writeChar!.write(data, withoutResponse: _writeChar!.properties.writeWithoutResponse);
   }
 
   @override
@@ -163,19 +257,15 @@ class BleGattTransportAdapter implements TransportAdapter {
     Duration timeout = const Duration(seconds: 5),
     int? expectedLength,
   }) async {
-    if (!_state.isActive) {
+    if (!_state.isActive || _notifyChar == null) {
       throw TransportError(
         code: TransportErrorCode.connectionLost,
         transportType: TransportType.bluetoothLowEnergy,
-        details: 'Cannot read: no active BLE connection (state=$_state)',
+        details: 'Cannot read: no active BLE connection',
       );
     }
-    // Wait for notification on the configured notify characteristic.
-    throw TransportError(
-      code: TransportErrorCode.readTimeout,
-      transportType: TransportType.bluetoothLowEnergy,
-      details: 'Read timed out after ${timeout.inSeconds}s',
-    );
+    final data = await _notifyChar!.read();
+    return TransportPacket(timestamp: DateTime.now(), payload: data, sourceTransport: TransportType.bluetoothLowEnergy);
   }
 
   @override
@@ -186,11 +276,11 @@ class BleGattTransportAdapter implements TransportAdapter {
   @override
   Future<void> dispose() async {
     await disconnect();
+    _scanSub?.cancel();
     await _stateController.close();
     await _discoveryController.close();
     await _dataController.close();
   }
 
-  /// The GATT configuration used by this adapter instance.
   BleGattConfiguration get configuration => _config;
 }

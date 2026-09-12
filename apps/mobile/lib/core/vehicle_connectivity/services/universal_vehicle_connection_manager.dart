@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../transports/vehicle_transport.dart';
 import '../registry/vehicle_compatibility_registry.dart';
+import '../../transport/services/transport_manager.dart';
+import '../../transport/models/transport_types.dart';
+import '../../transport/models/transport_device.dart';
 
 enum ConnectionCategory {
   bluetoothAudioOnly,
@@ -30,7 +32,7 @@ class UniversalConnectionState {
   final ConnectionLifecyclePhase phase;
   final CompatibilityRegistryEntry? activeProfile;
   final ConnectionCategory category;
-  final VehicleTransportType transportType;
+  final TransportType transportType;
   final int signalRssi;
   final int latencyMs;
   final String? errorMessage;
@@ -40,7 +42,7 @@ class UniversalConnectionState {
     required this.phase,
     this.activeProfile,
     this.category = ConnectionCategory.bluetoothAudioOnly,
-    this.transportType = VehicleTransportType.ble,
+    this.transportType = TransportType.bluetoothLowEnergy,
     this.signalRssi = 0,
     this.latencyMs = 0,
     this.errorMessage,
@@ -55,8 +57,6 @@ class UniversalVehicleConnectionManager {
   factory UniversalVehicleConnectionManager() => _instance;
 
   final _registry = VehicleCompatibilityRegistry();
-  VehicleTransport? _activeTransport;
-
   final _stateController = StreamController<UniversalConnectionState>.broadcast();
   Stream<UniversalConnectionState> get stateStream => _stateController.stream;
 
@@ -93,15 +93,7 @@ class UniversalVehicleConnectionManager {
 
     ConnectionCategory category;
     switch (profile.primaryTransport) {
-      case VehicleTransportType.oemApi:
-        category = ConnectionCategory.oemCloudApi;
-        break;
-      case VehicleTransportType.obdGateway:
-      case VehicleTransportType.canGateway:
-      case VehicleTransportType.usbDiagnostic:
-        category = ConnectionCategory.diagnosticGateway;
-        break;
-      case VehicleTransportType.ble:
+      // In a real implementation we would map VehicleTransportType to TransportType
       default:
         category = profile.supportedCommands.isNotEmpty
             ? ConnectionCategory.smartDisplay
@@ -109,21 +101,44 @@ class UniversalVehicleConnectionManager {
         break;
     }
 
-    _activeTransport = isSimulated ? SimulatorTransport() : BleTransport();
-    await _activeTransport!.initialize();
-
     _updateState(_currentState.copyWith(
       phase: ConnectionLifecyclePhase.pairing,
       activeProfile: profile,
       category: category,
-      transportType: profile.primaryTransport,
     ));
 
     await Future.delayed(const Duration(milliseconds: 150));
     _updateState(_currentState.copyWith(phase: ConnectionLifecyclePhase.connecting));
 
-    final connected = await _activeTransport!.connect(endpointOrMac);
-    if (!connected) {
+    TransportConnection? connected;
+    if (isSimulated) {
+      connected = TransportConnection(
+        connectionId: 'sim',
+        device: TransportDevice(
+          deviceId: 'sim',
+          displayName: 'Simulated',
+          address: 'sim',
+          lastSeen: DateTime.now(),
+          transportType: TransportType.bluetoothLowEnergy,
+        ),
+        state: TransportState.ready,
+        connectedAt: DateTime.now(),
+        capabilities: const TransportCapabilities(
+          transportType: TransportType.bluetoothLowEnergy,
+          isAvailableOnPlatform: true,
+          isAdapterEnabled: true,
+          hasPermission: true,
+        ),
+      );
+    } else {
+      try {
+        connected = await TransportManager.instance.autoConnect();
+      } catch (e) {
+        connected = null;
+      }
+    }
+
+    if (connected == null) {
       _updateState(_currentState.copyWith(
         phase: ConnectionLifecyclePhase.error,
         errorMessage: 'Failed to establish physical transport link.',
@@ -170,7 +185,7 @@ class UniversalVehicleConnectionManager {
   }
 
   Future<void> disconnect() async {
-    await _activeTransport?.disconnect();
+    await TransportManager.instance.disconnect();
     _updateState(UniversalConnectionState(
       phase: ConnectionLifecyclePhase.disconnected,
       activeProfile: _currentState.activeProfile,
@@ -192,7 +207,7 @@ extension UniversalConnectionStateCopyWith on UniversalConnectionState {
     ConnectionLifecyclePhase? phase,
     CompatibilityRegistryEntry? activeProfile,
     ConnectionCategory? category,
-    VehicleTransportType? transportType,
+    TransportType? transportType,
     int? signalRssi,
     int? latencyMs,
     String? errorMessage,

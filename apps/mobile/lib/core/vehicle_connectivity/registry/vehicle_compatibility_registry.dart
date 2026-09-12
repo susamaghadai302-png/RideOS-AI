@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../transports/vehicle_transport.dart';
+import '../../transport/models/transport_types.dart';
 import '../../vehicle_capabilities/models/universal_vehicle_capability_models.dart';
 
 enum VehicleCompatibilityStatus {
@@ -21,7 +21,7 @@ class CompatibilityRegistryEntry {
   final String region;
   final String displayGeneration;
   final String ecuGatewayGeneration;
-  final VehicleTransportType primaryTransport;
+  final TransportType primaryTransport;
   final List<String> supportedProtocols;
   final List<String> supportedTelemetry;
   final List<String> supportedCommands;
@@ -107,7 +107,7 @@ class VehicleCompatibilityRegistry {
       region: 'Global / APAC / EU',
       displayGeneration: 'Gen 3 Full Color TFT',
       ecuGatewayGeneration: 'Yamaha CCU BLE v2.1',
-      primaryTransport: VehicleTransportType.ble,
+      primaryTransport: TransportType.bluetoothLowEnergy,
       supportedProtocols: ['Yamaha Y-Connect GATT', 'OBD-II Passthrough'],
       supportedTelemetry: ['speed', 'rpm', 'fuelLevel', 'batteryVoltage', 'coolantTemp', 'absStatus'],
       supportedCommands: ['WRITE_TBT_NAVIGATION_ARROW', 'WRITE_CALLER_ID_ALERT'],
@@ -129,7 +129,7 @@ class VehicleCompatibilityRegistry {
       region: 'Global / EU / India',
       displayGeneration: 'Round 4-inch TFT Tripper Dash',
       ecuGatewayGeneration: 'RE Sherpa BLE Gateway',
-      primaryTransport: VehicleTransportType.ble,
+      primaryTransport: TransportType.bluetoothLowEnergy,
       supportedProtocols: ['RE Tripper Navigation GATT', 'Sherpa Telematics'],
       supportedTelemetry: ['speed', 'rpm', 'gear', 'fuelLevel', 'absStatus'],
       supportedCommands: ['WRITE_TBT_NAVIGATION_ARROW'],
@@ -151,7 +151,7 @@ class VehicleCompatibilityRegistry {
       region: 'India / Global',
       displayGeneration: '7-inch Android Touchscreen TFT',
       ecuGatewayGeneration: 'AtherStack 5.0 Cloud Telematics Gateway',
-      primaryTransport: VehicleTransportType.oemApi,
+      primaryTransport: TransportType.wifiTcp, // Placeholder for oemApi
       supportedProtocols: ['Ather Connect Cloud REST API', 'Local BLE Gateway'],
       supportedTelemetry: ['speed', 'batterySoc', 'batteryVoltage', 'motorTemp', 'tpms', 'chargingStatus'],
       supportedCommands: [],
@@ -173,7 +173,7 @@ class VehicleCompatibilityRegistry {
       region: 'Global',
       displayGeneration: 'Analog / Segment LCD',
       ecuGatewayGeneration: 'Standard 4-pin / 6-pin Diagnostic Port',
-      primaryTransport: VehicleTransportType.obdGateway,
+      primaryTransport: TransportType.usbOtgSerial, // Placeholder for obdGateway
       supportedProtocols: ['ISO 15765-4 (CAN 11/500)', 'SAE J1979 Standard PIDs'],
       supportedTelemetry: ['speed', 'rpm', 'coolantTemp', 'batteryVoltage'],
       supportedCommands: [],

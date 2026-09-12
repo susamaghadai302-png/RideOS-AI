@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/vehicle_capabilities/models/universal_vehicle_capability_models.dart';
-import 'package:rideos_mobile/core/vehicle_connectivity/transports/vehicle_transport.dart';
+import 'package:rideos_mobile/core/transport/models/transport_types.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/registry/vehicle_compatibility_registry.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/services/universal_vehicle_connection_manager.dart';
-
+import 'package:rideos_mobile/core/vehicle_connectivity/transports/vehicle_transport.dart';
+import 'mocks/simulator_transport.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -88,7 +89,7 @@ void main() {
         region: 'Global',
         displayGeneration: '6.5-inch TFT Connectivity Plus',
         ecuGatewayGeneration: 'BMW Connectivity Hub Gen 4',
-        primaryTransport: VehicleTransportType.ble,
+        primaryTransport: TransportType.bluetoothLowEnergy,
         supportedProtocols: ['BMW Motorrad Connected GATT', 'LIN Bus Mirror'],
         supportedTelemetry: ['speed', 'rpm', 'fuelLevel', 'tirePressure', 'absStatus'],
         supportedCommands: ['WRITE_TBT_NAVIGATION_ARROW'],

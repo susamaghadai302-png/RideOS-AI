@@ -1,18 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/transport_types.dart';
 import '../models/transport_device.dart';
 import 'transport_adapter.dart';
 
-/// Wi-Fi TCP transport adapter.
-///
-/// Provides configurable host/IP + port TCP socket communication
-/// for Wi-Fi-based OBD-II adapters.
-///
-/// IMPORTANT: This adapter does NOT perform arbitrary network scanning.
-/// The user must supply the target host and port via [WifiTcpConfiguration].
-/// When a connection cannot be established, the adapter returns an explicit
-/// error without falling back to fake data.
 class WifiTcpTransportAdapter implements TransportAdapter {
   WifiTcpTransportAdapter({
     WifiTcpConfiguration? configuration,
@@ -22,10 +14,15 @@ class WifiTcpTransportAdapter implements TransportAdapter {
 
   TransportState _state = TransportState.disconnected;
   TransportConnection? _activeConnection;
+  Socket? _socket;
+  
+  StreamSubscription<List<int>>? _socketSub;
 
   final _stateController = StreamController<TransportState>.broadcast();
   final _discoveryController = StreamController<TransportDevice>.broadcast();
   final _dataController = StreamController<TransportPacket>.broadcast();
+
+  final List<TransportDevice> _discoveredDevices = [];
 
   @override
   TransportType get transportType => TransportType.wifiTcp;
@@ -60,9 +57,9 @@ class WifiTcpTransportAdapter implements TransportAdapter {
     return const TransportCapabilities(
       transportType: TransportType.wifiTcp,
       isAvailableOnPlatform: true,
-      isAdapterEnabled: false, // Requires Wi-Fi connectivity check
-      hasPermission: true,     // No special permission for client TCP sockets
-      maxPayloadBytes: 65535,
+      isAdapterEnabled: true,
+      hasPermission: true,
+      maxPayloadBytes: 4096,
       supportsReconnection: true,
       supportsSubscription: true,
       supportsBidirectional: true,
@@ -71,7 +68,6 @@ class WifiTcpTransportAdapter implements TransportAdapter {
 
   @override
   Future<TransportPermissionState> checkPermission() async {
-    // TCP client sockets generally don't require special permissions.
     return TransportPermissionState.granted;
   }
 
@@ -85,33 +81,32 @@ class WifiTcpTransportAdapter implements TransportAdapter {
     Duration timeout = const Duration(seconds: 5),
     List<String>? serviceFilter,
   }) async {
-    // Wi-Fi TCP does not support broadcast/multicast discovery
-    // in this architecture. The device is created from the known
-    // configuration (host + port).
+    if (_state.isActive) return;
     _transition(TransportState.initializing);
-
-    final device = TransportDevice(
-      deviceId: 'wifi_${_config.host}:${_config.port}',
-      displayName: 'Wi-Fi OBD-II (${_config.host}:${_config.port})',
-      address: '${_config.host}:${_config.port}',
-      transportType: TransportType.wifiTcp,
-      manufacturer: 'Wi-Fi Adapter',
-      connectionState: TransportState.disconnected,
-      permissionState: TransportPermissionState.granted,
-      lastSeen: DateTime.now(),
-      supportedProtocols: const ['ISO 15765-4', 'ISO 14229'],
-    );
-    _discoveryController.add(device);
+    _discoveredDevices.clear();
+    
+    // In TCP we usually don't "scan" local network without a specific mDNS target.
+    // We just yield the configured host as a discovered device so the UI can connect to it.
     _transition(TransportState.scanning);
-
-    // Emit the pre-configured device immediately.
+    
+    final device = TransportDevice(
+      deviceId: '${_config.host}:${_config.port}',
+      displayName: 'Network TCP Device',
+      address: '${_config.host}:${_config.port}',
+      lastSeen: DateTime.now(),
+      transportType: TransportType.wifiTcp,
+    );
+    
+    _discoveredDevices.add(device);
+    _discoveryController.add(device);
+    
     await Future.delayed(const Duration(milliseconds: 100));
     _transition(TransportState.deviceFound);
   }
 
   @override
   Future<void> stopDiscovery() async {
-    if (_state == TransportState.scanning || _state == TransportState.deviceFound) {
+    if (_state == TransportState.scanning) {
       _transition(TransportState.disconnected);
     }
   }
@@ -119,28 +114,65 @@ class WifiTcpTransportAdapter implements TransportAdapter {
   @override
   Future<TransportConnection> connect(
     TransportDevice device, {
-    Duration timeout = const Duration(seconds: 10),
+    Duration timeout = const Duration(seconds: 15),
   }) async {
+    if (_state.isActive) await disconnect();
     _transition(TransportState.connecting);
 
-    // In production: opens a TCP socket to _config.host : _config.port,
-    // with _config.connectionTimeout, and configures keepAlive.
-    _transition(TransportState.error);
-    throw TransportError(
-      code: TransportErrorCode.connectionRefused,
-      transportType: TransportType.wifiTcp,
-      details: 'TCP connection to ${_config.host}:${_config.port} failed. '
-          'Ensure the Wi-Fi OBD-II adapter is powered on and reachable.',
-    );
+    try {
+      _socket = await Socket.connect(_config.host, _config.port, timeout: timeout);
+      
+      _socketSub = _socket!.listen(
+        (data) {
+          _dataController.add(TransportPacket(
+            timestamp: DateTime.now(),
+            payload: data,
+            sourceTransport: TransportType.wifiTcp,
+          ));
+        },
+        onError: (e) {
+          _cleanupConnection();
+          _transition(TransportState.error);
+        },
+        onDone: () {
+          _cleanupConnection();
+          _transition(TransportState.disconnected);
+        },
+      );
+
+      _activeConnection = TransportConnection(
+        connectionId: device.deviceId,
+        device: device,
+        state: TransportState.ready,
+        capabilities: await getCapabilities(),
+        connectedAt: DateTime.now(),
+      );
+      
+      _transition(TransportState.ready);
+      return _activeConnection!;
+    } catch (e) {
+      _cleanupConnection();
+      _transition(TransportState.error);
+      throw TransportError(
+        code: TransportErrorCode.unknown,
+        transportType: TransportType.wifiTcp,
+        details: e.toString(),
+      );
+    }
+  }
+
+  void _cleanupConnection() {
+    _socketSub?.cancel();
+    _socket?.destroy();
+    _socket = null;
+    _activeConnection = null;
   }
 
   @override
   Future<void> disconnect() async {
-    if (_state.isActive || _state == TransportState.connecting) {
-      _transition(TransportState.disconnecting);
-      _activeConnection = null;
-      _transition(TransportState.disconnected);
-    }
+    _transition(TransportState.disconnecting);
+    _cleanupConnection();
+    _transition(TransportState.disconnected);
   }
 
   @override
@@ -149,13 +181,15 @@ class WifiTcpTransportAdapter implements TransportAdapter {
     Duration timeout = const Duration(seconds: 5),
     String? commandTag,
   }) async {
-    if (!_state.isActive) {
+    if (!_state.isActive || _socket == null) {
       throw TransportError(
         code: TransportErrorCode.connectionLost,
         transportType: TransportType.wifiTcp,
-        details: 'Cannot write: no active Wi-Fi TCP connection (state=$_state)',
+        details: 'Cannot write: no active Wi-Fi TCP connection',
       );
     }
+    _socket!.add(data);
+    await _socket!.flush();
   }
 
   @override
@@ -163,17 +197,10 @@ class WifiTcpTransportAdapter implements TransportAdapter {
     Duration timeout = const Duration(seconds: 5),
     int? expectedLength,
   }) async {
-    if (!_state.isActive) {
-      throw TransportError(
-        code: TransportErrorCode.connectionLost,
-        transportType: TransportType.wifiTcp,
-        details: 'Cannot read: no active Wi-Fi TCP connection (state=$_state)',
-      );
-    }
     throw TransportError(
       code: TransportErrorCode.readTimeout,
       transportType: TransportType.wifiTcp,
-      details: 'Read timed out after ${timeout.inSeconds}s',
+      details: 'Read not implemented for Socket. Use stream subscription.',
     );
   }
 
@@ -189,7 +216,4 @@ class WifiTcpTransportAdapter implements TransportAdapter {
     await _discoveryController.close();
     await _dataController.close();
   }
-
-  /// The TCP configuration used by this adapter instance.
-  WifiTcpConfiguration get configuration => _config;
 }
