@@ -57,7 +57,7 @@ void main() {
 
       // Reconnect
       await telematicsEngine.connectDevice('sim_final');
-      expect(telematicsEngine.activeProvider.dataSourceClassification, equals(TelemetryDataSource.simulated));
+      expect(telematicsEngine.activeProvider!.dataSourceClassification, equals(TelemetryDataSource.simulated));
     });
 
     test('Offline to online cloud synchronization flushes bounded queue without duplicates', () async {

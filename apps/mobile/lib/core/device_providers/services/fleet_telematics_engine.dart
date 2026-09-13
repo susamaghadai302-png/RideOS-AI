@@ -9,8 +9,10 @@ class FleetTelematicsEngine {
   static final FleetTelematicsEngine _instance = FleetTelematicsEngine._internal();
   factory FleetTelematicsEngine() => _instance;
 
-  DeviceProvider _activeProvider = SimulatorProvider();
-  DeviceProvider get activeProvider => _activeProvider;
+  /// Production starts with NO active provider.
+  /// A provider is activated only when explicitly selected via [switchProvider].
+  DeviceProvider? _activeProvider;
+  DeviceProvider? get activeProvider => _activeProvider;
 
   final Map<String, DeviceProvider> _registeredProviders = {
     'simulator': SimulatorProvider(),
@@ -19,11 +21,18 @@ class FleetTelematicsEngine {
   };
 
   StreamSubscription? _telemetrySub;
+  StreamSubscription? _dtcSub;
   NormalizedTelemetrySnapshot? _latestSnapshot;
   NormalizedTelemetrySnapshot? get latestSnapshot => _latestSnapshot;
 
   final _telemetryController = StreamController<NormalizedTelemetrySnapshot>.broadcast();
   Stream<NormalizedTelemetrySnapshot> get telemetryStream => _telemetryController.stream;
+
+  final _dtcController = StreamController<List<DiagnosticTroubleCode>>.broadcast();
+  Stream<List<DiagnosticTroubleCode>> get diagnosticCodesStream => _dtcController.stream;
+
+  List<DiagnosticTroubleCode> _latestDtcs = [];
+  List<DiagnosticTroubleCode> get latestDtcs => List.unmodifiable(_latestDtcs);
 
   // Session Recording
   bool _isRecordingSession = false;
@@ -35,24 +44,27 @@ class FleetTelematicsEngine {
   DateTime? _sessionStartTime;
   DateTime? get sessionStartTime => _sessionStartTime;
 
-  FleetTelematicsEngine._internal() {
-    _bindActiveProvider();
-  }
+  FleetTelematicsEngine._internal();
+
+  /// Returns the link state of the active provider, or disconnected if none.
+  DeviceLinkState get linkState => _activeProvider?.linkState ?? DeviceLinkState.disconnected;
 
   void switchProvider(String providerKey) {
     if (_registeredProviders.containsKey(providerKey)) {
-      _telemetrySub?.cancel();
+      _unbindActiveProvider();
       _activeProvider = _registeredProviders[providerKey]!;
       _bindActiveProvider();
     }
   }
 
   Future<bool> connectDevice(String targetIdentifier) async {
-    return _activeProvider.connect(targetIdentifier);
+    if (_activeProvider == null) return false;
+    return _activeProvider!.connect(targetIdentifier);
   }
 
   Future<void> disconnectDevice() async {
-    return _activeProvider.disconnect();
+    if (_activeProvider == null) return;
+    return _activeProvider!.disconnect();
   }
 
   void startRecordingSession() {
@@ -81,12 +93,13 @@ class FleetTelematicsEngine {
       'totalSamples': totalSamples,
       'averageSpeedKmh': avgSpeed,
       'maxSpeedKmh': maxSpeed,
-      'dataSource': _activeProvider.dataSourceClassification.name,
+      'dataSource': _activeProvider?.dataSourceClassification.name ?? 'none',
     };
   }
 
   void _bindActiveProvider() {
-    _telemetrySub = _activeProvider.telemetryStream.listen((snapshot) {
+    if (_activeProvider == null) return;
+    _telemetrySub = _activeProvider!.telemetryStream.listen((snapshot) {
       _latestSnapshot = snapshot;
       if (_isRecordingSession) {
         _recordedSessionSamples.add(snapshot);
@@ -95,13 +108,28 @@ class FleetTelematicsEngine {
         _telemetryController.add(snapshot);
       }
     });
+    _dtcSub = _activeProvider!.diagnosticCodesStream.listen((dtcs) {
+      _latestDtcs = dtcs;
+      if (!_dtcController.isClosed) {
+        _dtcController.add(dtcs);
+      }
+    });
+  }
+
+  void _unbindActiveProvider() {
+    _telemetrySub?.cancel();
+    _telemetrySub = null;
+    _dtcSub?.cancel();
+    _dtcSub = null;
   }
 
   Future<void> dispose() async {
-    _telemetrySub?.cancel();
+    _unbindActiveProvider();
     await _telemetryController.close();
+    await _dtcController.close();
     for (final p in _registeredProviders.values) {
       await p.dispose();
     }
   }
 }
+

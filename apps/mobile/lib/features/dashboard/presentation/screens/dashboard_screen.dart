@@ -14,8 +14,6 @@ import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../cockpit/presentation/screens/cockpit_command_center_screen.dart';
 import '../../../navigation/presentation/screens/destination_search_screen.dart';
 import '../../../navigation/presentation/screens/three_d_navigation_screen.dart';
-import '../../../obd_tpms/presentation/bloc/obd_bloc.dart';
-import '../../../obd_tpms/presentation/bloc/obd_state.dart';
 import '../../../garage/presentation/screens/luxury_garage_showroom_screen.dart';
 import '../../../obd_tpms/presentation/screens/obd_diagnostics_screen.dart';
 import '../../../safety/presentation/screens/rider_safety_center_screen.dart';
@@ -26,6 +24,8 @@ import '../widgets/dashboard_dock_weather_widgets.dart';
 import '../widgets/live_telemetry_widgets.dart';
 import '../widgets/tpms_obd_health_widgets.dart';
 import '../../../../core/design_system/premium_navigation.dart';
+import '../../domain/models/advanced_dashboard_models.dart';
+import '../../core/services/realtime_dashboard_telemetry_engine.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -35,13 +35,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
-  late AnimationController _counterController;
   late AnimationController _staggerController;
-
-  late Animation<double> _speedAnimation;
-  late Animation<double> _rpmAnimation;
-  late Animation<double> _leanAnimation;
-  late Animation<double> _healthScoreAnimation;
 
   // Stagger Intervals
   late Animation<Offset> _heroSlideAnim;
@@ -52,37 +46,15 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   late Animation<Offset> _aiCardSlideAnim;
 
   String _speedUnit = 'KM/H';
-  final String _currentGear = 'N';
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _counterController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..forward();
-
     _staggerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..forward();
-
-    _speedAnimation = Tween<double>(begin: 0, end: 68).animate(
-      CurvedAnimation(parent: _counterController, curve: Curves.easeOutCubic),
-    );
-
-    _rpmAnimation = Tween<double>(begin: 1100, end: 7200).animate(
-      CurvedAnimation(parent: _counterController, curve: Curves.easeOutCubic),
-    );
-
-    _leanAnimation = Tween<double>(begin: 0, end: 46.2).animate(
-      CurvedAnimation(parent: _counterController, curve: Curves.easeOutCubic),
-    );
-
-    _healthScoreAnimation = Tween<double>(begin: 0, end: 98.0).animate(
-      CurvedAnimation(parent: _counterController, curve: Curves.easeOutCubic),
-    );
 
     // Stagger Intervals
     _heroSlideAnim = Tween<Offset>(begin: const Offset(0, 0.10), end: Offset.zero).animate(
@@ -113,7 +85,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   @override
   void dispose() {
     _searchController.dispose();
-    _counterController.dispose();
     _staggerController.dispose();
     super.dispose();
   }
@@ -168,12 +139,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         environmentType: RoadOSEnvironmentType.dashboard,
         child: SafeArea(
           top: false,
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-            child: LuxResponsiveContainer(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final content = LuxResponsiveContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 1. Greeting & Hero Destination Search Card
                   SlideTransition(
@@ -340,8 +310,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           const SizedBox(height: 14),
                           const Divider(height: 1, color: Color(0xFF111827)),
                           const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            spacing: 16,
+                            runSpacing: 12,
                             children: [
                               _buildMobilityStatItem('RANGE', '248 km', Icons.battery_charging_full_rounded, RoadOSColors.apexEmerald),
                               _buildMobilityStatItem('TRAFFIC', 'Normal', Icons.traffic_rounded, RoadOSColors.cyberCyan),
@@ -431,58 +403,73 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   const SizedBox(height: 20),
 
                   // 5. Staggered Live Gauges & Digital Twin Cards
-                  BlocBuilder<ObdBloc, ObdState>(
-                    builder: (context, obdState) {
-                      double speedVal = _speedAnimation.value;
-                      double rpmVal = _rpmAnimation.value;
-                      double frontPsiVal = 36.2;
-                      double rearPsiVal = 41.8;
-                      double fuelVal = 88.0;
-                      double batVal = 96.0;
-                      double coolantVal = 89.0;
+                  StreamBuilder<LiveRideMetrics>(
+                    stream: RealtimeDashboardTelemetryEngine().metricsStream,
+                    initialData: RealtimeDashboardTelemetryEngine().getLiveMetrics(),
+                    builder: (context, snapshot) {
+                      final metrics = snapshot.data;
+                      final isStale = metrics?.isStale ?? true;
 
-                      if (obdState is ObdStreamingState) {
-                        speedVal = obdState.telemetry.speedKmh;
-                        rpmVal = obdState.telemetry.rpm;
-                        frontPsiVal = obdState.telemetry.frontTirePsi;
-                        rearPsiVal = obdState.telemetry.rearTirePsi;
-                        fuelVal = obdState.telemetry.fuelLevelPct;
-                        batVal = (obdState.telemetry.batteryVoltage / 14.4 * 100.0).clamp(0.0, 100.0);
-                        coolantVal = obdState.telemetry.coolantTempC;
-                      }
+                      final speedVal = metrics?.speedKmh;
+                      final rpmVal = metrics?.rpm?.toDouble();
+                      final leanVal = metrics?.leanAngleDeg;
+                      final gearVal = metrics?.gear?.toString();
+                      final fuelVal = metrics?.fuelLevelPercent;
+                      final batVal = metrics?.batteryVoltage;
+                      final coolantVal = metrics?.coolantTempC;
 
-                      final displaySpeed = _speedUnit == 'MPH' ? speedVal * 0.621371 : speedVal;
+                      final displaySpeed = speedVal != null ? (_speedUnit == 'MPH' ? speedVal * 0.621371 : speedVal) : null;
 
                       return SlideTransition(
                         position: _gaugesSlideAnim,
                         child: Column(
                           children: [
+                            if (isStale)
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: RoadOSColors.errorCrimson.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: RoadOSColors.errorCrimson.withValues(alpha: 0.5)),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.warning_amber_rounded, color: RoadOSColors.errorCrimson, size: 16),
+                                    SizedBox(width: 8),
+                                    Text('TELEMETRY UNAVAILABLE / STALE', style: TextStyle(color: RoadOSColors.errorCrimson, fontWeight: FontWeight.bold, fontSize: 11)),
+                                  ],
+                                ),
+                              ),
                             SpeedometerArcWidget(
                               currentSpeed: displaySpeed,
                               maxSpeed: _speedUnit == 'MPH' ? 186.0 : 299.0,
-                              leanAngle: _leanAnimation.value,
+                              leanAngle: leanVal,
                               unit: _speedUnit,
                               onUnitToggle: _toggleSpeedUnit,
                             ),
                             const SizedBox(height: 16),
                             LiveTachometerWidget(currentRpm: rpmVal),
                             const SizedBox(height: 12),
-                            GearIndicatorWidget(currentGear: _currentGear),
+                            GearIndicatorWidget(currentGear: gearVal),
                             const SizedBox(height: 16),
-                            FuelBatteryGaugeWidget(fuelPercent: fuelVal, batteryPercent: batVal),
+                            FuelBatteryGaugeWidget(
+                              fuelPercent: fuelVal, 
+                              batteryPercent: batVal != null ? (batVal / 14.4 * 100.0).clamp(0.0, 100.0) : null
+                            ),
                             const SizedBox(height: 12),
                             EngineTemperatureWidget(engineTempCelsius: coolantVal),
-                            const SizedBox(height: 20),
-                            TpmsCardWidget(frontPsi: frontPsiVal, rearPsi: rearPsiVal),
+                            // TPMS: Not available in LiveRideMetrics stream — show UNAVAILABLE
+                            const TpmsCardWidget(frontPsi: null, rearPsi: null),
                             const SizedBox(height: 16),
-                            const ObdStatusCardWidget(),
-                            const SizedBox(height: 16),
-                            AnimatedBuilder(
-                              animation: _counterController,
-                              builder: (context, child) {
-                                return AiHealthScoreWidget(healthScore: _healthScoreAnimation.value);
-                              },
+                            ObdStatusCardWidget(
+                              isConnected: !isStale && metrics != null,
+                              faultCodeCount: 0, // Real DTC count comes from diagnosticCodesStream when wired
                             ),
+                            const SizedBox(height: 16),
+                            // AI Health Score: Not available from real telemetry stream — show UNAVAILABLE
+                            const AiHealthScoreWidget(healthScore: null),
                           ],
                         ),
                       );
@@ -545,25 +532,46 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   const SizedBox(height: 20),
 
                   // 7. Staggered Weather Radar & Summary
-                  WeatherWidget(
-                    weatherCondition: 'Clear Aurora | Ideal Riding Conditions',
-                    tempCelsius: 24.0,
-                    rainChance: 4.0,
-                    windSpeedKmh: 14.0,
-                    onWeatherModeChanged: (mode) {
-                      LuxAudioHapticsService.selectionClick();
-                      showLuxSnack(context, 'Weather simulation: ${mode.name.toUpperCase()}', variant: LuxSnackVariant.info);
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth < 450 ? 450.0 : constraints.maxWidth;
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: SizedBox(
+                          width: width,
+                          child: Column(
+                            children: [
+                              WeatherWidget(
+                                weatherCondition: 'Clear Aurora | Ideal Riding Conditions',
+                                tempCelsius: 24.0,
+                                rainChance: 4.0,
+                                windSpeedKmh: 14.0,
+                                onWeatherModeChanged: (mode) {
+                                  LuxAudioHapticsService.selectionClick();
+                                  showLuxSnack(context, 'Weather simulation: ${mode.name.toUpperCase()}', variant: LuxSnackVariant.info);
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              const LastRideSummaryWidget(),
+                            ],
+                          ),
+                        ),
+                      );
                     },
                   ),
-                  const SizedBox(height: 20),
-                  const LastRideSummaryWidget(),
                 ],
               ),
-            ),
-          ),
-        ),
+            );
+
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+            child: content,
+          );
+        },
       ),
-    );
+    )));
   }
 
   Widget _buildQuickActionTile({

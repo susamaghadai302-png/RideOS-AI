@@ -6,8 +6,8 @@ import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/roados_components.dart';
 
 class TpmsCardWidget extends StatelessWidget {
-  final double frontPsi;
-  final double rearPsi;
+  final double? frontPsi;
+  final double? rearPsi;
   final double targetFront;
   final double targetRear;
 
@@ -21,8 +21,8 @@ class TpmsCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frontNominal = (frontPsi - targetFront).abs() <= 2.5;
-    final rearNominal = (rearPsi - targetRear).abs() <= 2.5;
+    final frontNominal = frontPsi != null && (frontPsi! - targetFront).abs() <= 2.5;
+    final rearNominal = rearPsi != null && (rearPsi! - targetRear).abs() <= 2.5;
 
     return RoadOSCard(
       padding: const EdgeInsets.all(16),
@@ -47,11 +47,11 @@ class TpmsCardWidget extends StatelessWidget {
                   border: Border.all(color: (frontNominal && rearNominal) ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson),
                 ),
                 child: Text(
-                  (frontNominal && rearNominal) ? 'OPTIMAL' : 'CHECK PRESSURE',
+                  (frontPsi == null || rearPsi == null) ? 'UNAVAILABLE' : ((frontNominal && rearNominal) ? 'OPTIMAL' : 'CHECK PRESSURE'),
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
-                    color: (frontNominal && rearNominal) ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson,
+                    color: (frontPsi == null || rearPsi == null) ? RoadOSColors.textMuted : ((frontNominal && rearNominal) ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson),
                   ),
                 ),
               ),
@@ -73,11 +73,11 @@ class TpmsCardWidget extends StatelessWidget {
                       const Text('FRONT TIRE', style: TextStyle(fontSize: 10, color: RoadOSColors.textMuted, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
                       Text(
-                        '${frontPsi.toStringAsFixed(1)} PSI',
+                        frontPsi != null ? '${frontPsi!.toStringAsFixed(1)} PSI' : '-- PSI',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
-                          color: frontNominal ? RoadOSColors.platinumWhite : RoadOSColors.errorCrimson,
+                          color: frontPsi == null ? RoadOSColors.textMuted : (frontNominal ? RoadOSColors.platinumWhite : RoadOSColors.errorCrimson),
                         ),
                       ),
                       Text('Target ${targetFront.round()} PSI | 32 degC', style: const TextStyle(fontSize: 9, color: RoadOSColors.textMuted)),
@@ -99,11 +99,11 @@ class TpmsCardWidget extends StatelessWidget {
                       const Text('REAR TIRE', style: TextStyle(fontSize: 10, color: RoadOSColors.textMuted, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
                       Text(
-                        '${rearPsi.toStringAsFixed(1)} PSI',
+                        rearPsi != null ? '${rearPsi!.toStringAsFixed(1)} PSI' : '-- PSI',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
-                          color: rearNominal ? RoadOSColors.platinumWhite : RoadOSColors.errorCrimson,
+                          color: rearPsi == null ? RoadOSColors.textMuted : (rearNominal ? RoadOSColors.platinumWhite : RoadOSColors.errorCrimson),
                         ),
                       ),
                       Text('Target ${targetRear.round()} PSI | 35 degC', style: const TextStyle(fontSize: 9, color: RoadOSColors.textMuted)),
@@ -233,7 +233,7 @@ class ObdStatusCardWidget extends StatelessWidget {
 }
 
 class AiHealthScoreWidget extends StatelessWidget {
-  final double healthScore;
+  final double? healthScore;
 
   const AiHealthScoreWidget({
     super.key,
@@ -258,7 +258,7 @@ class AiHealthScoreWidget extends StatelessWidget {
                 ],
               ),
               Text(
-                '${healthScore.round()}/100',
+                healthScore != null ? '${healthScore!.round()}/100' : '--',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: RoadOSColors.hyperOrange),
               ),
             ],
@@ -266,13 +266,13 @@ class AiHealthScoreWidget extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildComponentBadge('Engine', '99%', RoadOSColors.apexEmerald)),
+              Expanded(child: _buildComponentBadge('Engine', healthScore != null ? '99%' : '--', RoadOSColors.apexEmerald)),
               const SizedBox(width: 8),
-              Expanded(child: _buildComponentBadge('Brakes', '97%', RoadOSColors.apexEmerald)),
+              Expanded(child: _buildComponentBadge('Brakes', healthScore != null ? '97%' : '--', RoadOSColors.apexEmerald)),
               const SizedBox(width: 8),
-              Expanded(child: _buildComponentBadge('Tires', '95%', RoadOSColors.solarGold)),
+              Expanded(child: _buildComponentBadge('Tires', healthScore != null ? '95%' : '--', RoadOSColors.solarGold)),
               const SizedBox(width: 8),
-              Expanded(child: _buildComponentBadge('Battery', '100%', RoadOSColors.apexEmerald)),
+              Expanded(child: _buildComponentBadge('Battery', healthScore != null ? '100%' : '--', RoadOSColors.apexEmerald)),
             ],
           ),
         ],

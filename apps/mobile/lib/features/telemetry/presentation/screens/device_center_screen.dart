@@ -78,12 +78,12 @@ class _DeviceCenterScreenState extends State<DeviceCenterScreen> with SingleTick
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: provider.dataSourceClassification == TelemetryDataSource.realDevice
+            color: provider?.dataSourceClassification == TelemetryDataSource.realDevice
                 ? RoadOSColors.apexEmerald.withValues(alpha: 0.15)
                 : const Color(0xFFFFD600).withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: provider.dataSourceClassification == TelemetryDataSource.realDevice
+              color: provider?.dataSourceClassification == TelemetryDataSource.realDevice
                   ? RoadOSColors.apexEmerald
                   : const Color(0xFFFFD600),
             ),
@@ -91,10 +91,10 @@ class _DeviceCenterScreenState extends State<DeviceCenterScreen> with SingleTick
           child: Row(
             children: [
               Icon(
-                provider.dataSourceClassification == TelemetryDataSource.realDevice
+                provider?.dataSourceClassification == TelemetryDataSource.realDevice
                     ? Icons.sensors_rounded
                     : Icons.science_rounded,
-                color: provider.dataSourceClassification == TelemetryDataSource.realDevice
+                color: provider?.dataSourceClassification == TelemetryDataSource.realDevice
                     ? RoadOSColors.apexEmerald
                     : const Color(0xFFFFD600),
               ),
@@ -104,9 +104,9 @@ class _DeviceCenterScreenState extends State<DeviceCenterScreen> with SingleTick
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      provider.dataSourceClassification.label,
+                      provider?.dataSourceClassification.label ?? 'NO PROVIDER',
                       style: TextStyle(
-                        color: provider.dataSourceClassification == TelemetryDataSource.realDevice
+                        color: provider?.dataSourceClassification == TelemetryDataSource.realDevice
                             ? RoadOSColors.apexEmerald
                             : const Color(0xFFFFD600),
                         fontWeight: FontWeight.bold,
@@ -115,7 +115,7 @@ class _DeviceCenterScreenState extends State<DeviceCenterScreen> with SingleTick
                       ),
                     ),
                     Text(
-                      provider.displayName,
+                      provider?.displayName ?? 'No Active Provider',
                       style: const TextStyle(color: RoadOSColors.textSecondary, fontSize: 11),
                     ),
                   ],
@@ -324,9 +324,9 @@ class _DeviceCenterScreenState extends State<DeviceCenterScreen> with SingleTick
             minimumSize: const Size.fromHeight(44),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          onPressed: _engine.activeProvider.canClearDtcCodes
+          onPressed: (_engine.activeProvider?.canClearDtcCodes ?? false)
               ? () {
-                  _engine.activeProvider.clearDtcCodes();
+                  _engine.activeProvider?.clearDtcCodes();
                   showLuxSnack(context, 'DTC codes cleared.', variant: LuxSnackVariant.info);
                 }
               : null,

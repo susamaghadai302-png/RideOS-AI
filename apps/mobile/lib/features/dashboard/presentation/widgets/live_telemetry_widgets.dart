@@ -6,9 +6,9 @@ import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 
 class SpeedometerArcWidget extends StatelessWidget {
-  final double currentSpeed;
+  final double? currentSpeed;
   final double maxSpeed;
-  final double leanAngle;
+  final double? leanAngle;
   final String unit;
   final VoidCallback? onUnitToggle;
 
@@ -64,7 +64,7 @@ class SpeedometerArcWidget extends StatelessWidget {
             child: RepaintBoundary(
               child: CustomPaint(
                 painter: _SpeedGaugePainter(
-                  speed: currentSpeed,
+                  speed: currentSpeed ?? 0.0,
                   maxSpeed: maxSpeed,
                   accentColor: RoadOSColors.hyperOrange,
                 ),
@@ -82,7 +82,7 @@ class SpeedometerArcWidget extends StatelessWidget {
                         color: RoadOSColors.platinumWhite,
                         shadows: LuxShadows.textGlow(RoadOSColors.hyperOrange),
                       ),
-                      child: Text('${currentSpeed.round()}'),
+                      child: Text(currentSpeed != null ? '${currentSpeed!.round()}' : '--'),
                     ),
                     Text(
                       unit,
@@ -111,7 +111,7 @@ class SpeedometerArcWidget extends StatelessWidget {
                 const Icon(Icons.screen_rotation_rounded, color: RoadOSColors.cyberCyan, size: 14),
                 const SizedBox(width: 6),
                 Text(
-                  'LEAN ANGLE: ${leanAngle.toStringAsFixed(1)} deg',
+                  'LEAN ANGLE: ${leanAngle != null ? leanAngle!.toStringAsFixed(1) : '--'} deg',
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: RoadOSColors.cyberCyan),
                 ),
               ],
@@ -187,7 +187,7 @@ class _SpeedGaugePainter extends CustomPainter {
 }
 
 class LiveTachometerWidget extends StatelessWidget {
-  final double currentRpm;
+  final double? currentRpm;
   final double maxRpm;
 
   const LiveTachometerWidget({
@@ -198,7 +198,7 @@ class LiveTachometerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rpmPct = (currentRpm / maxRpm).clamp(0.0, 1.0);
+    final rpmPct = currentRpm != null ? (currentRpm! / maxRpm).clamp(0.0, 1.0) : 0.0;
     final isRedline = rpmPct >= 0.85;
 
     return RoadOSCard(
@@ -217,7 +217,7 @@ class LiveTachometerWidget extends StatelessWidget {
                 ],
               ),
               Text(
-                '${(currentRpm).round()} RPM',
+                currentRpm != null ? '${(currentRpm!).round()} RPM' : 'UNAVAILABLE',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -254,7 +254,7 @@ class LiveTachometerWidget extends StatelessWidget {
 }
 
 class GearIndicatorWidget extends StatelessWidget {
-  final String currentGear;
+  final String? currentGear;
 
   const GearIndicatorWidget({
     super.key,
@@ -294,7 +294,7 @@ class GearIndicatorWidget extends StatelessWidget {
               boxShadow: LuxShadows.glassGlow(isNeutral ? RoadOSColors.apexEmerald : RoadOSColors.hyperOrange),
             ),
             child: Text(
-              currentGear,
+              currentGear ?? '-',
               style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
@@ -309,8 +309,8 @@ class GearIndicatorWidget extends StatelessWidget {
 }
 
 class FuelBatteryGaugeWidget extends StatelessWidget {
-  final double fuelPercent;
-  final double batteryPercent;
+  final double? fuelPercent;
+  final double? batteryPercent;
 
   const FuelBatteryGaugeWidget({
     super.key,
@@ -332,7 +332,7 @@ class FuelBatteryGaugeWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Icon(Icons.local_gas_station_rounded, color: RoadOSColors.solarGold, size: 18),
-                    Text('${fuelPercent.round()}%', style: const TextStyle(fontWeight: FontWeight.bold, color: RoadOSColors.solarGold)),
+                    Text(fuelPercent != null ? '${fuelPercent!.round()}%' : '--', style: const TextStyle(fontWeight: FontWeight.bold, color: RoadOSColors.solarGold)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -341,11 +341,11 @@ class FuelBatteryGaugeWidget extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
-                    value: fuelPercent / 100.0,
+                    value: fuelPercent != null ? fuelPercent! / 100.0 : 0.0,
                     minHeight: 8,
                     backgroundColor: const Color(0xFF1B2332),
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      fuelPercent < 20 ? RoadOSColors.errorCrimson : RoadOSColors.solarGold,
+                      (fuelPercent ?? 100.0) < 20 ? RoadOSColors.errorCrimson : RoadOSColors.solarGold,
                     ),
                   ),
                 ),
@@ -364,7 +364,7 @@ class FuelBatteryGaugeWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Icon(Icons.battery_charging_full_rounded, color: RoadOSColors.apexEmerald, size: 18),
-                    Text('${batteryPercent.round()}%', style: const TextStyle(fontWeight: FontWeight.bold, color: RoadOSColors.apexEmerald)),
+                    Text(batteryPercent != null ? '${batteryPercent!.round()}%' : '--', style: const TextStyle(fontWeight: FontWeight.bold, color: RoadOSColors.apexEmerald)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -373,11 +373,11 @@ class FuelBatteryGaugeWidget extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
-                    value: batteryPercent / 100.0,
+                    value: batteryPercent != null ? batteryPercent! / 100.0 : 0.0,
                     minHeight: 8,
                     backgroundColor: const Color(0xFF1B2332),
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      batteryPercent < 20 ? RoadOSColors.errorCrimson : RoadOSColors.apexEmerald,
+                      (batteryPercent ?? 100.0) < 20 ? RoadOSColors.errorCrimson : RoadOSColors.apexEmerald,
                     ),
                   ),
                 ),
@@ -391,7 +391,7 @@ class FuelBatteryGaugeWidget extends StatelessWidget {
 }
 
 class EngineTemperatureWidget extends StatelessWidget {
-  final double engineTempCelsius;
+  final double? engineTempCelsius;
 
   const EngineTemperatureWidget({
     super.key,
@@ -400,7 +400,7 @@ class EngineTemperatureWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isHot = engineTempCelsius > 105;
+    final isHot = engineTempCelsius != null && engineTempCelsius! > 105;
 
     return RoadOSCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -428,7 +428,7 @@ class EngineTemperatureWidget extends StatelessWidget {
             ],
           ),
           Text(
-            '${engineTempCelsius.round()} degC',
+            engineTempCelsius != null ? '${engineTempCelsius!.round()} degC' : 'UNAVAILABLE',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,

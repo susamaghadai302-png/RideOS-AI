@@ -10,17 +10,21 @@ void main() {
       engine = FleetTelematicsEngine();
     });
 
-    test('Initializes with SimulatorProvider by default and connects', () async {
-      expect(engine.activeProvider.dataSourceClassification, equals(TelemetryDataSource.simulated));
+    test('Production initializes with no active provider (DISCONNECTED)', () {
+      expect(engine.activeProvider, isNull);
+      expect(engine.linkState.name, equals('disconnected'));
+    });
 
-      final connected = await engine.connectDevice('sim_01');
-      expect(connected, isTrue);
+    test('Explicit switchProvider activates SimulatorProvider', () {
+      engine.switchProvider('simulator');
+      expect(engine.activeProvider, isNotNull);
+      expect(engine.activeProvider!.dataSourceClassification, equals(TelemetryDataSource.simulated));
     });
 
     test('Switches hardware provider to OBD-II CAN link', () {
       engine.switchProvider('obd2_can');
-      expect(engine.activeProvider.dataSourceClassification, equals(TelemetryDataSource.realDevice));
-      expect(engine.activeProvider.canClearDtcCodes, isTrue);
+      expect(engine.activeProvider!.dataSourceClassification, equals(TelemetryDataSource.realDevice));
+      expect(engine.activeProvider!.canClearDtcCodes, isTrue);
     });
 
     test('Records ride telemetry session and computes summary metrics', () async {

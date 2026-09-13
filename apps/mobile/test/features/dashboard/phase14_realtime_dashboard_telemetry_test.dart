@@ -46,16 +46,10 @@ void main() {
       expect(engine.rideState, equals(RideState.completed));
     });
 
-    test('4. Historical Telemetry Charts provide consistent time-series points', () {
+    test('4. Historical Telemetry Charts return empty when no session is recorded', () {
+      // With no active provider and no recorded session, charts must be empty
       final points = engine.getHistoricalChartPoints();
-
-      expect(points.length, greaterThanOrEqualTo(5));
-      for (final p in points) {
-        expect(p.speedKmh, greaterThanOrEqualTo(0.0));
-        expect(p.rpm, greaterThanOrEqualTo(0));
-        expect(p.coolantTempC, greaterThanOrEqualTo(0.0));
-        expect(p.batteryVoltage, inInclusiveRange(10.0, 16.0));
-      }
+      expect(points.length, equals(0));
     });
 
     test('5. Dashboard AI Assistant answers live drivetrain and electrical queries offline', () {
