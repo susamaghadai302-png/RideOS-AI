@@ -362,10 +362,10 @@ class _AdvancedRealtimeDashboardScreenState extends State<AdvancedRealtimeDashbo
         spacing: 8,
         runSpacing: 4,
         children: [
-          Text('${c.speedKmh.round()} km/h', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-          Text('${c.rpm} RPM', style: const TextStyle(color: RoadOSColors.cyberCyan, fontSize: 10)),
-          Text('${c.coolantTempC.round()} degC', style: const TextStyle(color: RoadOSColors.hyperOrange, fontSize: 10)),
-          Text('${c.batteryVoltage}V', style: const TextStyle(color: RoadOSColors.apexEmerald, fontSize: 10)),
+          Text(c.speedKmh != null ? '${c.speedKmh!.round()} km/h' : '— km/h', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+          Text(c.rpm != null ? '${c.rpm} RPM' : '— RPM', style: const TextStyle(color: RoadOSColors.cyberCyan, fontSize: 10)),
+          Text(c.coolantTempC != null ? '${c.coolantTempC!.round()} degC' : '— degC', style: const TextStyle(color: RoadOSColors.hyperOrange, fontSize: 10)),
+          Text(c.batteryVoltage != null ? '${c.batteryVoltage}V' : '— V', style: const TextStyle(color: RoadOSColors.apexEmerald, fontSize: 10)),
         ],
       ),
     );

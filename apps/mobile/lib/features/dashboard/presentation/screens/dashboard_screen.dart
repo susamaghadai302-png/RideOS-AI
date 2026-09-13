@@ -26,6 +26,7 @@ import '../widgets/tpms_obd_health_widgets.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../domain/models/advanced_dashboard_models.dart';
 import '../../core/services/realtime_dashboard_telemetry_engine.dart';
+import '../../../../core/device_providers/models/normalized_telemetry_models.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -433,12 +434,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(color: RoadOSColors.errorCrimson.withValues(alpha: 0.5)),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.warning_amber_rounded, color: RoadOSColors.errorCrimson, size: 16),
-                                    SizedBox(width: 8),
-                                    Text('TELEMETRY UNAVAILABLE / STALE', style: TextStyle(color: RoadOSColors.errorCrimson, fontWeight: FontWeight.bold, fontSize: 11)),
+                                    const Icon(Icons.warning_amber_rounded, color: RoadOSColors.errorCrimson, size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      conn != TelemetryConnectionStatus.connected 
+                                          ? 'TELEMETRY DISCONNECTED' 
+                                          : 'STALE TELEMETRY', 
+                                      style: const TextStyle(color: RoadOSColors.errorCrimson, fontWeight: FontWeight.bold, fontSize: 11),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -463,9 +469,16 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                             // TPMS: Not available in LiveRideMetrics stream — show UNAVAILABLE
                             const TpmsCardWidget(frontPsi: null, rearPsi: null),
                             const SizedBox(height: 16),
-                            ObdStatusCardWidget(
-                              isConnected: !isStale && metrics != null,
-                              faultCodeCount: 0, // Real DTC count comes from diagnosticCodesStream when wired
+                            StreamBuilder<List<DiagnosticTroubleCode>>(
+                              stream: _engine.diagnosticCodesStream,
+                              initialData: _engine.latestDtcs,
+                              builder: (context, dtcSnapshot) {
+                                final dtcs = dtcSnapshot.data ?? [];
+                                return ObdStatusCardWidget(
+                                  isConnected: !isStale && metrics != null,
+                                  faultCodeCount: dtcs.length,
+                                );
+                              },
                             ),
                             const SizedBox(height: 16),
                             // AI Health Score: Not available from real telemetry stream — show UNAVAILABLE

@@ -109,16 +109,16 @@ class LiveRideMetrics {
 @immutable
 class HistoricalChartPoint {
   final DateTime timestamp;
-  final double speedKmh;
-  final int rpm;
-  final double coolantTempC;
-  final double batteryVoltage;
+  final double? speedKmh;
+  final int? rpm;
+  final double? coolantTempC;
+  final double? batteryVoltage;
 
   const HistoricalChartPoint({
     required this.timestamp,
-    required this.speedKmh,
-    required this.rpm,
-    required this.coolantTempC,
-    required this.batteryVoltage,
+    this.speedKmh,
+    this.rpm,
+    this.coolantTempC,
+    this.batteryVoltage,
   });
 }

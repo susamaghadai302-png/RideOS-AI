@@ -194,11 +194,13 @@ class ObdStatusCardWidget extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      faultCodeCount == 0 ? '0 Diagnostic Fault Codes (Nominal)' : '$faultCodeCount Active DTC Fault Codes!',
+                      !isConnected 
+                          ? 'UNAVAILABLE / DISCONNECTED' 
+                          : (faultCodeCount == 0 ? 'NO ACTIVE DIAGNOSTICS' : '$faultCodeCount Active DTC Fault Codes!'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: faultCodeCount == 0 ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson,
+                        color: !isConnected ? RoadOSColors.textMuted : (faultCodeCount == 0 ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson),
                       ),
                     ),
                   ],

@@ -13,6 +13,7 @@ class RealtimeDashboardTelemetryEngine {
   RideState _rideState = RideState.ready;
   DateTime? _rideStartTime;
   double _accumulatedDistanceKm = 0.0;
+  DateTime? _lastProcessedTimestamp;
   
   StreamController<LiveRideMetrics>? _metricsController;
   StreamSubscription<NormalizedTelemetrySnapshot>? _snapshotSub;
@@ -30,6 +31,9 @@ class RealtimeDashboardTelemetryEngine {
     }
     return _metricsController!.stream;
   }
+
+  Stream<List<DiagnosticTroubleCode>> get diagnosticCodesStream => _telematics.diagnosticCodesStream;
+  List<DiagnosticTroubleCode> get latestDtcs => _telematics.latestDtcs;
 
   void _startListening() {
     _snapshotSub?.cancel();
@@ -68,6 +72,7 @@ class RealtimeDashboardTelemetryEngine {
     _rideState = RideState.riding;
     _rideStartTime = DateTime.now();
     _accumulatedDistanceKm = 0.0;
+    _lastProcessedTimestamp = null;
   }
 
   void pauseRide() {
@@ -93,12 +98,21 @@ class RealtimeDashboardTelemetryEngine {
 
     final durationSec = _rideStartTime != null ? now.difference(_rideStartTime!).inSeconds : 0;
     
-    // We only increment distance if we actually have moving speed in a real app,
-    // but for now we will keep the duration tracking. We should not fabricate distance
-    // unless we actually integrate real speed over time.
-    if (tele != null && tele.vehicleSpeedKmh.isAvailable && _rideState == RideState.riding) {
-       // A very basic numerical integration for distance based on real speed if needed
-       // _accumulatedDistanceKm += (tele.vehicleSpeedKmh.value! / 3600.0) * (timeDelta);
+    // Integrate real speed over time for genuine distance accumulation
+    if (tele != null && tele.vehicleSpeedKmh.isAvailable) {
+      if (_rideState == RideState.riding) {
+        if (_lastProcessedTimestamp != null && tele.timestamp.isAfter(_lastProcessedTimestamp!)) {
+          final timeDeltaSec = tele.timestamp.difference(_lastProcessedTimestamp!).inMilliseconds / 1000.0;
+          final speed = tele.vehicleSpeedKmh.value ?? 0.0;
+          if (speed > 0) {
+            _accumulatedDistanceKm += (speed / 3600.0) * timeDeltaSec;
+          }
+        }
+      }
+      // Always advance the processed timestamp to prevent jumping after pause/resume
+      if (_lastProcessedTimestamp == null || tele.timestamp.isAfter(_lastProcessedTimestamp!)) {
+        _lastProcessedTimestamp = tele.timestamp;
+      }
     }
 
     if (tele == null) {
@@ -157,10 +171,10 @@ class RealtimeDashboardTelemetryEngine {
 
     return samples.map((s) => HistoricalChartPoint(
       timestamp: s.timestamp,
-      speedKmh: s.vehicleSpeedKmh.value ?? 0.0,
-      rpm: s.engineRpm.value ?? 0,
-      coolantTempC: s.coolantTempC.value ?? 0.0,
-      batteryVoltage: s.batteryVoltage.value ?? 0.0,
+      speedKmh: s.vehicleSpeedKmh.value,
+      rpm: s.engineRpm.value,
+      coolantTempC: s.coolantTempC.value,
+      batteryVoltage: s.batteryVoltage.value,
     )).toList();
   }
 
