@@ -22,8 +22,8 @@ class Global3DStateBridgeImpl {
   }
 
   void updateTelemetry({
-    required double speedKmh,
-    required double rpm,
+    double? speedKmh,
+    double? rpm,
     required bool isIgnitionOn,
     bool isHeadlightOn = true,
     bool isBraking = false,

@@ -81,19 +81,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final speedVal = telemetry.speed.hasValue
         ? '${telemetry.speed.value!.round()}'
-        : (isRealBleConnected ? '0' : '--');
+        : '--';
 
     final rpmVal = telemetry.rpm.hasValue
         ? '${telemetry.rpm.value}'
-        : (isRealBleConnected ? '1100' : '--');
+        : '--';
 
     final battVal = telemetry.batteryVoltage.hasValue
         ? telemetry.batteryVoltage.value!.toStringAsFixed(1)
-        : (isRealBleConnected ? '13.6' : '--');
+        : '--';
 
     final tempVal = telemetry.engineTemperature.hasValue
         ? '${telemetry.engineTemperature.value}'
-        : (isRealBleConnected ? '85' : '--');
+        : '--';
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Global3DStateBridge().setCameraPreset('home');
@@ -101,8 +101,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         Global3DStateBridge().loadVehicle(activeVehicle);
       }
       Global3DStateBridge().updateTelemetry(
-        speedKmh: telemetry.speed.value?.toDouble() ?? 0.0,
-        rpm: telemetry.rpm.value?.toDouble() ?? 0.0,
+        speedKmh: telemetry.speed.value?.toDouble(),
+        rpm: telemetry.rpm.value?.toDouble(),
         isIgnitionOn: isConnected,
       );
     });

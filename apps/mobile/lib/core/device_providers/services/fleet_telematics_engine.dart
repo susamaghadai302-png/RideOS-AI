@@ -131,5 +131,19 @@ class FleetTelematicsEngine {
       await p.dispose();
     }
   }
+
+  void injectSimulatedSnapshotForTesting(NormalizedTelemetrySnapshot snapshot) {
+    _latestSnapshot = snapshot;
+    if (!_telemetryController.isClosed) {
+      _telemetryController.add(snapshot);
+    }
+  }
+
+  void injectDiagnosticsForTesting(List<DiagnosticTroubleCode> dtcs) {
+    _latestDtcs = dtcs;
+    if (!_dtcController.isClosed) {
+      _dtcController.add(dtcs);
+    }
+  }
 }
 

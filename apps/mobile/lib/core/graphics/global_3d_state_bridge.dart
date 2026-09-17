@@ -24,8 +24,8 @@ class Global3DStateBridge {
       _impl.setCameraPreset(preset, duration: duration);
 
   void updateTelemetry({
-    required double speedKmh,
-    required double rpm,
+    double? speedKmh,
+    double? rpm,
     required bool isIgnitionOn,
     bool isHeadlightOn = true,
     bool isBraking = false,

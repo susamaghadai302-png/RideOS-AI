@@ -8,6 +8,7 @@ import 'package:rideos_mobile/features/auth/data/models/rider_model.dart';
 import 'package:rideos_mobile/features/shell/presentation/screens/roados_app_shell.dart';
 import 'package:rideos_mobile/core/storage/token_storage.dart';
 import 'package:rideos_mobile/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widget_test.dart';
 
 class TestAuthBloc extends AuthBloc {
@@ -34,6 +35,7 @@ class TestAuthBloc extends AuthBloc {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
 
   final targetViewports = <String, Size>{
     'Ultra-Narrow Mobile (320px)': const Size(320, 640),
@@ -86,8 +88,7 @@ void main() {
           );
 
           // Advance frames
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pumpAndSettle();
         }
 
         expect(errors, isEmpty, reason: 'RenderFlex overflow occurred on $name: $errors');

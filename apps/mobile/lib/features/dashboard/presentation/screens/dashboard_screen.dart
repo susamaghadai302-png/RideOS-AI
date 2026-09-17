@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
+import '../../domain/models/vehicle_capabilities_extension.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
@@ -28,14 +31,14 @@ import '../../domain/models/advanced_dashboard_models.dart';
 import '../../core/services/realtime_dashboard_telemetry_engine.dart';
 import '../../../../core/device_providers/models/normalized_telemetry_models.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerProviderStateMixin {
   late AnimationController _staggerController;
 
   // Stagger Intervals
@@ -134,9 +137,15 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final activeVehicle = ref.watch(activeVehicleContextProvider);
+    final dashEngine = RealtimeDashboardTelemetryEngine();
+    final conn = dashEngine.getConnectionStatus();
+
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: RoadOSVisualEnvironment(
+      backgroundColor: RoadOSColors.deepSpaceBlack,
+      body: Stack(
+        children: [
+          RoadOSVisualEnvironment(
         environmentType: RoadOSEnvironmentType.dashboard,
         child: SafeArea(
           top: false,
@@ -448,30 +457,48 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                   ],
                                 ),
                               ),
-                            SpeedometerArcWidget(
-                              currentSpeed: displaySpeed,
-                              maxSpeed: _speedUnit == 'MPH' ? 186.0 : 299.0,
-                              leanAngle: leanVal,
-                              unit: _speedUnit,
-                              onUnitToggle: _toggleSpeedUnit,
-                            ),
-                            const SizedBox(height: 16),
-                            LiveTachometerWidget(currentRpm: rpmVal),
-                            const SizedBox(height: 12),
-                            GearIndicatorWidget(currentGear: gearVal),
-                            const SizedBox(height: 16),
-                            FuelBatteryGaugeWidget(
-                              fuelPercent: fuelVal, 
-                              batteryPercent: batVal != null ? (batVal / 14.4 * 100.0).clamp(0.0, 100.0) : null
-                            ),
-                            const SizedBox(height: 12),
-                            EngineTemperatureWidget(engineTempCelsius: coolantVal),
-                            // TPMS: Not available in LiveRideMetrics stream — show UNAVAILABLE
-                            const TpmsCardWidget(frontPsi: null, rearPsi: null),
+                              SpeedometerArcWidget(
+                                currentSpeed: displaySpeed,
+                                maxSpeed: activeVehicle.maxSpeedKmh,
+                                leanAngle: activeVehicle.hasLeanAngle ? leanVal : null,
+                                unit: _speedUnit,
+                                onUnitToggle: _toggleSpeedUnit,
+                              ),
+                              const SizedBox(height: 16),
+                              if (activeVehicle.hasRpm) ...[
+                                LiveTachometerWidget(
+                                  currentRpm: rpmVal,
+                                  maxRpm: activeVehicle.maxRpm,
+                                  redlineRpm: activeVehicle.redlineRpm,
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              GearIndicatorWidget(currentGear: gearVal),
+                              const SizedBox(height: 16),
+                              if (activeVehicle.hasFuel) ...[
+                                FuelBatteryGaugeWidget(
+                                  fuelPercent: fuelVal,
+                                  batteryPercent: batVal != null ? (batVal / 14.4 * 100.0).clamp(0.0, 100.0) : null
+                                ),
+                                const SizedBox(height: 12),
+                              ] else ...[
+                                FuelBatteryGaugeWidget(
+                                  fuelPercent: null, // No fuel for EV
+                                  batteryPercent: batVal != null ? (batVal / 14.4 * 100.0).clamp(0.0, 100.0) : null
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              EngineTemperatureWidget(engineTempCelsius: coolantVal),
+                              // TPMS: Adapt to vehicle profile
+                              TpmsCardWidget(
+                                tirePressures: List.generate(activeVehicle.tpmsSensorCount, (_) => null), // Telemetry stream doesn't yet support TPMS, so pass null
+                                tireLabels: activeVehicle.tpmsSensorLabels,
+                                targetPressure: activeVehicle.optimalTirePressureFront,
+                              ),
                             const SizedBox(height: 16),
                             StreamBuilder<List<DiagnosticTroubleCode>>(
-                              stream: _engine.diagnosticCodesStream,
-                              initialData: _engine.latestDtcs,
+                              stream: dashEngine.diagnosticCodesStream,
+                              initialData: dashEngine.latestDtcs,
                               builder: (context, dtcSnapshot) {
                                 final dtcs = dtcSnapshot.data ?? [];
                                 return ObdStatusCardWidget(
@@ -584,8 +611,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           );
         },
       ),
-    )));
-  }
+    ),
+  ),
+  ],
+),
+);
+}
 
   Widget _buildQuickActionTile({
     required IconData icon,

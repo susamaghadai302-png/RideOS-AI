@@ -3,6 +3,7 @@ import '../../domain/models/advanced_dashboard_models.dart';
 import '../../../../core/device_providers/services/fleet_telematics_engine.dart';
 import '../../../../core/device_providers/models/normalized_telemetry_models.dart';
 import '../../../../core/device_providers/interfaces/device_provider.dart';
+import 'package:flutter/foundation.dart';
 
 class RealtimeDashboardTelemetryEngine {
   static final RealtimeDashboardTelemetryEngine _instance = RealtimeDashboardTelemetryEngine._internal();
@@ -92,7 +93,7 @@ class RealtimeDashboardTelemetryEngine {
   }
 
   /// Retrieves live normalized telemetry from the actual provider
-  LiveRideMetrics getLiveMetrics({String vehicleId = 'v_yamaha_r1m'}) {
+  LiveRideMetrics getLiveMetrics({String? vehicleId}) {
     final tele = _telematics.latestSnapshot;
     final now = DateTime.now();
 
@@ -128,6 +129,7 @@ class RealtimeDashboardTelemetryEngine {
         durationSeconds: durationSec,
         timestamp: now,
         isStale: true,
+        engineLoadPct: null,
       );
     }
 
@@ -154,6 +156,7 @@ class RealtimeDashboardTelemetryEngine {
       durationSeconds: durationSec,
       timestamp: tele.timestamp,
       isStale: isStale,
+      engineLoadPct: tele.engineLoadPct.value,
     );
   }
 
@@ -212,5 +215,15 @@ class RealtimeDashboardTelemetryEngine {
     if (_metricsController != null && !_metricsController!.isClosed) {
       _metricsController!.close();
     }
+  }
+
+  @visibleForTesting
+  void processTelemetrySnapshot(NormalizedTelemetrySnapshot snap) {
+    _telematics.injectSimulatedSnapshotForTesting(snap);
+  }
+
+  @visibleForTesting
+  void processDiagnostics(List<DiagnosticTroubleCode> dtcs) {
+    _telematics.injectDiagnosticsForTesting(dtcs);
   }
 }

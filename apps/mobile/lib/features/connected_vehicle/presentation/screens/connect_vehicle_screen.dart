@@ -179,7 +179,10 @@ class _ConnectVehicleScreenState extends ConsumerState<ConnectVehicleScreen>
       if (mounted) setState(() => _scanStream = stream);
     } catch (e) {
       if (mounted) {
-        setState(() => _radioState = ConnectVehicleRadioState.error);
+        setState(() {
+          _isScanning = false;
+          _radioState = ConnectVehicleRadioState.error;
+        });
         showLuxSnack(context, 'Scan error: $e', variant: LuxSnackVariant.error);
       }
     }

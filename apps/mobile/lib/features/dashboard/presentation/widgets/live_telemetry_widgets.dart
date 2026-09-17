@@ -7,7 +7,7 @@ import '../../../../core/services/lux_haptics_audio_service.dart';
 
 class SpeedometerArcWidget extends StatelessWidget {
   final double? currentSpeed;
-  final double maxSpeed;
+  final double? maxSpeed;
   final double? leanAngle;
   final String unit;
   final VoidCallback? onUnitToggle;
@@ -15,7 +15,7 @@ class SpeedometerArcWidget extends StatelessWidget {
   const SpeedometerArcWidget({
     super.key,
     required this.currentSpeed,
-    this.maxSpeed = 299.0,
+    required this.maxSpeed,
     required this.leanAngle,
     this.unit = 'KM/H',
     this.onUnitToggle,
@@ -64,7 +64,7 @@ class SpeedometerArcWidget extends StatelessWidget {
             child: RepaintBoundary(
               child: CustomPaint(
                 painter: _SpeedGaugePainter(
-                  speed: currentSpeed ?? 0.0,
+                  speed: currentSpeed ?? 0.0, // Visual arc position only; text shows '--' for null
                   maxSpeed: maxSpeed,
                   accentColor: RoadOSColors.hyperOrange,
                 ),
@@ -125,7 +125,7 @@ class SpeedometerArcWidget extends StatelessWidget {
 
 class _SpeedGaugePainter extends CustomPainter {
   final double speed;
-  final double maxSpeed;
+  final double? maxSpeed;
   final Color accentColor;
 
   _SpeedGaugePainter({
@@ -158,25 +158,27 @@ class _SpeedGaugePainter extends CustomPainter {
       bgPaint,
     );
 
-    final ratio = (speed / (maxSpeed > 0 ? maxSpeed : 299.0)).clamp(0.0, 1.0);
-    final activeSweep = sweepAngle * ratio;
+    if (maxSpeed != null && maxSpeed! > 0) {
+      final ratio = (speed / maxSpeed!).clamp(0.0, 1.0);
+      final activeSweep = sweepAngle * ratio;
 
-    final activePaint = Paint()
-      ..shader = LinearGradient(
-        colors: [accentColor, RoadOSColors.cyberCyan],
-      ).createShader(Rect.fromCircle(center: center, radius: radius))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round;
+      final activePaint = Paint()
+        ..shader = LinearGradient(
+          colors: [accentColor, RoadOSColors.cyberCyan],
+        ).createShader(Rect.fromCircle(center: center, radius: radius))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 14
+        ..strokeCap = StrokeCap.round;
 
-    if (activeSweep > 0) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        activeSweep,
-        false,
-        activePaint,
-      );
+      if (activeSweep > 0) {
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: radius),
+          startAngle,
+          activeSweep,
+          false,
+          activePaint,
+        );
+      }
     }
   }
 
@@ -188,18 +190,55 @@ class _SpeedGaugePainter extends CustomPainter {
 
 class LiveTachometerWidget extends StatelessWidget {
   final double? currentRpm;
-  final double maxRpm;
+  final double? maxRpm;
+  final double? redlineRpm;
 
   const LiveTachometerWidget({
     super.key,
     required this.currentRpm,
-    this.maxRpm = 14000,
+    this.maxRpm,
+    this.redlineRpm,
   });
 
   @override
   Widget build(BuildContext context) {
-    final rpmPct = currentRpm != null ? (currentRpm! / maxRpm).clamp(0.0, 1.0) : 0.0;
-    final isRedline = rpmPct >= 0.85;
+    // When max RPM spec is unavailable, we cannot render a meaningful tachometer
+    if (maxRpm == null) {
+      return RoadOSCard(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.tune_rounded, color: RoadOSColors.textMuted, size: 20),
+                const SizedBox(width: 8),
+                Text('TACHOMETER (RPM)', style: LuxTypography.titleMedium(color: RoadOSColors.platinumWhite)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Center(
+              child: Text(
+                currentRpm != null ? '${currentRpm!.round()} RPM' : 'UNAVAILABLE',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: currentRpm != null ? RoadOSColors.cyberCyan : RoadOSColors.textMuted,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Center(
+              child: Text('RPM SCALE CONFIGURATION REQUIRED', style: TextStyle(fontSize: 9, color: RoadOSColors.textMuted)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final effectiveMax = maxRpm!;
+    final rpmPct = currentRpm != null ? (currentRpm! / effectiveMax).clamp(0.0, 1.0) : 0.0;
+    final isRedline = redlineRpm != null && currentRpm != null && currentRpm! >= redlineRpm!;
 
     return RoadOSCard(
       padding: const EdgeInsets.all(18),
@@ -239,12 +278,12 @@ class LiveTachometerWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('0', style: TextStyle(fontSize: 10, color: RoadOSColors.textMuted)),
-              Text('7K', style: TextStyle(fontSize: 10, color: RoadOSColors.textMuted)),
-              Text('14K REDLINE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: RoadOSColors.errorCrimson)),
+              const Text('0', style: TextStyle(fontSize: 10, color: RoadOSColors.textMuted)),
+              Text('${(effectiveMax / 2000).round()}K', style: const TextStyle(fontSize: 10, color: RoadOSColors.textMuted)),
+              Text(redlineRpm != null ? '${(effectiveMax / 1000).round()}K REDLINE' : '${(effectiveMax / 1000).round()}K', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: redlineRpm != null ? RoadOSColors.errorCrimson : RoadOSColors.textMuted)),
             ],
           ),
         ],
@@ -345,7 +384,7 @@ class FuelBatteryGaugeWidget extends StatelessWidget {
                     minHeight: 8,
                     backgroundColor: const Color(0xFF1B2332),
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      (fuelPercent ?? 100.0) < 20 ? RoadOSColors.errorCrimson : RoadOSColors.solarGold,
+                      fuelPercent == null ? Colors.grey : (fuelPercent! < 20 ? RoadOSColors.errorCrimson : RoadOSColors.solarGold),
                     ),
                   ),
                 ),
@@ -368,7 +407,7 @@ class FuelBatteryGaugeWidget extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('12V BATTERY', style: LuxTypography.caption(color: RoadOSColors.textMuted)),
+                Text('BATTERY', style: LuxTypography.caption(color: RoadOSColors.textMuted)),
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -377,7 +416,7 @@ class FuelBatteryGaugeWidget extends StatelessWidget {
                     minHeight: 8,
                     backgroundColor: const Color(0xFF1B2332),
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      (batteryPercent ?? 100.0) < 20 ? RoadOSColors.errorCrimson : RoadOSColors.apexEmerald,
+                      batteryPercent == null ? Colors.grey : (batteryPercent! < 20 ? RoadOSColors.errorCrimson : RoadOSColors.apexEmerald),
                     ),
                   ),
                 ),

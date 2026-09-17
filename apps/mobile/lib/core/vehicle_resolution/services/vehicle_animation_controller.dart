@@ -1,4 +1,5 @@
 import '../models/active_vehicle_context.dart';
+import '../../../features/dashboard/domain/models/vehicle_capabilities_extension.dart';
 
 enum VisualAnimationMode {
   idle,
@@ -43,7 +44,8 @@ class VehicleAnimationController {
     final lean = context.telemetry.leanAngle.value ?? 0.0;
     final isRunning = rpm > 500.0;
 
-    final normalizedRpm = (rpm / 14000.0).clamp(0.0, 1.0);
+    final maxRpm = context.maxRpm;
+    final normalizedRpm = maxRpm != null && maxRpm > 0 ? (rpm / maxRpm).clamp(0.0, 1.0) : 0.0;
 
     if (speed > 5.0 || context.activeTripId != null) {
       return VisualAnimationState(

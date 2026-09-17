@@ -6,23 +6,32 @@ import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/roados_components.dart';
 
 class TpmsCardWidget extends StatelessWidget {
-  final double? frontPsi;
-  final double? rearPsi;
-  final double targetFront;
-  final double targetRear;
+  final List<double?> tirePressures;
+  final List<String> tireLabels;
+  final double? targetPressure;
 
   const TpmsCardWidget({
     super.key,
-    required this.frontPsi,
-    required this.rearPsi,
-    this.targetFront = 36.0,
-    this.targetRear = 42.0,
+    required this.tirePressures,
+    required this.tireLabels,
+    this.targetPressure,
   });
 
   @override
   Widget build(BuildContext context) {
-    final frontNominal = frontPsi != null && (frontPsi! - targetFront).abs() <= 2.5;
-    final rearNominal = rearPsi != null && (rearPsi! - targetRear).abs() <= 2.5;
+    bool allNominal = true;
+    bool anyUnavailable = false;
+
+    for (var psi in tirePressures) {
+      if (psi == null || targetPressure == null) {
+        anyUnavailable = true;
+        allNominal = false;
+        break;
+      }
+      if ((psi - targetPressure!).abs() > 2.5) {
+        allNominal = false;
+      }
+    }
 
     return RoadOSCard(
       padding: const EdgeInsets.all(16),
@@ -42,77 +51,59 @@ class TpmsCardWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (frontNominal && rearNominal) ? RoadOSColors.apexEmerald.withValues(alpha: 0.15) : RoadOSColors.errorCrimson.withValues(alpha: 0.15),
+                  color: anyUnavailable ? RoadOSColors.textMuted.withValues(alpha: 0.15) : (allNominal ? RoadOSColors.apexEmerald.withValues(alpha: 0.15) : RoadOSColors.errorCrimson.withValues(alpha: 0.15)),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: (frontNominal && rearNominal) ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson),
+                  border: Border.all(color: anyUnavailable ? RoadOSColors.textMuted : (allNominal ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson)),
                 ),
                 child: Text(
-                  (frontPsi == null || rearPsi == null) ? 'UNAVAILABLE' : ((frontNominal && rearNominal) ? 'OPTIMAL' : 'CHECK PRESSURE'),
+                  anyUnavailable ? 'UNAVAILABLE' : (allNominal ? 'OPTIMAL' : 'CHECK PRESSURE'),
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
-                    color: (frontPsi == null || rearPsi == null) ? RoadOSColors.textMuted : ((frontNominal && rearNominal) ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson),
+                    color: anyUnavailable ? RoadOSColors.textMuted : (allNominal ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson),
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black26,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: frontNominal ? RoadOSColors.apexEmerald.withValues(alpha: 0.4) : RoadOSColors.errorCrimson),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text('FRONT TIRE', style: TextStyle(fontSize: 10, color: RoadOSColors.textMuted, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(
-                        frontPsi != null ? '${frontPsi!.toStringAsFixed(1)} PSI' : '-- PSI',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: frontPsi == null ? RoadOSColors.textMuted : (frontNominal ? RoadOSColors.platinumWhite : RoadOSColors.errorCrimson),
-                        ),
-                      ),
-                      Text('Target ${targetFront.round()} PSI | 32 degC', style: const TextStyle(fontSize: 9, color: RoadOSColors.textMuted)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black26,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: rearNominal ? RoadOSColors.apexEmerald.withValues(alpha: 0.4) : RoadOSColors.errorCrimson),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text('REAR TIRE', style: TextStyle(fontSize: 10, color: RoadOSColors.textMuted, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(
-                        rearPsi != null ? '${rearPsi!.toStringAsFixed(1)} PSI' : '-- PSI',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: rearPsi == null ? RoadOSColors.textMuted : (rearNominal ? RoadOSColors.platinumWhite : RoadOSColors.errorCrimson),
-                        ),
-                      ),
-                      Text('Target ${targetRear.round()} PSI | 35 degC', style: const TextStyle(fontSize: 9, color: RoadOSColors.textMuted)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: List.generate(tirePressures.length, (index) {
+              final psi = tirePressures[index];
+              final isNominal = psi != null && targetPressure != null && (psi - targetPressure!).abs() <= 2.5;
+              final label = tireLabels.length > index ? tireLabels[index] : 'TIRE ${index + 1}';
+              return _buildTireWidget(label, psi, isNominal, targetPressure);
+            }),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTireWidget(String label, double? psi, bool isNominal, double? target) {
+    return Container(
+      width: 140, // Fixed width for wrap layout
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black26,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: psi == null ? RoadOSColors.textMuted : (isNominal ? RoadOSColors.apexEmerald.withValues(alpha: 0.4) : RoadOSColors.errorCrimson)),
+      ),
+      child: Column(
+        children: [
+          Text(label.toUpperCase(), style: const TextStyle(fontSize: 10, color: RoadOSColors.textMuted, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(
+            psi != null ? '${psi.toStringAsFixed(1)} PSI' : 'UNAVAILABLE',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: psi == null ? RoadOSColors.textMuted : (isNominal ? RoadOSColors.platinumWhite : RoadOSColors.errorCrimson),
+            ),
+          ),
+          Text(target != null ? 'Target ${target.round()} PSI' : 'Target UNAVAILABLE', style: const TextStyle(fontSize: 9, color: RoadOSColors.textMuted)),
         ],
       ),
     );

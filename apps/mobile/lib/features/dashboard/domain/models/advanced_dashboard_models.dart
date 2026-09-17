@@ -62,6 +62,7 @@ class LiveRideMetrics {
   final int durationSeconds;
   final DateTime timestamp;
   final bool isStale;
+  final double? engineLoadPct;
 
   const LiveRideMetrics({
     this.speedKmh,
@@ -75,6 +76,7 @@ class LiveRideMetrics {
     this.durationSeconds = 0,
     required this.timestamp,
     this.isStale = false,
+    this.engineLoadPct,
   });
 
   LiveRideMetrics copyWith({
@@ -89,6 +91,7 @@ class LiveRideMetrics {
     int? durationSeconds,
     DateTime? timestamp,
     bool? isStale,
+    double? engineLoadPct,
   }) {
     return LiveRideMetrics(
       speedKmh: speedKmh ?? this.speedKmh,
@@ -102,6 +105,7 @@ class LiveRideMetrics {
       durationSeconds: durationSeconds ?? this.durationSeconds,
       timestamp: timestamp ?? this.timestamp,
       isStale: isStale ?? this.isStale,
+      engineLoadPct: engineLoadPct ?? this.engineLoadPct,
     );
   }
 }

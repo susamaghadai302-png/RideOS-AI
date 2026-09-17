@@ -56,8 +56,8 @@ class Global3DStateBridgeImpl {
   }
 
   void updateTelemetry({
-    required double speedKmh,
-    required double rpm,
+    double? speedKmh,
+    double? rpm,
     required bool isIgnitionOn,
     bool isHeadlightOn = true,
     bool isBraking = false,
@@ -71,8 +71,8 @@ class Global3DStateBridgeImpl {
         'ignition': isIgnitionOn,
         'headlight': isHeadlightOn,
         'brakeState': isBraking,
-        'batteryPercent': batteryPercent ?? 100.0,
-        'engineTempC': engineTempC ?? 85.0,
+        'batteryPercent': batteryPercent,
+        'engineTempC': engineTempC,
       };
 
       final rideOs3d = js.context['RideOS3D'];
