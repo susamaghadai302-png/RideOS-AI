@@ -14,6 +14,8 @@ enum HardwareValidationMode {
         return 'SIMULATED TEST BENCH';
       case HardwareValidationMode.offline:
         return 'OFFLINE CACHED TELEMETRY';
+      case HardwareValidationMode.production:
+        return 'PRODUCTION (LIVE)';
     }
   }
 }
