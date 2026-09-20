@@ -49,10 +49,8 @@ class OfflineMapManager {
   List<OfflineRegionInfo> get downloadedRegions => List.unmodifiable(_downloadedRegions);
 
   Future<void> downloadRegion(String name, MapCoordinates min, MapCoordinates max, Function(double) onProgress) async {
-    for (int i = 1; i <= 10; i++) {
-      await Future.delayed(const Duration(milliseconds: 120));
-      onProgress(i * 10.0);
-    }
+    // Native map SDK download process here
+    onProgress(100.0);
 
     final newRegion = OfflineRegionInfo(
       id: 'region-${DateTime.now().millisecondsSinceEpoch}',

@@ -406,8 +406,8 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
     }
 
     final destCoords = MapCoordinates(
-      latitude: place.latitude,
-      longitude: place.longitude,
+      latitude: place.latitude ?? 0.0,
+      longitude: place.longitude ?? 0.0,
     );
 
     double originLat = 28.6139; debugPrint(originLat.toString()); debugPrint(originLat.toString());

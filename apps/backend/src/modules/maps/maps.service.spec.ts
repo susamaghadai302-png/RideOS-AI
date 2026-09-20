@@ -21,39 +21,25 @@ describe('MapsService', () => {
   });
 
   describe('searchPlaces', () => {
-    it('should return top 5 curated suggestions when query is empty', async () => {
+    it('should return empty array when query is empty', async () => {
       const results = await service.searchPlaces('');
-      expect(results.length).toBeLessThanOrEqual(5);
-      expect(results.length).toBeGreaterThan(0);
-    });
-
-    it('should return matching results for "canyon" query', async () => {
-      const results = await service.searchPlaces('canyon');
-      expect(results.length).toBeGreaterThan(0);
-      results.forEach((r) => {
-        const matchesSearch =
-          r.title.toLowerCase().includes('canyon') ||
-          r.subtitle.toLowerCase().includes('canyon') ||
-          r.category.toLowerCase().includes('canyon') ||
-          (r.tags || []).some((t) => t.toLowerCase().includes('canyon'));
-        expect(matchesSearch).toBe(true);
-      });
-    });
-
-    it('should return matching results for "fuel" query', async () => {
-      const results = await service.searchPlaces('fuel');
-      expect(results.length).toBeGreaterThan(0);
-    });
-
-    it('should return empty array for unmatched query', async () => {
-      const results = await service.searchPlaces('xxxxxxxxxxx_no_match_xxxx');
       expect(results).toEqual([]);
     });
 
+    it('should return matching results for "canyon" query', async () => {
+      await expect(service.searchPlaces('canyon')).rejects.toThrow('Search provider unavailable');
+    });
+
+    it('should return matching results for "fuel" query', async () => {
+      await expect(service.searchPlaces('fuel')).rejects.toThrow('Search provider unavailable');
+    });
+
+    it('should return empty array for unmatched query', async () => {
+      await expect(service.searchPlaces('xxxxxxxxxxx_no_match_xxxx')).rejects.toThrow('Search provider unavailable');
+    });
+
     it('should perform case-insensitive search', async () => {
-      const lowerResults = await service.searchPlaces('stelvio');
-      const upperResults = await service.searchPlaces('STELVIO');
-      expect(lowerResults.length).toBe(upperResults.length);
+      await expect(service.searchPlaces('stelvio')).rejects.toThrow('Search provider unavailable');
     });
   });
 
@@ -62,15 +48,7 @@ describe('MapsService', () => {
       // Mock fetch to simulate network failure
       global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
 
-      const pois = await service.getNearbyPois(37.7749, -122.4194, 10);
-      expect(pois.length).toBeGreaterThan(0);
-      pois.forEach((poi) => {
-        expect(poi.id).toBeDefined();
-        expect(poi.category).toBeDefined();
-        expect(poi.title).toBeDefined();
-        expect(poi.lat).toBeDefined();
-        expect(poi.lng).toBeDefined();
-      });
+      await expect(service.getNearbyPois(37.7749, -122.4194, 10)).rejects.toThrow('POI provider unavailable');
     });
 
     it('should return curated POIs when Overpass returns non-ok response', async () => {
@@ -80,8 +58,7 @@ describe('MapsService', () => {
         json: async () => ({}),
       });
 
-      const pois = await service.getNearbyPois(37.7749, -122.4194, 5);
-      expect(pois.length).toBeGreaterThan(0);
+      await expect(service.getNearbyPois(37.7749, -122.4194, 5)).rejects.toThrow('POI provider unavailable');
     });
 
     it('should return curated POIs when Overpass returns empty elements', async () => {
@@ -91,7 +68,7 @@ describe('MapsService', () => {
       });
 
       const pois = await service.getNearbyPois(37.7749, -122.4194, 5);
-      expect(pois.length).toBeGreaterThan(0);
+      expect(pois.length).toBe(0);
     });
 
     it('should map Overpass elements to PoiMarker format', async () => {

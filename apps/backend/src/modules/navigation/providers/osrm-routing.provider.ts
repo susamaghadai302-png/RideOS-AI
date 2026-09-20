@@ -91,11 +91,10 @@ export class OsrmRoutingProvider implements IMapRoutingProvider {
         }
       }
     } catch (err: any) {
-      this.logger.warn(`[OSRM] Live routing request failed (${err.message}). Falling back to local route synthesizer.`);
+      this.logger.error(`[OSRM] Live routing request failed (${err.message}).`);
     }
 
-    // Fallback if live OSRM is unreachable
-    return this.synthesizeFallbackRoute(origin, destination, waypoints, preference);
+    throw new Error('OSRM routing provider failed to calculate a route.');
   }
 
   private mapManeuverType(type?: string, modifier?: string): string {
@@ -139,66 +138,6 @@ export class OsrmRoutingProvider implements IMapRoutingProvider {
     if (lowerMod.includes('uturn')) return `Make a U-turn onto ${road}`;
 
     return `Continue onto ${road}`;
-  }
-
-  private synthesizeFallbackRoute(
-    origin: GeoPointDto,
-    destination: GeoPointDto,
-    waypoints: GeoPointDto[],
-    preference: string,
-  ): RouteResult {
-    const allPoints = [origin, ...waypoints, destination];
-    const totalDistanceKm = this.estimateDistanceKm(origin, destination) * 1.2;
-    const totalDurationMinutes = Math.max(1, Math.round((totalDistanceKm / 55) * 60));
-
-    // Interpolate 10 smooth waypoint segments between origin and destination
-    const interpolatedWaypoints: GeoPointDto[] = [];
-    const numPoints = 12;
-    for (let i = 0; i <= numPoints; i++) {
-      const frac = i / numPoints;
-      // Add subtle curve displacement for realism
-      const curveOffset = Math.sin(frac * Math.PI) * 0.005;
-      interpolatedWaypoints.push({
-        lat: parseFloat((origin.lat + (destination.lat - origin.lat) * frac + curveOffset).toFixed(6)),
-        lng: parseFloat((origin.lng + (destination.lng - origin.lng) * frac + curveOffset * 0.5).toFixed(6)),
-      });
-    }
-
-    const steps: RouteStep[] = [
-      {
-        instruction: 'Depart starting location onto main roadway',
-        distanceMeters: Math.round(totalDistanceKm * 300),
-        durationSeconds: Math.round(totalDurationMinutes * 15),
-        type: 'DEPART',
-        maneuverPoint: origin,
-      },
-      {
-        instruction: 'Follow scenic curves along motorcycle corridor',
-        distanceMeters: Math.round(totalDistanceKm * 500),
-        durationSeconds: Math.round(totalDurationMinutes * 35),
-        type: 'STRAIGHT',
-        maneuverPoint: interpolatedWaypoints[Math.floor(numPoints / 2)],
-      },
-      {
-        instruction: 'Arrive at destination',
-        distanceMeters: Math.round(totalDistanceKm * 200),
-        durationSeconds: Math.round(totalDurationMinutes * 10),
-        type: 'ARRIVE',
-        maneuverPoint: destination,
-      },
-    ];
-
-    return {
-      routeId: randomUUID(),
-      distanceKm: parseFloat(totalDistanceKm.toFixed(2)),
-      durationMinutes: totalDurationMinutes,
-      polyline: JSON.stringify(interpolatedWaypoints),
-      waypoints: interpolatedWaypoints,
-      steps,
-      elevationGainMeters: Math.round(totalDistanceKm * 20),
-      twistinessScore: preference === 'SCENIC_TWISTY' ? 7.8 : 4.5,
-      provider: 'OSRM',
-    };
   }
 
   private estimateDistanceKm(p1: GeoPointDto, p2: GeoPointDto): number {

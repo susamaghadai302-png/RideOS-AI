@@ -1,3 +1,4 @@
+import 'package:rideos_mobile/core/contracts/navigation_models.dart';
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -49,12 +50,12 @@ class MockRouteService implements RouteService {
 }
 
 class MockLocationService implements LocationService {
-  final _controller = StreamController<MapCoordinates>.broadcast();
+  final _controller = StreamController<RiderLocationFix>.broadcast();
   bool _hasPermission = true;
   bool _isGpsEnabled = true;
 
   @override
-  Stream<MapCoordinates> get locationStream => _controller.stream;
+  Stream<RiderLocationFix> get locationStream => _controller.stream;
 
   @override
   Future<MapCoordinates> getCurrentLocation() async => const MapCoordinates(latitude: 0, longitude: 0);
@@ -67,7 +68,7 @@ class MockLocationService implements LocationService {
 
   void simulateNoPermission() => _hasPermission = false;
   void simulateNoGps() => _isGpsEnabled = false;
-  void emitLocation(MapCoordinates coords) => _controller.add(coords);
+  void emitLocation(MapCoordinates coords) => _controller.add(RiderLocationFix(coordinates: coords, timestamp: DateTime.now()));
 }
 
 class MockVoiceService implements NavigationVoiceService {

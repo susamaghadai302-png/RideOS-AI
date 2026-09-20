@@ -186,7 +186,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
             // Arrival Check (<30 meters from destination)
             final distToDest = IndiaPlacesSearchEngine.calculateDistanceKm(
               _currentPosition,
-              LatLng(_activeDestination!.latitude, _activeDestination!.longitude),
+              LatLng((_activeDestination!.latitude ?? 0.0), (_activeDestination!.longitude ?? 0.0)),
             );
             if (distToDest < 0.035 && _isNavigating) {
               _endTrip(isArrival: true);
@@ -210,12 +210,12 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
   Future<void> _calculateAndDrawRoute(PlaceSearchResultEntity destination) async {
     _activeDestination = destination;
     final start = _currentPosition;
-    final end = LatLng(destination.latitude, destination.longitude);
+    final end = LatLng(destination.latitude ?? 0.0, destination.longitude ?? 0.0);
 
     final multiResult = await GoogleMapsPlatformService.instance.calculateDirections(
       origin: start,
       destination: end,
-      waypoints: _intermediateWaypoints.map((w) => LatLng(w.latitude, w.longitude)).toList(),
+      waypoints: _intermediateWaypoints.map((w) => LatLng(w.latitude ?? 0.0, w.longitude ?? 0.0)).toList(),
       selectedOption: _selectedRouteOption,
     );
 
@@ -450,7 +450,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
       newMarkers.add(
         gm.Marker(
           markerId: gm.MarkerId('search_poi_${p.id}'),
-          position: gm.LatLng(p.latitude, p.longitude),
+          position: gm.LatLng(p.latitude ?? 0.0, p.longitude ?? 0.0),
           icon: gm.BitmapDescriptor.defaultMarkerWithHue(gm.BitmapDescriptor.hueOrange),
           onTap: () {
             LuxAudioHapticsService.selectionClick();
@@ -460,8 +460,8 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                 category: p.category,
                 title: p.title,
                 address: p.subtitle,
-                lat: p.latitude,
-                lng: p.longitude,
+                lat: p.latitude ?? 0.0,
+                lng: p.longitude ?? 0.0,
                 rating: p.rating ?? 4.8,
                 distanceKm: p.distanceKm,
               );
@@ -689,7 +689,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
         final wp = entry.value;
         return gm.Marker(
           markerId: gm.MarkerId('wp_${entry.key}'),
-          position: gm.LatLng(wp.latitude, wp.longitude),
+          position: gm.LatLng((wp.latitude ?? 0.0), (wp.longitude ?? 0.0)),
           icon: gm.BitmapDescriptor.defaultMarkerWithHue(gm.BitmapDescriptor.hueOrange),
         );
       }),
@@ -698,7 +698,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
       if (_activeDestination != null)
         gm.Marker(
           markerId: const gm.MarkerId('destination'),
-          position: gm.LatLng(_activeDestination!.latitude, _activeDestination!.longitude),
+          position: gm.LatLng((_activeDestination!.latitude ?? 0.0), (_activeDestination!.longitude ?? 0.0)),
           icon: gm.BitmapDescriptor.defaultMarkerWithHue(gm.BitmapDescriptor.hueRed),
           zIndexInt: 90,
         ),

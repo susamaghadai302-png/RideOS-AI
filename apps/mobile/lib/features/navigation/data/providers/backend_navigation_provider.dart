@@ -66,7 +66,7 @@ class BackendNavigationProvider implements NavigationProvider {
     try {
       final results = await _remoteDatasource.searchPlaces(address);
       return results.map((place) => GeocodingResult(
-        coordinates: MapCoordinates(latitude: place.latitude, longitude: place.longitude),
+        coordinates: MapCoordinates(latitude: place.latitude ?? 0.0, longitude: place.longitude ?? 0.0),
         formattedAddress: '${place.title}, ${place.subtitle}',
         placeId: place.id,
         confidence: 0.8,

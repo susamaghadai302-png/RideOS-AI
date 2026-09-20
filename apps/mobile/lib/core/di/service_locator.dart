@@ -78,7 +78,7 @@ class ServiceLocator {
     _getIt.registerLazySingleton<SmartCityService>(() => SmartCityService());
     _getIt.registerLazySingleton<GpsTrackingService>(() => GpsTrackingService());
     _getIt.registerLazySingleton<VoiceGuidanceService>(() => VoiceGuidanceService());
-    _getIt.registerLazySingleton<RouteService>(() => ProductionRouteService());
+    _getIt.registerLazySingleton<RouteService>(() => ProductionRouteService(repository: _getIt<NavigationRepository>()));
     _getIt.registerLazySingleton<LocationService>(() => ProductionLocationService());
     _getIt.registerLazySingleton<TrafficService>(() => ProductionTrafficService());
     _getIt.registerLazySingleton<NavigationVoiceService>(() => ProductionVoiceService());

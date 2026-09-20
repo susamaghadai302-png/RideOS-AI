@@ -171,7 +171,7 @@ class GoogleMapsProvider implements MapProvider {
               id: p.id,
               name: p.title,
               address: p.subtitle,
-              coordinates: LatLng(p.latitude, p.longitude),
+              coordinates: LatLng(p.latitude ?? 0.0, p.longitude ?? 0.0),
               category: p.category,
             );
           }).toList();

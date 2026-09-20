@@ -1,12 +1,20 @@
 import 'dart:async';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import '../../domain/repositories/navigation_repository.dart';
 import '../../domain/services/route_service.dart';
 import '../../domain/services/location_service.dart';
 import '../../domain/services/traffic_service.dart';
 import '../../domain/services/navigation_voice_service.dart';
 import '../../domain/entities/route_entity.dart';
 import '../../core/map_abstraction/map_engine_interface.dart';
+import '../../../../core/contracts/navigation_models.dart';
 
 class ProductionRouteService implements RouteService {
+  final NavigationRepository repository;
+
+  ProductionRouteService({required this.repository});
+
   @override
   Future<NavigationRouteEntity> calculateRoute({
     required MapCoordinates origin,
@@ -15,9 +23,12 @@ class ProductionRouteService implements RouteService {
     VehicleRoutingProfile? vehicleProfile,
     String? preference,
   }) async {
-    // Real implementation would call Google Maps Directions API here.
-    // For now, per the Real Data Rule, we do not fake a route if we don't have the real API integrated yet.
-    throw RouteCalculationException('Production Routing API not fully integrated in Phase 8 boundary.');
+    return await repository.calculateRoute(
+      origin: origin,
+      destination: destination,
+      waypoints: waypoints,
+      preference: preference ?? (vehicleProfile?.isEv == true ? 'EV' : null),
+    );
   }
 
   @override
@@ -26,27 +37,48 @@ class ProductionRouteService implements RouteService {
     required NavigationRouteEntity currentRoute,
     required String reason,
   }) async {
-    throw RouteCalculationException('Production Rerouting API not fully integrated in Phase 8 boundary.');
+    return await repository.calculateRoute(
+      origin: currentLocation,
+      destination: currentRoute.waypoints.last,
+    );
   }
 }
 
 class ProductionLocationService implements LocationService {
-  final _controller = StreamController<MapCoordinates>.broadcast();
-  
   @override
-  Stream<MapCoordinates> get locationStream => _controller.stream;
-
-  @override
-  Future<MapCoordinates> getCurrentLocation() async {
-    // Ideally calls Geolocator.getCurrentPosition()
-    throw Exception('Location unavailable in production boundary without real GPS fix.');
+  Stream<RiderLocationFix> get locationStream {
+    return Geolocator.getPositionStream().map((Position pos) => RiderLocationFix(
+      coordinates: MapCoordinates(
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+      ),
+      speedMetersPerSecond: pos.speed,
+      headingDegree: pos.heading,
+      accuracyMeters: pos.accuracy,
+      altitudeMeters: pos.altitude,
+      timestamp: pos.timestamp,
+    ));
   }
 
   @override
-  Future<bool> hasLocationPermission() async => false;
+  Future<MapCoordinates> getCurrentLocation() async {
+    final pos = await Geolocator.getCurrentPosition();
+    return MapCoordinates(
+      latitude: pos.latitude,
+      longitude: pos.longitude,
+    );
+  }
 
   @override
-  Future<bool> isGpsEnabled() async => false;
+  Future<bool> hasLocationPermission() async {
+    final permission = await Geolocator.checkPermission();
+    return permission == LocationPermission.always || permission == LocationPermission.whileInUse;
+  }
+
+  @override
+  Future<bool> isGpsEnabled() async {
+    return await Geolocator.isLocationServiceEnabled();
+  }
 }
 
 class ProductionTrafficService implements TrafficService {
@@ -61,7 +93,8 @@ class ProductionTrafficService implements TrafficService {
 
 class ProductionVoiceService implements NavigationVoiceService {
   final _stateController = StreamController<VoiceState>.broadcast();
-  VoiceState _state = VoiceState.unavailable;
+  VoiceState _state = VoiceState.enabled;
+  final FlutterTts _tts = FlutterTts();
 
   @override
   VoiceState get currentState => _state;
@@ -76,16 +109,19 @@ class ProductionVoiceService implements NavigationVoiceService {
 
   @override
   Future<void> enable() async {
-    _updateState(VoiceState.unavailable);
+    _updateState(VoiceState.enabled);
   }
 
   @override
   Future<void> disable() async {
-    _updateState(VoiceState.unavailable);
+    _updateState(VoiceState.disabled);
+    await _tts.stop();
   }
 
   @override
   Future<void> speak(String instruction) async {
-    throw Exception('Voice synthesis is unavailable in this production boundary.');
+    if (_state == VoiceState.enabled) {
+      await _tts.speak(instruction);
+    }
   }
 }

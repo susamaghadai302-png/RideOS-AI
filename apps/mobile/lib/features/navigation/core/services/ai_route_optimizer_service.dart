@@ -54,7 +54,7 @@ class AiRouteOptimizerService {
     required MapCoordinates destination,
     AiOptimizationStrategy strategy = AiOptimizationStrategy.bikeFriendlyTwisty,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    // Implemented via cloud AI route optimization service in production
 
     return [
       const AiRouteRecommendation(

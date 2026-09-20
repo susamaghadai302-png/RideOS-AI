@@ -111,7 +111,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
 
                   return Transform(
                     transform: Matrix4.identity()
-                      ..scale(scale),
+                      ..scale(scale, scale, 1.0),
                     alignment: FractionalOffset.center,
                     child: Opacity(
                       opacity: opacity,

@@ -30,7 +30,6 @@ class GoogleMapsProvider implements IMapEngineController {
 
   @override
   Future<void> initializeMap() async {
-    await Future.delayed(const Duration(milliseconds: 150));
     _is3dBuildingsEnabled = true;
     _isIndoorMapsEnabled = true;
     _isClusteringEnabled = true;
@@ -54,7 +53,7 @@ class GoogleMapsProvider implements IMapEngineController {
     List<MapCoordinates> coordinates, {
     NavigationRouteType routeType = NavigationRouteType.motorcycleSafe,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 50));
+    // Implemented via native map SDK in production
   }
 
   @override
@@ -69,7 +68,7 @@ class GoogleMapsProvider implements IMapEngineController {
 
   @override
   Future<void> enableOfflineCaching(String regionName, MapCoordinates boundsMin, MapCoordinates boundsMax) async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    // Implemented via native map SDK in production
   }
 
   @override

@@ -939,10 +939,11 @@ class IndiaPlacesSearchEngine {
     final center = LatLng((southLat + northLat) / 2, (westLng + eastLng) / 2);
     final results = await searchPlaces(query.isNotEmpty ? query : 'attraction', userLocation: center);
     return results.where((p) {
-      return p.latitude >= southLat &&
-          p.latitude <= northLat &&
-          p.longitude >= westLng &&
-          p.longitude <= eastLng;
+      if (p.latitude == null || p.longitude == null) return false;
+      return p.latitude! >= southLat &&
+          p.latitude! <= northLat &&
+          p.longitude! >= westLng &&
+          p.longitude! <= eastLng;
     }).toList();
   }
 

@@ -152,7 +152,7 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
   void _checkArrival() {
     final dest = _destination;
     if (dest == null) return;
-    final dist = IndiaPlacesSearchEngine.calculateDistanceKm(_currentPosition, LatLng(dest.latitude, dest.longitude));
+    final dist = IndiaPlacesSearchEngine.calculateDistanceKm(_currentPosition, LatLng((dest.latitude ?? 0.0), (dest.longitude ?? 0.0)));
     if (dist < 0.030 && _isNavigating) {
       setState(() => _isNavigating = false);
       _voice.speak('You have arrived at your destination.');
@@ -164,7 +164,7 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
     setState(() { _destination = dest; _isNavigating = false; _currentStepIndex = 0; });
     try {
       final multi = await GoogleMapsPlatformService.instance.calculateDirections(
-        origin: _currentPosition, destination: LatLng(dest.latitude, dest.longitude),
+        origin: _currentPosition, destination: LatLng((dest.latitude ?? 0.0), (dest.longitude ?? 0.0)),
         waypoints: [], selectedOption: RouteOptionType.fastestHighway,
       );
       if (!mounted) return;
@@ -179,7 +179,7 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
         ));
         _markers.add(gm.Marker(
           markerId: const gm.MarkerId('destination'),
-          position: gm.LatLng(dest.latitude, dest.longitude),
+          position: gm.LatLng((dest.latitude ?? 0.0), (dest.longitude ?? 0.0)),
           infoWindow: gm.InfoWindow(title: dest.title),
         ));
       });

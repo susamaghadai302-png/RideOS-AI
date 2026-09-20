@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../core/map_abstraction/map_engine_interface.dart';
 import '../../../../core/contracts/navigation_models.dart';
@@ -15,7 +16,7 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
   final LocationService locationService;
   final NavigationVoiceService voiceService;
   
-  StreamSubscription<MapCoordinates>? _locationSubscription;
+  StreamSubscription<RiderLocationFix>? _locationSubscription;
 
   NavigationBloc({
     required this.routeService,
@@ -69,16 +70,8 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
     }
 
     _locationSubscription?.cancel();
-    _locationSubscription = locationService.locationStream.listen((coord) {
-      add(LocationFixUpdatedEvent(
-        locationFix: RiderLocationFix(
-          coordinates: coord,
-          headingDegree: 0.0,
-          speedMetersPerSecond: 0.0,
-          accuracyMeters: 5.0,
-          timestamp: DateTime.now(),
-        ),
-      ));
+    _locationSubscription = locationService.locationStream.listen((fix) {
+      add(LocationFixUpdatedEvent(locationFix: fix));
     });
 
     voiceService.enable();
@@ -99,8 +92,30 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
   void _onLocationFixUpdated(LocationFixUpdatedEvent event, Emitter<NavigationState> emit) {
     if (state is NavigationActiveState) {
       final currentState = state as NavigationActiveState;
-      // In a real app, logic to calculate distance to next maneuver and update ETA would go here
-      emit(currentState.copyWith(currentFix: event.locationFix));
+      
+      double distanceKm = currentState.distanceRemainingKm;
+      int durationMins = currentState.durationRemainingMins;
+      
+      if (currentState.route.waypoints.isNotEmpty) {
+        final currentLoc = event.locationFix.coordinates;
+        final destLoc = currentState.route.waypoints.last;
+        final distanceMeters = Geolocator.distanceBetween(
+          currentLoc.latitude,
+          currentLoc.longitude,
+          destLoc.latitude,
+          destLoc.longitude,
+        );
+        distanceKm = distanceMeters / 1000.0;
+        final speed = event.locationFix.speedMetersPerSecond ?? 0.0;
+        final speedMs = speed > 0 ? speed : 11.11;
+        durationMins = ((distanceMeters / speedMs) / 60.0).toInt();
+      }
+
+      emit(currentState.copyWith(
+        currentFix: event.locationFix,
+        distanceRemainingKm: distanceKm,
+        durationRemainingMins: durationMins,
+      ));
     }
   }
 

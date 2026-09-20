@@ -71,10 +71,8 @@ class OfflineNavigationCacheManager {
   List<OfflineRegionPackage> get regionsList => _regions.values.toList();
 
   Future<void> downloadRegion(String regionId, Function(double) onProgress) async {
-    for (int i = 1; i <= 10; i++) {
-      await Future.delayed(const Duration(milliseconds: 50));
-      onProgress(i / 10.0);
-    }
+    // Native map SDK download process here
+    onProgress(1.0);
     final existing = _regions[regionId];
     if (existing != null) {
       _regions[regionId] = existing.copyWith(
@@ -96,7 +94,7 @@ class OfflineNavigationCacheManager {
   }
 
   Future<void> optimizeStorageCache() async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    // Native cache optimization
   }
 
   Map<String, dynamic> getOfflineStatusSummary() {

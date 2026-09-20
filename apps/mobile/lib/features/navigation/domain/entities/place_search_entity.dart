@@ -5,8 +5,8 @@ class PlaceSearchResultEntity extends Equatable {
   final String title;
   final String subtitle;
   final String category;
-  final double latitude;
-  final double longitude;
+  final double? latitude;
+  final double? longitude;
   final double distanceKm;
   final double? rating;
   final List<String> tags;
@@ -16,8 +16,8 @@ class PlaceSearchResultEntity extends Equatable {
     required this.title,
     required this.subtitle,
     required this.category,
-    required this.latitude,
-    required this.longitude,
+    this.latitude,
+    this.longitude,
     required this.distanceKm,
     this.rating,
     this.tags = const [],
@@ -29,8 +29,8 @@ class PlaceSearchResultEntity extends Equatable {
       title: json['title'] ?? '',
       subtitle: json['subtitle'] ?? '',
       category: json['category'] ?? 'DESTINATION',
-      latitude: (json['lat'] as num?)?.toDouble() ?? 37.7749,
-      longitude: (json['lng'] as num?)?.toDouble() ?? -122.4194,
+      latitude: (json['lat'] as num?)?.toDouble(),
+      longitude: (json['lng'] as num?)?.toDouble(),
       distanceKm: (json['distanceKm'] as num?)?.toDouble() ?? 0.0,
       rating: (json['rating'] as num?)?.toDouble(),
       tags: (json['tags'] as List<dynamic>?)?.map((t) => t.toString()).toList() ?? [],

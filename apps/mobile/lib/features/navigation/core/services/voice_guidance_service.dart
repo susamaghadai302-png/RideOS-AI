@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
 import '../../../../core/utils/platform_web_helper.dart';
 
 enum VoicePack { jarvisAi, apexRacer, cyberSynth, britishTourer }
@@ -61,30 +63,50 @@ class VoiceGuidanceService {
     }
   }
 
+  final SpeechToText _speechToText = SpeechToText();
+
   /// Starts live voice recognition listener for voice search
   Future<bool> startVoiceSearch({
     required Function(String recognizedText) onResult,
     required Function(String error) onError,
   }) async {
     isListening = true;
-
-    Timer(const Duration(milliseconds: 1400), () {
-      if (isListening) {
+    
+    bool available = await _speechToText.initialize(
+      onError: (val) {
         isListening = false;
-        final sample = currentLanguage == NavigationLanguage.hindi
-            ? 'कटक एससीबी मेडिकल कॉलेज'
-            : currentLanguage == NavigationLanguage.odia
-                ? 'କଟକ ବାରବାଟୀ ଷ୍ଟାଡିୟମ'
-                : 'Bhubaneswar Biju Patnaik Airport';
-        onResult(sample);
-      }
-    });
+        onError(val.errorMsg);
+      },
+      onStatus: (val) {
+        if (val == 'done' || val == 'notListening') {
+          isListening = false;
+        }
+      },
+    );
 
-    return true;
+    if (available) {
+      _speechToText.listen(
+        onResult: (SpeechRecognitionResult result) {
+          if (result.finalResult) {
+            isListening = false;
+            onResult(result.recognizedWords);
+          }
+        },
+        localeId: currentLanguage.code,
+        cancelOnError: true,
+        partialResults: false,
+      );
+      return true;
+    } else {
+      isListening = false;
+      onError('Speech recognition not available');
+      return false;
+    }
   }
 
   void stopListening() {
     isListening = false;
+    _speechToText.stop();
   }
 
   String getGreetingMessage() {

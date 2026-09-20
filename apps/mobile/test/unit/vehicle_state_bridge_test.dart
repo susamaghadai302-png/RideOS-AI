@@ -1,3 +1,4 @@
+import 'package:rideos_mobile/core/contracts/navigation_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/models/vehicle_profile.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/models/vehicle_identity.dart';
@@ -56,9 +57,9 @@ class _FakeRouteService implements RouteService {
 }
 
 class _FakeLocationService implements LocationService {
-  final _controller = StreamController<MapCoordinates>.broadcast();
+  final _controller = StreamController<RiderLocationFix>.broadcast();
   @override
-  Stream<MapCoordinates> get locationStream => _controller.stream;
+  Stream<RiderLocationFix> get locationStream => _controller.stream;
   @override
   Future<MapCoordinates> getCurrentLocation() async => const MapCoordinates(latitude: 37.7749, longitude: -122.4194);
   @override

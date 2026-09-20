@@ -136,7 +136,7 @@ class _ScooterModeScreenState extends ConsumerState<ScooterModeScreen> {
 
   void _checkArrival() {
     if (_destination == null) return;
-    final dist = IndiaPlacesSearchEngine.calculateDistanceKm(_currentPosition, LatLng(_destination!.latitude, _destination!.longitude));
+    final dist = IndiaPlacesSearchEngine.calculateDistanceKm(_currentPosition, LatLng((_destination!.latitude ?? 0.0), (_destination!.longitude ?? 0.0)));
     if (dist < 0.025 && _isNavigating) {
       setState(() => _isNavigating = false);
       _voice.speak('You have arrived.');
@@ -147,7 +147,7 @@ class _ScooterModeScreenState extends ConsumerState<ScooterModeScreen> {
     setState(() { _destination = dest; _isNavigating = false; _currentStepIndex = 0; });
     try {
       final multi = await GoogleMapsPlatformService.instance.calculateDirections(
-        origin: _currentPosition, destination: LatLng(dest.latitude, dest.longitude),
+        origin: _currentPosition, destination: LatLng((dest.latitude ?? 0.0), (dest.longitude ?? 0.0)),
         waypoints: [], selectedOption: RouteOptionType.fastestHighway,
       );
       if (!mounted) return;
@@ -160,7 +160,7 @@ class _ScooterModeScreenState extends ConsumerState<ScooterModeScreen> {
           points: best.polylinePoints.map((p) => gm.LatLng(p.latitude, p.longitude)).toList(),
           color: RoadOSColors.apexEmerald, width: 6,
         ));
-        _markers.add(gm.Marker(markerId: const gm.MarkerId('dest'), position: gm.LatLng(dest.latitude, dest.longitude)));
+        _markers.add(gm.Marker(markerId: const gm.MarkerId('dest'), position: gm.LatLng((dest.latitude ?? 0.0), (dest.longitude ?? 0.0))));
       });
       _voice.speak(best.steps.isNotEmpty ? best.steps.first.instruction : 'Route ready. Start riding.');
     } catch (e) {
