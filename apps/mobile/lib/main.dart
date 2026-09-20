@@ -16,9 +16,9 @@ import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/screens/auth_gate.dart';
-import 'features/navigation/core/services/gps_tracking_service.dart';
-import 'features/navigation/core/services/voice_guidance_service.dart';
-import 'features/navigation/domain/repositories/navigation_repository.dart';
+import 'features/navigation/domain/services/route_service.dart';
+import 'features/navigation/domain/services/location_service.dart';
+import 'features/navigation/domain/services/navigation_voice_service.dart';
 import 'features/navigation/presentation/bloc/navigation_bloc.dart';
 import 'features/obd_tpms/core/ble/obd_ble_service.dart';
 import 'features/obd_tpms/data/datasources/obd_remote_datasource.dart';
@@ -100,26 +100,26 @@ void main() async {
 
 class RideOSApp extends StatefulWidget {
   final AuthRepository? authRepository;
-  final NavigationRepository? navRepository;
   final AiAssistantRemoteDatasource? aiRemoteDatasource;
   final SquadRemoteDatasource? squadRemoteDatasource;
   final ObdRemoteDatasource? obdRemoteDatasource;
   final ObdBleService? obdBleService;
   final ApiClient? apiClient;
-  final GpsTrackingService? gpsService;
-  final VoiceGuidanceService? voiceService;
+  final RouteService? routeService;
+  final LocationService? locationService;
+  final NavigationVoiceService? voiceService;
   final VehicleBloc? vehicleBloc;
 
   const RideOSApp({
     super.key,
     this.authRepository,
-    this.navRepository,
     this.aiRemoteDatasource,
     this.squadRemoteDatasource,
     this.obdRemoteDatasource,
     this.obdBleService,
     this.apiClient,
-    this.gpsService,
+    this.routeService,
+    this.locationService,
     this.voiceService,
     this.vehicleBloc,
   });
@@ -144,9 +144,9 @@ class _RideOSAppState extends State<RideOSApp> {
           BlocProvider(
             create: (context) {
               final navBloc = NavigationBloc(
-                repository: widget.navRepository ?? getIt<NavigationRepository>(),
-                gpsTrackingService: widget.gpsService ?? getIt<GpsTrackingService>(),
-                voiceGuidanceService: widget.voiceService ?? getIt<VoiceGuidanceService>(),
+                routeService: widget.routeService ?? getIt<RouteService>(),
+                locationService: widget.locationService ?? getIt<LocationService>(),
+                voiceService: widget.voiceService ?? getIt<NavigationVoiceService>(),
               );
               
               if (Platform.isIOS) {

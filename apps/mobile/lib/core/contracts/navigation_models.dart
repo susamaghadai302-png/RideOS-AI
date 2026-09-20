@@ -368,3 +368,35 @@ class GeocodingResult extends Equatable {
   @override
   List<Object?> get props => [coordinates.latitude, coordinates.longitude, formattedAddress, placeId, confidence, provider];
 }
+
+// ─── Rider Location Fix ────────────────────────────────────────────────────────
+class RiderLocationFix extends Equatable {
+  final MapCoordinates coordinates;
+  final double? speedMetersPerSecond;
+  final double? speedKmh;
+  final double? headingDegree;
+  final double? altitudeMeters;
+  final double? accuracyMeters;
+  final DateTime timestamp;
+
+  const RiderLocationFix({
+    required this.coordinates,
+    this.speedMetersPerSecond,
+    this.speedKmh,
+    this.headingDegree,
+    this.altitudeMeters,
+    this.accuracyMeters,
+    required this.timestamp,
+  });
+
+  @override
+  List<Object?> get props => [
+        coordinates,
+        speedMetersPerSecond,
+        speedKmh,
+        headingDegree,
+        altitudeMeters,
+        accuracyMeters,
+        timestamp,
+      ];
+}

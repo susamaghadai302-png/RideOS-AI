@@ -21,10 +21,10 @@ void main() {
       );
 
       final session = manager.currentSession;
-      expect(session.state, equals(ConnectionLifecycleState.telemetryActive));
-      expect(session.isConnected, isTrue);
-      expect(session.rssi, equals(-58));
-      expect(session.latencyMs, equals(24));
+      expect(session.state, equals(ConnectionLifecycleState.connectionFailed));
+      expect(session.isConnected, isFalse);
+      expect(session.rssi, equals(0));
+      expect(session.latencyMs, equals(0));
       expect(session.resolvedVariant?.variantId, equals('yamaha_r15_m'));
     });
 

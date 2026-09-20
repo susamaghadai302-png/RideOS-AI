@@ -11,11 +11,27 @@ abstract class NavigationState extends Equatable {
   List<Object?> get props => [];
 }
 
-class NavigationInitialState extends NavigationState {}
+class NavigationIdleState extends NavigationState {}
 
-class RouteCalculatingState extends NavigationState {}
+class NavigationSearchingState extends NavigationState {
+  final String query;
+  const NavigationSearchingState({required this.query});
 
-class ActiveTurnByTurnState extends NavigationState {
+  @override
+  List<Object?> get props => [query];
+}
+
+class NavigationRoutePreviewState extends NavigationState {
+  final NavigationRouteEntity previewRoute;
+  const NavigationRoutePreviewState({required this.previewRoute});
+
+  @override
+  List<Object?> get props => [previewRoute];
+}
+
+class NavigationStartingState extends NavigationState {}
+
+class NavigationActiveState extends NavigationState {
   final NavigationRouteEntity route;
   final int currentStepIndex;
   final RiderLocationFix? currentFix;
@@ -24,7 +40,7 @@ class ActiveTurnByTurnState extends NavigationState {
   final MapProviderType activeMapProvider;
   final bool isVoiceMuted;
 
-  const ActiveTurnByTurnState({
+  const NavigationActiveState({
     required this.route,
     required this.currentStepIndex,
     this.currentFix,
@@ -37,7 +53,7 @@ class ActiveTurnByTurnState extends NavigationState {
   RouteStepEntity get currentStep =>
       currentStepIndex < route.steps.length ? route.steps[currentStepIndex] : route.steps.last;
 
-  ActiveTurnByTurnState copyWith({
+  NavigationActiveState copyWith({
     NavigationRouteEntity? route,
     int? currentStepIndex,
     RiderLocationFix? currentFix,
@@ -46,7 +62,7 @@ class ActiveTurnByTurnState extends NavigationState {
     MapProviderType? activeMapProvider,
     bool? isVoiceMuted,
   }) {
-    return ActiveTurnByTurnState(
+    return NavigationActiveState(
       route: route ?? this.route,
       currentStepIndex: currentStepIndex ?? this.currentStepIndex,
       currentFix: currentFix ?? this.currentFix,
@@ -69,7 +85,7 @@ class ActiveTurnByTurnState extends NavigationState {
       ];
 }
 
-class NavigationEndedState extends NavigationState {}
+class NavigationArrivedState extends NavigationState {}
 
 class NavigationErrorState extends NavigationState {
   final String message;
@@ -81,18 +97,6 @@ class NavigationErrorState extends NavigationState {
   List<Object?> get props => [message, navigationError];
 }
 
-/// Tier 4: Navigation is running but with degraded quality (e.g., poor GPS, stale data).
-class NavigationDegradedState extends NavigationState {
-  final NavigationRouteEntity? lastKnownRoute;
-  final String reason;
-
-  const NavigationDegradedState({this.lastKnownRoute, required this.reason});
-
-  @override
-  List<Object?> get props => [lastKnownRoute, reason];
-}
-
-/// Tier 4: Navigation is operating in offline mode with limited capabilities.
 class NavigationOfflineState extends NavigationState {
   final NavigationRouteEntity? cachedRoute;
   final String reason;
@@ -103,13 +107,12 @@ class NavigationOfflineState extends NavigationState {
   List<Object?> get props => [cachedRoute, reason];
 }
 
-/// Tier 4: Route is being recalculated.
 class NavigationReroutingState extends NavigationState {
   final RerouteReason reason;
+  final NavigationRouteEntity? currentRoute;
 
-  const NavigationReroutingState({required this.reason});
+  const NavigationReroutingState({required this.reason, this.currentRoute});
 
   @override
-  List<Object?> get props => [reason];
+  List<Object?> get props => [reason, currentRoute];
 }
-

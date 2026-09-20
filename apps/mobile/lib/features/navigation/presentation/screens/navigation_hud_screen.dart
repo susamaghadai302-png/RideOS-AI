@@ -114,7 +114,7 @@ class _NavigationHudScreenState extends State<NavigationHudScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is RouteCalculatingState) {
+                if (state is NavigationStartingState) {
                   return const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -130,8 +130,8 @@ class _NavigationHudScreenState extends State<NavigationHudScreen> {
                   );
                 }
 
-                final step = (state is ActiveTurnByTurnState) ? state.currentStep : null;
-                final currentSpeed = (state is ActiveTurnByTurnState) ? (state.currentFix?.speedKmh ?? 74.0) : 74.0;
+                final step = (state is NavigationActiveState) ? state.currentStep : null;
+                final currentSpeed = (state is NavigationActiveState) ? (state.currentFix?.speedKmh ?? 74.0) : 74.0;
 
                 return Stack(
                   children: [

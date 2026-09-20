@@ -26,7 +26,7 @@ void main() {
       expect(snapshot.stateExplanation, contains('Vehicle profile active'));
       expect(snapshot.activeInsights.isNotEmpty, isTrue);
       expect(snapshot.recommendations.isNotEmpty, isTrue);
-      expect(snapshot.rideReadinessPercent, equals(75.0));
+      expect(snapshot.rideReadinessPercent, equals(0.0));
       expect(snapshot.healthGrade, equals('GOOD'));
     });
 

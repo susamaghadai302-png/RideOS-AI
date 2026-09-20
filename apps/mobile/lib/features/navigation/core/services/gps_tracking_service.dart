@@ -1,22 +1,7 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import '../map_abstraction/map_engine_interface.dart';
-
-class RiderLocationFix {
-  final MapCoordinates coordinates;
-  final double speedKmh;
-  final double headingDegree;
-  final double altitudeMeters;
-  final DateTime timestamp;
-
-  const RiderLocationFix({
-    required this.coordinates,
-    required this.speedKmh,
-    required this.headingDegree,
-    required this.altitudeMeters,
-    required this.timestamp,
-  });
-}
+import '../../../../core/contracts/navigation_models.dart';
 
 class GpsTrackingService {
   StreamSubscription<Position>? _positionStreamSub;

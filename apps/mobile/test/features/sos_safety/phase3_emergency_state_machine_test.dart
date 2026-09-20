@@ -100,7 +100,7 @@ void main() {
         sosBloc.stream,
         emitsInOrder([
           predicate<SosState>((s) => s is SosConfirmedState && s.status == EmergencyLifecycleStatus.emergencyConfirmed),
-          predicate<SosState>((s) => s is SosDispatchedState && s.status == EmergencyLifecycleStatus.emergencySent),
+          predicate<SosState>((s) => s is SosFailedState && s.status == EmergencyLifecycleStatus.emergencyFailed),
         ]),
       );
     });

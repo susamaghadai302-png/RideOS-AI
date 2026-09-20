@@ -179,9 +179,9 @@ class _ArNavigationHudScreenState extends State<ArNavigationHudScreen> with Sing
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: RoadOSCard(
-                      padding: EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(14),
                       child: Row(
                         children: [
                           Icon(Icons.shield_rounded, color: RoadOSColors.apexEmerald, size: 28),

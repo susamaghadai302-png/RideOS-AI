@@ -11,20 +11,21 @@ import 'package:rideos_mobile/features/navigation/presentation/bloc/navigation_s
 import 'package:rideos_mobile/features/navigation/presentation/providers/navigation_notifier.dart';
 import 'package:rideos_mobile/features/navigation/presentation/providers/navigation_state.dart' as ui_nav;
 import 'package:rideos_mobile/features/navigation/domain/entities/route_entity.dart';
-import 'package:rideos_mobile/features/navigation/domain/repositories/navigation_repository.dart';
-import 'package:rideos_mobile/features/navigation/core/services/gps_tracking_service.dart';
-import 'package:rideos_mobile/features/navigation/core/services/voice_guidance_service.dart';
+import 'package:rideos_mobile/features/navigation/domain/entities/route_entity.dart';
+import 'package:rideos_mobile/features/navigation/domain/services/route_service.dart';
+import 'package:rideos_mobile/features/navigation/domain/services/location_service.dart';
+import 'package:rideos_mobile/features/navigation/domain/services/navigation_voice_service.dart';
 import 'package:rideos_mobile/features/navigation/core/map_abstraction/map_engine_interface.dart';
-import 'package:rideos_mobile/features/navigation/domain/entities/place_search_entity.dart';
+import 'dart:async';
 
-class _FakeNavRepository implements NavigationRepository {
+class _FakeRouteService implements RouteService {
   @override
   Future<NavigationRouteEntity> calculateRoute({
     required MapCoordinates origin,
     required MapCoordinates destination,
     List<MapCoordinates>? waypoints,
+    VehicleRoutingProfile? vehicleProfile,
     String? preference,
-    String? provider,
   }) async {
     return NavigationRouteEntity(
       routeId: 'bridge-route',
@@ -46,20 +47,38 @@ class _FakeNavRepository implements NavigationRepository {
   }
 
   @override
-  Future<bool> checkOffRoute({
+  Future<NavigationRouteEntity> recalculateRoute({
     required MapCoordinates currentLocation,
-    required List<MapCoordinates> waypoints,
-  }) async => false;
-
-  @override
-  Future<List<PlaceSearchResultEntity>> searchPlaces(String query) async => [];
+    required NavigationRouteEntity currentRoute,
+    required String reason,
+  }) async {
+    return currentRoute;
+  }
 }
 
-class _FakeGpsTrackingService extends GpsTrackingService {
+class _FakeLocationService implements LocationService {
+  final _controller = StreamController<MapCoordinates>.broadcast();
   @override
-  void startTracking() {}
+  Stream<MapCoordinates> get locationStream => _controller.stream;
   @override
-  void stopTracking() {}
+  Future<MapCoordinates> getCurrentLocation() async => const MapCoordinates(latitude: 37.7749, longitude: -122.4194);
+  @override
+  Future<bool> hasLocationPermission() async => true;
+  @override
+  Future<bool> isGpsEnabled() async => true;
+}
+
+class _FakeVoiceService implements NavigationVoiceService {
+  @override
+  VoiceState get currentState => VoiceState.enabled;
+  @override
+  Stream<VoiceState> get stateStream => const Stream.empty();
+  @override
+  Future<void> enable() async {}
+  @override
+  Future<void> disable() async {}
+  @override
+  Future<void> speak(String instruction) async {}
 }
 
 void main() {
@@ -182,18 +201,24 @@ void main() {
 
     test('6. NavigationNotifier bridges to NavigationBloc turn-by-turn state', () async {
       final navBloc = NavigationBloc(
-        repository: _FakeNavRepository(),
-        gpsTrackingService: _FakeGpsTrackingService(),
-        voiceGuidanceService: VoiceGuidanceService(),
+        routeService: _FakeRouteService(),
+        locationService: _FakeLocationService(),
+        voiceService: _FakeVoiceService(),
       );
 
       final navNotifier = NavigationNotifier(navigationBloc: navBloc);
       expect(navNotifier.state.status, equals(ui_nav.NavigationStatus.idle));
 
-      navBloc.add(const StartNavigationEvent(
-        origin: MapCoordinates(latitude: 37.7749, longitude: -122.4194),
+      // Trigger calculate first, then start when preview state is reached.
+      navBloc.add(const PreviewRouteEvent(
         destination: MapCoordinates(latitude: 36.6002, longitude: -121.8947),
       ));
+
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      final previewState = navBloc.state as bloc_nav.NavigationRoutePreviewState;
+      
+      navBloc.add(StartNavigationEvent(route: previewState.previewRoute));
 
       await Future.delayed(const Duration(milliseconds: 50));
 
@@ -204,7 +229,7 @@ void main() {
       navNotifier.stopNavigation();
       await Future.delayed(const Duration(milliseconds: 20));
 
-      expect(navBloc.state, isA<bloc_nav.NavigationEndedState>());
+      expect(navBloc.state, isA<bloc_nav.NavigationIdleState>());
       expect(navNotifier.state.status, equals(ui_nav.NavigationStatus.idle));
 
       navNotifier.dispose();

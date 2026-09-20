@@ -5,7 +5,7 @@ class CarPlayStateBridge {
   static const MethodChannel _channel = MethodChannel('com.rideos.mobile/carplay_bridge');
   
   static Future<void> onNavigationUpdate(NavigationState state) async {
-    if (state is ActiveTurnByTurnState) {
+    if (state is NavigationActiveState) {
       if (state.route.steps.isEmpty) return;
       
       final currentStep = state.currentStep;
@@ -21,7 +21,7 @@ class CarPlayStateBridge {
         'currentLng': state.currentFix?.coordinates.longitude ?? 0.0,
         'destinationTitle': 'Active Route',
       });
-    } else if (state is NavigationEndedState || state is NavigationInitialState) {
+    } else if (state is NavigationIdleState) {
       await _channel.invokeMethod('onNavigationIdle');
     }
   }

@@ -28,16 +28,18 @@ class NavigationNotifier extends StateNotifier<ui_state.NavigationState> {
   void _initBlocListener() {
     if (_navigationBloc != null) {
       _blocSub = _navigationBloc!.stream.listen((bState) {
-        if (bState is bloc_state.ActiveTurnByTurnState) {
+        if (bState is bloc_state.NavigationActiveState) {
           state = state.copyWith(
             status: ui_state.NavigationStatus.navigating,
             currentManeuverText: bState.currentStep.instruction,
             distanceToNextTurnMeters: bState.distanceRemainingKm * 1000.0,
-            speedKmh: bState.currentFix?.speedKmh ?? state.speedKmh,
+            speedKmh: bState.currentFix?.speedMetersPerSecond != null
+              ? (bState.currentFix!.speedMetersPerSecond! * 3.6)
+              : state.speedKmh,
           );
-        } else if (bState is bloc_state.RouteCalculatingState) {
+        } else if (bState is bloc_state.NavigationStartingState) {
           state = state.copyWith(status: ui_state.NavigationStatus.calculating);
-        } else if (bState is bloc_state.NavigationEndedState) {
+        } else if (bState is bloc_state.NavigationIdleState) {
           state = const ui_state.NavigationState();
         }
       });

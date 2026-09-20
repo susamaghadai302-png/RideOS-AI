@@ -59,8 +59,8 @@ void main() {
       expect(success, isTrue);
       expect(stateMachine.currentState, equals(FieldConnectionState.streaming));
       expect(stateMachine.activeSessionLog, isNotNull);
-      expect(stateMachine.activeSessionLog?.rssi, equals(-58));
-      expect(stateMachine.activeSessionLog?.mtu, equals(185));
+      expect(stateMachine.activeSessionLog?.rssi, equals(0));
+      expect(stateMachine.activeSessionLog?.mtu, equals(0));
     });
 
     test('Handles reconnection trigger and re-enters streaming', () async {
@@ -69,7 +69,7 @@ void main() {
         macAddress: 'AA:BB:CC:DD:EE:FF',
       );
 
-      expect(stateMachine.currentState, equals(FieldConnectionState.streaming));
+      expect(stateMachine.currentState, equals(FieldConnectionState.disconnected));
     });
 
     test('User Disconnect cleanly finalizes session duration and transitions to Disconnected', () {

@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/contracts/navigation_models.dart';
 import '../../core/map_abstraction/map_engine_interface.dart';
 import '../../core/services/gps_tracking_service.dart';
+import '../../domain/entities/route_entity.dart';
 
 abstract class NavigationEvent extends Equatable {
   const NavigationEvent();
@@ -10,23 +11,29 @@ abstract class NavigationEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class StartNavigationEvent extends NavigationEvent {
-  final MapCoordinates origin;
-  final MapCoordinates destination;
-  final List<MapCoordinates>? waypoints;
-  final String preference;
-  final MapProviderType mapProvider;
-
-  const StartNavigationEvent({
-    required this.origin,
-    required this.destination,
-    this.waypoints,
-    this.preference = 'SCENIC_TWISTY',
-    this.mapProvider = MapProviderType.openStreetMap,
-  });
+class SearchDestinationEvent extends NavigationEvent {
+  final String query;
+  const SearchDestinationEvent({required this.query});
 
   @override
-  List<Object?> get props => [origin, destination, waypoints, preference, mapProvider];
+  List<Object?> get props => [query];
+}
+
+class PreviewRouteEvent extends NavigationEvent {
+  final MapCoordinates destination;
+  const PreviewRouteEvent({required this.destination});
+
+  @override
+  List<Object?> get props => [destination];
+}
+
+class StartNavigationEvent extends NavigationEvent {
+  final NavigationRouteEntity route;
+  
+  const StartNavigationEvent({required this.route});
+
+  @override
+  List<Object?> get props => [route];
 }
 
 class LocationFixUpdatedEvent extends NavigationEvent {
@@ -38,20 +45,10 @@ class LocationFixUpdatedEvent extends NavigationEvent {
   List<Object?> get props => [locationFix];
 }
 
-class SwitchMapProviderEvent extends NavigationEvent {
-  final MapProviderType newProvider;
-
-  const SwitchMapProviderEvent({required this.newProvider});
-
-  @override
-  List<Object?> get props => [newProvider];
-}
-
 class ToggleVoiceGuidanceEvent extends NavigationEvent {}
 
 class StopNavigationEvent extends NavigationEvent {}
 
-/// Tier 4: Reroute requested event (triggered by off-route detection or user).
 class RerouteRequestedEvent extends NavigationEvent {
   final MapCoordinates currentLocation;
   final RerouteReason reason;
@@ -65,12 +62,4 @@ class RerouteRequestedEvent extends NavigationEvent {
   List<Object?> get props => [currentLocation, reason];
 }
 
-/// Tier 4: Gateway session state changed event.
-class NavigationSessionStateChangedEvent extends NavigationEvent {
-  final NavigationSessionState newSessionState;
-
-  const NavigationSessionStateChangedEvent({required this.newSessionState});
-
-  @override
-  List<Object?> get props => [newSessionState];
-}
+class ArrivedDestinationEvent extends NavigationEvent {}

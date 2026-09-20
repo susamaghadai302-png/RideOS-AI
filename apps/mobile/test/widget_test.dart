@@ -5,11 +5,7 @@ import 'package:rideos_mobile/features/ai_assistant/data/datasources/ai_assistan
 import 'package:rideos_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:rideos_mobile/features/auth/data/models/rider_model.dart';
 import 'package:rideos_mobile/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:rideos_mobile/features/navigation/core/services/gps_tracking_service.dart';
-import 'package:rideos_mobile/features/navigation/core/services/voice_guidance_service.dart';
-import 'package:rideos_mobile/features/navigation/data/datasources/navigation_local_datasource.dart';
 import 'package:rideos_mobile/features/navigation/data/datasources/navigation_remote_datasource.dart';
-import 'package:rideos_mobile/features/navigation/data/repositories/navigation_repository_impl.dart';
 import 'package:rideos_mobile/features/navigation/domain/entities/place_search_entity.dart';
 import 'package:rideos_mobile/features/navigation/domain/entities/route_entity.dart';
 import 'package:rideos_mobile/features/obd_tpms/core/ble/obd_ble_service.dart';
@@ -105,25 +101,20 @@ void main() {
     final navRemoteDS = MockNavRemoteDS();
 
     final authRepositoryImpl = AuthRepositoryImpl(remoteDatasource: authRemoteDS, tokenStorage: tokenStorage);
-    final navRepositoryImpl = NavigationRepositoryImpl(remoteDatasource: navRemoteDS, localDatasource: NavigationLocalDatasource());
 
     final aiRemoteDatasource = MockAiDS();
     final squadRemoteDatasource = MockSquadDS();
     final obdRemoteDatasource = MockObdDS();
     final obdBleService = ObdBleService();
-    final gpsService = GpsTrackingService();
-    final voiceService = VoiceGuidanceService();
+
 
     await tester.pumpWidget(RideOSApp(
       authRepository: authRepositoryImpl,
-      navRepository: navRepositoryImpl,
       aiRemoteDatasource: aiRemoteDatasource,
       squadRemoteDatasource: squadRemoteDatasource,
       obdRemoteDatasource: obdRemoteDatasource,
       obdBleService: obdBleService,
       apiClient: apiClient,
-      gpsService: gpsService,
-      voiceService: voiceService,
     ));
 
     await tester.pump();

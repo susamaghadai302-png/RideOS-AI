@@ -5,42 +5,35 @@ import '../di/service_locator.dart';
 import '../../features/navigation/presentation/bloc/navigation_bloc.dart';
 import '../../features/navigation/presentation/bloc/navigation_state.dart';
 import '../../features/navigation/presentation/bloc/navigation_event.dart';
-import '../../features/navigation/core/services/gps_tracking_service.dart';
+import '../../features/navigation/domain/services/location_service.dart';
+import '../../features/navigation/domain/services/route_service.dart';
+import '../../features/navigation/domain/services/navigation_voice_service.dart';
 import '../../features/navigation/core/map_abstraction/map_engine_interface.dart';
+import '../../core/contracts/navigation_models.dart';
 
 const MethodChannel _aaosChannel = MethodChannel('com.rideos.mobile/aaos_bridge');
 
-class AaosHeadlessGpsService extends GpsTrackingService {
-  final _locationController = StreamController<RiderLocationFix>.broadcast();
+class AaosHeadlessLocationService implements LocationService {
+  final _locationController = StreamController<MapCoordinates>.broadcast();
 
   @override
-  Stream<RiderLocationFix> get locationStream => _locationController.stream;
+  Stream<MapCoordinates> get locationStream => _locationController.stream;
 
   @override
-  Future<bool> requestPermission() async => true;
+  Future<MapCoordinates> getCurrentLocation() async => const MapCoordinates(latitude: 0, longitude: 0);
 
   @override
-  void startTracking() {
-    // Location is pushed down from Kotlin NativeLocationAdapter.
-  }
+  Future<bool> hasLocationPermission() async => true;
 
   @override
-  void stopTracking() {}
+  Future<bool> isGpsEnabled() async => true;
 
   void pushLocation(double lat, double lng, double speed, double heading) {
-    _locationController.add(RiderLocationFix(
-      coordinates: MapCoordinates(latitude: lat, longitude: lng),
-      speedKmh: speed,
-      headingDegree: heading,
-      altitudeMeters: 0,
-      timestamp: DateTime.now(),
-    ));
+    _locationController.add(MapCoordinates(latitude: lat, longitude: lng));
   }
 
-  @override
   void dispose() {
     _locationController.close();
-    super.dispose();
   }
 }
 
@@ -49,16 +42,16 @@ void aaosHeadlessEntrypoint() async {
   WidgetsFlutterBinding.ensureInitialized();
   getIt.setupLocator();
 
-  final aaosGpsService = AaosHeadlessGpsService();
+  final aaosLocationService = AaosHeadlessLocationService();
   final navBloc = NavigationBloc(
-    repository: getIt(),
-    gpsTrackingService: aaosGpsService,
-    voiceGuidanceService: getIt(),
+    routeService: getIt<RouteService>(),
+    locationService: aaosLocationService,
+    voiceService: getIt<NavigationVoiceService>(),
   );
 
   // Listen to Navigation state changes and broadcast to Kotlin Native Session
   navBloc.stream.listen((state) {
-    if (state is ActiveTurnByTurnState) {
+    if (state is NavigationActiveState) {
       final fix = state.currentFix;
       final step = state.currentStep;
       _aaosChannel.invokeMethod('onNavigationUpdate', {
@@ -70,7 +63,7 @@ void aaosHeadlessEntrypoint() async {
         'currentLat': fix?.coordinates.latitude ?? 0.0,
         'currentLng': fix?.coordinates.longitude ?? 0.0,
       });
-    } else if (state is NavigationInitialState || state is NavigationEndedState) {
+    } else if (state is NavigationIdleState) {
       _aaosChannel.invokeMethod('onNavigationIdle');
     }
   });
@@ -83,7 +76,7 @@ void aaosHeadlessEntrypoint() async {
         final lng = (args['lng'] as num).toDouble();
         final speed = (args['speed'] as num).toDouble();
         final heading = (args['heading'] as num).toDouble();
-        aaosGpsService.pushLocation(lat, lng, speed, heading);
+        aaosLocationService.pushLocation(lat, lng, speed, heading);
         return true;
       case 'stopNavigation':
         navBloc.add(StopNavigationEvent());

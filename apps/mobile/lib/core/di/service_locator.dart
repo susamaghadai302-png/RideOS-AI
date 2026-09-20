@@ -12,6 +12,11 @@ import '../../features/navigation/data/datasources/navigation_local_datasource.d
 import '../../features/navigation/data/datasources/navigation_remote_datasource.dart';
 import '../../features/navigation/data/repositories/navigation_repository_impl.dart';
 import '../../features/navigation/domain/repositories/navigation_repository.dart';
+import '../../features/navigation/domain/services/route_service.dart';
+import '../../features/navigation/domain/services/location_service.dart';
+import '../../features/navigation/domain/services/traffic_service.dart';
+import '../../features/navigation/domain/services/navigation_voice_service.dart';
+import '../../features/navigation/data/services/production_navigation_services.dart';
 import '../../features/ai_assistant/data/datasources/ai_assistant_remote_datasource.dart';
 import '../../features/ai_assistant/domain/services/ai_intent_resolver.dart';
 import '../../features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
@@ -73,6 +78,10 @@ class ServiceLocator {
     _getIt.registerLazySingleton<SmartCityService>(() => SmartCityService());
     _getIt.registerLazySingleton<GpsTrackingService>(() => GpsTrackingService());
     _getIt.registerLazySingleton<VoiceGuidanceService>(() => VoiceGuidanceService());
+    _getIt.registerLazySingleton<RouteService>(() => ProductionRouteService());
+    _getIt.registerLazySingleton<LocationService>(() => ProductionLocationService());
+    _getIt.registerLazySingleton<TrafficService>(() => ProductionTrafficService());
+    _getIt.registerLazySingleton<NavigationVoiceService>(() => ProductionVoiceService());
     _getIt.registerLazySingleton<ObdBleService>(() => ObdBleService());
     _getIt.registerLazySingleton<PushNotificationService>(() => PushNotificationService());
 
@@ -149,10 +158,9 @@ class ServiceLocator {
     );
     _getIt.registerLazySingleton<NavigationBloc>(
       () => NavigationBloc(
-        repository: _getIt<NavigationRepository>(),
-        gateway: _getIt<NavigationGateway>(),
-        gpsTrackingService: _getIt<GpsTrackingService>(),
-        voiceGuidanceService: _getIt<VoiceGuidanceService>(),
+        routeService: _getIt<RouteService>(),
+        locationService: _getIt<LocationService>(),
+        voiceService: _getIt<NavigationVoiceService>(),
       ),
     );
     _getIt.registerLazySingleton<AiAssistantBloc>(

@@ -425,8 +425,7 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
     if (!mounted) return;
 
     context.read<NavigationBloc>().add(
-      StartNavigationEvent(
-        origin: MapCoordinates(latitude: originLat, longitude: originLng),
+      PreviewRouteEvent(
         destination: destCoords,
       ),
     );
