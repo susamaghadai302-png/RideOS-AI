@@ -7,8 +7,8 @@ export class EmergencyDispatcherService {
   async dispatchEmergencyAlert(
     riderId: string,
     incidentId: string,
-    lat: number,
-    lng: number,
+    lat: number | undefined,
+    lng: number | undefined,
     emergencyContacts: any[],
   ) {
     const liveTrackingUrl = `https://rideos.ai/track/sos/${incidentId}`;
@@ -17,8 +17,9 @@ export class EmergencyDispatcherService {
     );
 
     for (const contact of emergencyContacts) {
+      const locString = (lat != null && lng != null) ? `Live GPS position: ${liveTrackingUrl}` : `Location unavailable.`;
       this.logger.log(
-        `Sending Emergency SMS to ${contact.name} (${contact.phone}): "CRASH ALERT: Rider may be in an accident! Live GPS position: ${liveTrackingUrl}"`,
+        `Sending Emergency SMS to ${contact.name} (${contact.phone}): "CRASH ALERT: Rider may be in an accident! ${locString}"`,
       );
     }
 

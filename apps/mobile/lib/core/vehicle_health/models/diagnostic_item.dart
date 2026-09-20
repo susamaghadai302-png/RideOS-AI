@@ -2,7 +2,8 @@ enum DiagnosticSeverity {
   info,
   notice,
   warning,
-  critical;
+  critical,
+  unknown;
 
   String get label => name.toUpperCase();
 }
@@ -87,8 +88,8 @@ class DiagnosticItem {
     code: json['code'] as String,
     source: json['source'] as String? ?? 'Vehicle ECU',
     severity: DiagnosticSeverity.values.firstWhere(
-      (e) => e.name.toLowerCase() == (json['severity'] as String? ?? 'warning').toLowerCase(),
-      orElse: () => DiagnosticSeverity.warning,
+      (e) => e.name.toLowerCase() == (json['severity'] as String? ?? 'unknown').toLowerCase(),
+      orElse: () => DiagnosticSeverity.unknown,
     ),
     description: json['description'] as String,
     firstSeen: DateTime.parse(json['firstSeen'] as String),

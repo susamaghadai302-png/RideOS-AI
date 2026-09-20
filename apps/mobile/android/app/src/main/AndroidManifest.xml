@@ -64,6 +64,15 @@
             'Instantiatable' lint check fails. We suppress it here because this is the 
             official way to resolve the metadata merger conflict between app-projected and app-automotive.
         -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="com.google.maps.android.utils.attribution.AttributionIdInitializer"
+                tools:node="remove" />
+        </provider>
         <service android:name="androidx.car.app.CarAppMetadataHolderService"
             android:enabled="false"
             android:exported="false"

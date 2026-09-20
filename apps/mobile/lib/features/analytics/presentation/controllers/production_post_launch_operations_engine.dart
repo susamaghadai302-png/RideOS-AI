@@ -71,13 +71,13 @@ class ProductionPostLaunchOperationsEngine {
   /// Fetches real-time post-launch operational health telemetry.
   LiveProductionOpsDashboard getLiveOperationsDashboard() {
     const dashboard = LiveProductionOpsDashboard(
-      globalServiceAvailabilityPct: 99.99,
-      errorBudgetRemainingPct: 99.8,
+      globalServiceAvailabilityPct: 0.0,
+      errorBudgetRemainingPct: 0.0,
       activeP0IncidentsCount: 0,
       activeP1IncidentsCount: 0,
-      meanTimeToDetectSeconds: 4.2,
-      meanTimeToRecoverSeconds: 120.0,
-      clusterStatus: 'HEALTHY_ACTIVE',
+      meanTimeToDetectSeconds: 0.0,
+      meanTimeToRecoverSeconds: 0.0,
+      clusterStatus: 'UNKNOWN',
     );
 
     _opsDashboardStreamController.add(dashboard);
@@ -105,11 +105,11 @@ class ProductionPostLaunchOperationsEngine {
   /// Evaluates business analytics and user engagement metrics.
   PostLaunchAnalyticsReport evaluatePostLaunchAnalytics() {
     return const PostLaunchAnalyticsReport(
-      dailyActiveUsersCount: 142500,
-      monthlyActiveUsersCount: 890000,
-      day30RetentionPct: 84.2,
-      rideCompletionRatePct: 99.4,
-      crashFreeSessionsPct: 99.95,
+      dailyActiveUsersCount: 0,
+      monthlyActiveUsersCount: 0,
+      day30RetentionPct: 0.0,
+      rideCompletionRatePct: 0.0,
+      crashFreeSessionsPct: 0.0,
     );
   }
 

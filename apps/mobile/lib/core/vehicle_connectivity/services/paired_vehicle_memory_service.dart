@@ -64,9 +64,9 @@ class PairedVehicleRecord {
         brand: json['brand'] ?? '',
         model: json['model'] ?? '',
         variant: json['variant'] ?? '',
-        modelYear: json['modelYear'] ?? 2024,
+        modelYear: json['modelYear'] ,
         category: json['category'] ?? 'Motorcycle',
-        fuelType: json['fuelType'] ?? 'Petrol',
+        fuelType: json['fuelType'] ,
         protocolAdapterId: json['protocolAdapterId'] ?? 'generic_ble',
         capabilities: VehicleCapabilities.fromJson(json['capabilities'] ?? {}),
         compatibilityLevel: VehicleCompatibilityLevel.values.firstWhere(

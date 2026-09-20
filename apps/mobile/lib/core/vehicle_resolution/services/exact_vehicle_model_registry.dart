@@ -259,7 +259,7 @@ class ExactVehicleModelRegistry {
             targetMake: identity.make,
             targetModel: identity.model,
             targetVariant: identity.variant,
-            targetYear: identity.modelYear,
+            targetYear: identity.modelYear ?? DateTime.now().year,
           )) {
         return record;
       }

@@ -112,15 +112,15 @@ class TpmsCardWidget extends StatelessWidget {
 
 class ObdStatusCardWidget extends StatelessWidget {
   final bool isConnected;
-  final int faultCodeCount;
+  final int? faultCodeCount;
   final String protocol;
   final VoidCallback? onScanPressed;
 
   const ObdStatusCardWidget({
     super.key,
-    this.isConnected = true,
-    this.faultCodeCount = 0,
-    this.protocol = 'CAN-BUS ISO 15765-4',
+    this.isConnected = false,
+    this.faultCodeCount,
+    this.protocol = 'UNAVAILABLE',
     this.onScanPressed,
   });
 
@@ -185,13 +185,13 @@ class ObdStatusCardWidget extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      !isConnected 
+                      !isConnected || faultCodeCount == null
                           ? 'UNAVAILABLE / DISCONNECTED' 
                           : (faultCodeCount == 0 ? 'NO ACTIVE DIAGNOSTICS' : '$faultCodeCount Active DTC Fault Codes!'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: !isConnected ? RoadOSColors.textMuted : (faultCodeCount == 0 ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson),
+                        color: !isConnected || faultCodeCount == null ? RoadOSColors.textMuted : (faultCodeCount == 0 ? RoadOSColors.apexEmerald : RoadOSColors.errorCrimson),
                       ),
                     ),
                   ],
@@ -259,13 +259,13 @@ class AiHealthScoreWidget extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildComponentBadge('Engine', healthScore != null ? '99%' : '--', RoadOSColors.apexEmerald)),
+              Expanded(child: _buildComponentBadge('Engine', healthScore != null ? 'UNAVAILABLE' : '--', RoadOSColors.apexEmerald)),
               const SizedBox(width: 8),
-              Expanded(child: _buildComponentBadge('Brakes', healthScore != null ? '97%' : '--', RoadOSColors.apexEmerald)),
+              Expanded(child: _buildComponentBadge('Brakes', healthScore != null ? 'UNAVAILABLE' : '--', RoadOSColors.apexEmerald)),
               const SizedBox(width: 8),
-              Expanded(child: _buildComponentBadge('Tires', healthScore != null ? '95%' : '--', RoadOSColors.solarGold)),
+              Expanded(child: _buildComponentBadge('Tires', healthScore != null ? 'UNAVAILABLE' : '--', RoadOSColors.solarGold)),
               const SizedBox(width: 8),
-              Expanded(child: _buildComponentBadge('Battery', healthScore != null ? '100%' : '--', RoadOSColors.apexEmerald)),
+              Expanded(child: _buildComponentBadge('Battery', healthScore != null ? 'UNAVAILABLE' : '--', RoadOSColors.apexEmerald)),
             ],
           ),
         ],

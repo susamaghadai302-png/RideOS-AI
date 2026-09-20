@@ -18,12 +18,10 @@ export class SosIncident {
     type: {
       type: String,
       enum: ['Point'],
-      required: true,
       default: 'Point',
     },
     coordinates: {
       type: [Number], // [lng, lat]
-      required: true,
     },
   })
   location: {

@@ -45,11 +45,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onAppStarted(AppStartedEvent event, Emitter<AuthState> emit) async {
     try {
-      final rider = await authRepository.getProfile();
+      final rider = await authRepository.getProfile().timeout(const Duration(seconds: 8));
       emit(AuthenticatedState(rider: rider));
     } catch (_) {
-      await authRepository.logout();
-      emit(UnauthenticatedState());
+      try {
+        await authRepository.logout().timeout(const Duration(seconds: 3));
+      } finally {
+        emit(UnauthenticatedState());
+      }
     }
   }
 

@@ -70,10 +70,6 @@ class GenericBleVehicleAdapter implements VehicleConnectivityAdapter {
       _updateState(AdapterConnectionState.connected);
       return true;
     } catch (_) {
-      if (targetIdentifier.startsWith('DC:A6') || targetIdentifier.contains('TEST') || targetIdentifier == 'demo_device') {
-        _updateState(AdapterConnectionState.connected);
-        return true;
-      }
       _updateState(AdapterConnectionState.error);
       return false;
     }
@@ -82,10 +78,9 @@ class GenericBleVehicleAdapter implements VehicleConnectivityAdapter {
   @override
   Future<bool> authenticate({String? secretKey, String? pinCode}) async {
     _updateState(AdapterConnectionState.authenticating);
-    // Standard GATT security negotiation / passkey pairing
-    await Future.delayed(const Duration(milliseconds: 250));
-    _updateState(AdapterConnectionState.connected);
-    return true;
+    // Simulated authentication delay removed. Real transport missing.
+    _updateState(AdapterConnectionState.error);
+    return false;
   }
 
   @override
@@ -108,8 +103,8 @@ class GenericBleVehicleAdapter implements VehicleConnectivityAdapter {
       timestamp: DateTime.now(),
       speedKmh: null,
       rpm: null,
-      batteryVoltage: 12.6,
-      isSimulated: false,
+      batteryVoltage: null,
+      isSimulated: false, // empty/unsupported state
     );
   }
 

@@ -106,7 +106,7 @@ class VinIdentificationEngine {
     final serial = int.tryParse(serialSub) ?? 0;
 
     final wmiData = _wmiCatalog[wmi];
-    final modelYear = _modelYearCharMap[yearChar] ?? 2024;
+    final modelYear = _modelYearCharMap[yearChar] ;
 
     if (wmiData == null) {
       // WMI unrecognized: Return partially decoded without fabricating false vehicle identity
@@ -166,7 +166,7 @@ class VinIdentificationEngine {
     );
   }
 
-  String? _resolveCatalogModel(String wmi, String vds, int year) {
+  String? _resolveCatalogModel(String wmi, String vds, int? year) {
     if (wmi == 'JYA') {
       if (vds.startsWith('RN39') || vds.startsWith('RN49') || vds.startsWith('RN65')) return 'Yamaha YZF-R1M';
       if (vds.startsWith('RN70') || vds.startsWith('RN57')) return 'Yamaha MT-09 SP';

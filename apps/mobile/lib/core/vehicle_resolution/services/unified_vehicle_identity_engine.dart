@@ -139,7 +139,7 @@ class UnifiedVehicleIdentityEngine {
       make: manufacturer ?? 'Unknown',
       model: model ?? (rawName.isNotEmpty ? rawName : 'Unknown Two-Wheeler'),
       variant: model != null && model.contains('SP') ? 'SP' : (model != null && model.contains('V4 S') ? 'V4 S' : ''),
-      modelYear: 2024,
+      modelYear: null,
       firmwareVersion: firmwareRevision,
       protocolAdapterId: 'ble_ccu_${(manufacturer ?? "generic").toLowerCase()}',
       confidence: confidence,
@@ -162,7 +162,7 @@ class UnifiedVehicleIdentityEngine {
     String? manufacturer;
     String? model;
     String? variant;
-    int modelYear = 2024;
+    int? modelYear;
     final provenance = <String, IdentityFieldProvenance>{};
 
     if (rawVin != null && rawVin.length >= 3) {
@@ -238,7 +238,7 @@ class UnifiedVehicleIdentityEngine {
     );
   }
 
-  int _decodeVinYear(String yearChar) {
+  int? _decodeVinYear(String yearChar) {
     const yearMap = {
       'P': 2023,
       'R': 2024,
@@ -249,6 +249,6 @@ class UnifiedVehicleIdentityEngine {
       'L': 2020,
       'K': 2019,
     };
-    return yearMap[yearChar] ?? 2024;
+    return yearMap[yearChar] ;
   }
 }

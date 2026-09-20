@@ -104,8 +104,8 @@ class SosBloc extends Bloc<SosEvent, SosState> {
   }
 
   Future<void> _onDispatchSos(DispatchSosEvent event, Emitter<SosState> emit) async {
-    double lat = 20.2961;
-    double lng = 85.8245;
+    double? lat;
+    double? lng;
     String triggerType = 'MANUAL_SOS';
 
     if (state is SosCountdownState) {
@@ -124,8 +124,8 @@ class SosBloc extends Bloc<SosEvent, SosState> {
       final response = await apiClient.dio.post(
         '/sos/trigger',
         data: {
-          'lat': lat,
-          'lng': lng,
+          if (lat != null) 'lat': lat,
+          if (lng != null) 'lng': lng,
           'triggerType': triggerType,
           'timestamp': DateTime.now().toIso8601String(),
         },
@@ -169,14 +169,14 @@ class SosBloc extends Bloc<SosEvent, SosState> {
     } catch (_) {}
   }
 
-  Future<void> _queueOfflineSos(String id, double lat, double lng, String triggerType) async {
+  Future<void> _queueOfflineSos(String id, double? lat, double? lng, String triggerType) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final queue = prefs.getStringList(_offlineQueueKey) ?? [];
       final payload = jsonEncode({
         'id': id,
-        'lat': lat,
-        'lng': lng,
+        if (lat != null) 'lat': lat,
+        if (lng != null) 'lng': lng,
         'triggerType': triggerType,
         'timestamp': DateTime.now().toIso8601String(),
       });

@@ -26,14 +26,14 @@ class SosIdleState extends SosState {
 class SosSuspectedImpactState extends SosState {
   final double confidenceScore;
   final String reason;
-  final double lat;
-  final double lng;
+  final double? lat;
+  final double? lng;
 
   const SosSuspectedImpactState({
     required this.confidenceScore,
     required this.reason,
-    required this.lat,
-    required this.lng,
+    this.lat,
+    this.lng,
   }) : super(status: EmergencyLifecycleStatus.suspectedImpact);
 
   @override
@@ -42,15 +42,15 @@ class SosSuspectedImpactState extends SosState {
 
 class SosCountdownState extends SosState {
   final int secondsRemaining;
-  final double lat;
-  final double lng;
+  final double? lat;
+  final double? lng;
   final String triggerType;
   final bool isConfirmedByUser;
 
   const SosCountdownState({
     required this.secondsRemaining,
-    required this.lat,
-    required this.lng,
+    this.lat,
+    this.lng,
     required this.triggerType,
     this.isConfirmedByUser = false,
   }) : super(status: EmergencyLifecycleStatus.countdownActive);
@@ -60,13 +60,13 @@ class SosCountdownState extends SosState {
 }
 
 class SosConfirmedState extends SosState {
-  final double lat;
-  final double lng;
+  final double? lat;
+  final double? lng;
   final String triggerType;
 
   const SosConfirmedState({
-    required this.lat,
-    required this.lng,
+    this.lat,
+    this.lng,
     required this.triggerType,
   }) : super(status: EmergencyLifecycleStatus.emergencyConfirmed);
 
@@ -91,13 +91,13 @@ class SosDispatchedState extends SosState {
 
 class SosFailedState extends SosState {
   final String errorMessage;
-  final double lat;
-  final double lng;
+  final double? lat;
+  final double? lng;
 
   const SosFailedState({
     required this.errorMessage,
-    required this.lat,
-    required this.lng,
+    this.lat,
+    this.lng,
   }) : super(status: EmergencyLifecycleStatus.emergencyFailed);
 
   @override

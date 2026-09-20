@@ -21,7 +21,6 @@ class GenericBleAdapter extends ProtocolAdapter {
   VehicleCapabilities get capabilities => const VehicleCapabilities(
     supportedTelemetry: {
       TelemetryCapability.speed,
-      TelemetryCapability.batteryVoltage,
     },
     supportedControls: {},
     requiresAuthentication: false,
@@ -100,14 +99,13 @@ class GenericBleAdapter extends ProtocolAdapter {
       double speed = rawBytes[1].toDouble();
       return NormalizedTelemetry.empty().copyWith(
         speed: TelemetryValue.live(speed, 'km/h'),
-        batteryVoltage: TelemetryValue.live(12.0, 'V'),
       );
     }
     return NormalizedTelemetry.empty();
   }
 
   @override
-  List<String> getSupportedFeatures() => ['speed', 'voltage'];
+  List<String> getSupportedFeatures() => ['speed'];
 
   @override
   Stream<NormalizedTelemetry> get telemetryStream => _controller.stream;

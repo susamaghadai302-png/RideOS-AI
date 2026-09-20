@@ -56,6 +56,7 @@ android {
     ndkVersion = "28.2.13676358"
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -108,6 +109,8 @@ flutter {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.5")
+
     // Android Auto / Car App Library — required for CarAppService
     // Navigation category (androidx.car.app.navigation) requires minSdk 23+
     implementation("androidx.car.app:app:1.7.0")
@@ -116,7 +119,7 @@ dependencies {
     
     // Official Google Navigation SDK (includes MapView and NavigationViewForAuto)
     // Used specifically to provide a real geographic map surface on the vehicle DHU
-    implementation("com.google.android.libraries.navigation:navigation:5.5.0")
+    implementation("com.google.android.libraries.navigation:navigation:7.9.0")
 }
 
 configurations.all {

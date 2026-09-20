@@ -58,25 +58,25 @@ class BluetoothClassicAdapter implements VehicleConnectivityAdapter {
   @override
   Future<bool> discover({Duration timeout = const Duration(seconds: 10)}) async {
     _updateState(AdapterConnectionState.discovering);
-    await Future.delayed(const Duration(milliseconds: 300));
-    _updateState(AdapterConnectionState.disconnected);
-    return true;
+    // Simulated discovery delay removed. Real transport missing.
+    _updateState(AdapterConnectionState.error);
+    return false;
   }
 
   @override
   Future<bool> connect(String targetIdentifier) async {
     _updateState(AdapterConnectionState.connecting);
-    await Future.delayed(const Duration(milliseconds: 350));
-    _updateState(AdapterConnectionState.connected);
-    return true;
+    // Simulated connection delay removed. Real transport missing.
+    _updateState(AdapterConnectionState.error);
+    return false;
   }
 
   @override
   Future<bool> authenticate({String? secretKey, String? pinCode}) async {
     _updateState(AdapterConnectionState.authenticating);
-    await Future.delayed(const Duration(milliseconds: 200));
-    _updateState(AdapterConnectionState.connected);
-    return true;
+    // Simulated authentication delay removed. Real transport missing.
+    _updateState(AdapterConnectionState.error);
+    return false;
   }
 
   @override
@@ -93,8 +93,8 @@ class BluetoothClassicAdapter implements VehicleConnectivityAdapter {
       timestamp: DateTime.now(),
       speedKmh: null,
       rpm: null,
-      batteryVoltage: 12.6,
-      isSimulated: false,
+      batteryVoltage: null,
+      isSimulated: false // empty/unsupported state,
     );
   }
 

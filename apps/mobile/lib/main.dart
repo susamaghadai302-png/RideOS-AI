@@ -64,8 +64,13 @@ void main() async {
   };
 
   // 3. Safe Framework Rendering Error Catch (Does NOT disrupt Flutter build scope)
+  final originalOnError = FlutterError.onError;
   FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
+    if (kReleaseMode) {
+      FlutterError.presentError(details);
+    } else if (originalOnError != null) {
+      originalOnError(details);
+    }
   };
 
   // 4. Safe Component Error Boundary (In-place widget fallback)

@@ -52,30 +52,30 @@ class RideDashboardMetrics {
 class RideIntelligenceService {
   RidingHabitAnalysis analyzeCurrentRide() {
     return const RidingHabitAnalysis(
-      brakingSmoothnessScore: 94.5,
-      corneringLeanStabilityScore: 92.0,
-      accelerationIndexScore: 88.5,
-      throttleControlScore: 90.0,
-      speedComplianceScore: 95.0,
-      nightRidingSafetyScore: 96.0,
-      rainRidingControlScore: 91.0,
-      overallSafetyScore: 96.0,
-      overallRideScore: 94.0,
-      smoothnessScore: 93.5,
-      overallEcoScore: 91.5,
-      fuelEfficiencyScore: 93.0,
+      brakingSmoothnessScore: 0.0,
+      corneringLeanStabilityScore: 0.0,
+      accelerationIndexScore: 0.0,
+      throttleControlScore: 0.0,
+      speedComplianceScore: 0.0,
+      nightRidingSafetyScore: 0.0,
+      rainRidingControlScore: 0.0,
+      overallSafetyScore: 0.0,
+      overallRideScore: 0.0,
+      smoothnessScore: 0.0,
+      overallEcoScore: 0.0,
+      fuelEfficiencyScore: 0.0,
     );
   }
 
   RideDashboardMetrics getDashboardMetrics() {
     return const RideDashboardMetrics(
-      todaysDistanceKm: 48.6,
-      weeklyDistanceKm: 342.0,
-      monthlyDistanceKm: 1280.5,
-      totalLifetimeKm: 8420.0,
-      fuelSavedLiters: 18.4,
-      totalRidingTimeStr: '142h 30m',
-      carbonSavedKg: 42.5,
+      todaysDistanceKm: 0.0,
+      weeklyDistanceKm: 0.0,
+      monthlyDistanceKm: 0.0,
+      totalLifetimeKm: 0.0,
+      fuelSavedLiters: 0.0,
+      totalRidingTimeStr: '--',
+      carbonSavedKg: 0.0,
     );
   }
 }

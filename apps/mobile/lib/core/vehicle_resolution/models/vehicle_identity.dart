@@ -49,7 +49,7 @@ class VehicleIdentity {
   final String make;
   final String model;
   final String variant;
-  final int modelYear;
+  final int? modelYear;
   final String? vin;
   final String? ecuIdentifier;
   final String? firmwareVersion;
@@ -67,7 +67,7 @@ class VehicleIdentity {
     String? make,
     required this.model,
     this.variant = '',
-    this.modelYear = 2024,
+    this.modelYear,
     this.vin,
     this.ecuIdentifier,
     this.firmwareVersion,
@@ -82,8 +82,8 @@ class VehicleIdentity {
         metadata = Map.unmodifiable(metadata ?? {}),
         establishedAt = establishedAt ?? DateTime.now();
 
-  String get canonicalKey => '${make.trim().toLowerCase()}_${model.trim().toLowerCase()}_${variant.trim().toLowerCase()}_$modelYear';
-  String get displayName => '$make $model ${variant.isNotEmpty ? variant : ''} ($modelYear)'.trim();
+  String get canonicalKey => '${make.trim().toLowerCase()}_${model.trim().toLowerCase()}_${variant.trim().toLowerCase()}_${modelYear ?? "unknown"}';
+  String get displayName => '$make $model ${variant.isNotEmpty ? variant : ''} ${modelYear != null ? '($modelYear)' : ''}'.trim();
   bool get isExactMatch => confidence == IdentityConfidence.exactMatch;
   bool get isVerified => confidence == IdentityConfidence.exactMatch || confidence == IdentityConfidence.verifiedMatch;
 
@@ -99,7 +99,7 @@ class VehicleIdentity {
       make: 'Unknown',
       model: rawAdvertisementName != null && rawAdvertisementName.isNotEmpty ? rawAdvertisementName : 'Unknown Two-Wheeler',
       variant: 'Unverified',
-      modelYear: DateTime.now().year,
+      modelYear: null,
       protocolAdapterId: 'generic_ble',
       confidence: IdentityConfidence.unknown,
       fieldProvenance: const {

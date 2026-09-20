@@ -99,7 +99,7 @@ class DiagnosticManager {
 
     final severity = dictEntry != null
         ? (dictEntry['sev'] as DiagnosticSeverity)
-        : DiagnosticSeverity.notice;
+        : DiagnosticSeverity.unknown;
 
     final existingIdx = _history.indexWhere((e) => e.code == cleanCode && e.active);
     final now = DateTime.now();

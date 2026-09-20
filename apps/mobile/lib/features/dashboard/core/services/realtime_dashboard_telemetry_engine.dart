@@ -167,7 +167,7 @@ class RealtimeDashboardTelemetryEngine {
   }
 
   /// Returns historical telemetry chart points
-  List<HistoricalChartPoint> getHistoricalChartPoints({String vehicleId = 'v_yamaha_r1m'}) {
+  List<HistoricalChartPoint> getHistoricalChartPoints({String? vehicleId}) {
     // Return empty or actual recorded session samples. We MUST NOT return fake data.
     final samples = _telematics.recordedSessionSamples;
     if (samples.isEmpty) return [];
@@ -207,7 +207,8 @@ class RealtimeDashboardTelemetryEngine {
       return 'Ride State: ${_rideState.label}. Duration: ${metrics.durationSeconds}s, Distance: ${metrics.distanceKm.toStringAsFixed(2)} km.';
     }
 
-    return 'Dashboard Telemetry Engine: Real-time sensor stream connected. Eyes on the apex!';
+    final status = getConnectionStatus().name.toUpperCase();
+    return 'Dashboard Telemetry Engine: Stream is $status.';
   }
 
   void dispose() {

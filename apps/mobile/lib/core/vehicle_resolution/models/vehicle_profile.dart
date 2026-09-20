@@ -81,7 +81,7 @@ class VehicleProfile {
     required this.year,
     required this.category,
     this.engineType,
-    this.fuelType = 'Petrol',
+    this.fuelType,
     this.vin,
     this.displacementCc,
     this.powerBhp,
@@ -222,7 +222,7 @@ class VehicleProfile {
       year: json['year'] ?? 0,
       category: json['category'] ?? 'Motorcycle',
       engineType: json['engineType'],
-      fuelType: json['fuelType'] ?? 'Petrol',
+      fuelType: json['fuelType'] ,
       vin: json['vin'],
       displacementCc: json['displacementCc'] ??
           json['specifications']?['displacementCc'] ??

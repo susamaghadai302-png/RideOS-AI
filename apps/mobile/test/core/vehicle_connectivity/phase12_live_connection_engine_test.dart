@@ -115,8 +115,8 @@ void main() {
       expect(vehicles.first.isPrimary, isTrue);
 
       final autoConnected = await memoryService.connectAutomatically(vehicles.first);
-      expect(autoConnected, isTrue);
-      expect(connectivityEngine.currentState, equals(AdapterConnectionState.connected));
+      expect(autoConnected, isFalse, reason: 'Auto-connect must fail without a real underlying transport');
+      expect(connectivityEngine.currentState, equals(AdapterConnectionState.error));
 
       await memoryService.forgetVehicle('veh_r15_01');
       final remaining = await memoryService.getPairedVehicles();

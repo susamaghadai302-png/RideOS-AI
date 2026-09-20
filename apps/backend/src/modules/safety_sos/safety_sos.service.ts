@@ -19,10 +19,10 @@ export class SafetySosService {
       riderId,
       triggerType: dto.triggerType,
       status: 'DISPATCHED',
-      location: {
+      location: (dto.lng != null && dto.lat != null) ? {
         type: 'Point',
         coordinates: [dto.lng, dto.lat],
-      },
+      } : undefined,
       impactForceG: dto.impactForceG,
       tripId: dto.tripId,
       dispatchedAt: new Date(),

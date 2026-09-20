@@ -8,15 +8,15 @@ abstract class SosEvent extends Equatable {
 }
 
 class TriggerSosEvent extends SosEvent {
-  final double lat;
-  final double lng;
+  final double? lat;
+  final double? lng;
   final String triggerType;
   final double? impactForceG;
   final int countdownSeconds;
 
   const TriggerSosEvent({
-    required this.lat,
-    required this.lng,
+    this.lat,
+    this.lng,
     required this.triggerType,
     this.impactForceG,
     this.countdownSeconds = 15,
@@ -29,14 +29,14 @@ class TriggerSosEvent extends SosEvent {
 class ImpactDetectedEvent extends SosEvent {
   final double confidenceScore;
   final String reason;
-  final double lat;
-  final double lng;
+  final double? lat;
+  final double? lng;
 
   const ImpactDetectedEvent({
     required this.confidenceScore,
     required this.reason,
-    required this.lat,
-    required this.lng,
+    this.lat,
+    this.lng,
   });
 
   @override

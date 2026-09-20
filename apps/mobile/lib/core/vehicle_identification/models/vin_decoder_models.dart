@@ -49,7 +49,7 @@ class VinDecodedDetails {
   final String vds; // Vehicle Descriptor Section (chars 4-8)
   final String checkDigit; // Check digit (char 9)
   final String vis; // Vehicle Identifier Section (chars 10-17)
-  final int modelYear;
+  final int? modelYear;
   final String assemblyPlant;
   final int serialNumber;
   final String countryOfOrigin;

@@ -32,7 +32,7 @@ void main() {
       final unknown = manager.recordFaultCode('P9999');
       expect(unknown.code, 'P9999');
       expect(unknown.description, 'Unknown diagnostic code — manufacturer documentation required.');
-      expect(unknown.severity, DiagnosticSeverity.notice);
+      expect(unknown.severity, DiagnosticSeverity.unknown);
     });
   });
 

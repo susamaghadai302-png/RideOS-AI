@@ -109,8 +109,8 @@ void main() {
         protocolAdapterId: 'yamaha_y_connect',
       );
 
-      expect(connected, isTrue);
-      expect(engine.currentState, equals(AdapterConnectionState.connected));
+      expect(connected, isFalse, reason: 'Without a real BLE transport, the truthful adapter must reject connection');
+      expect(engine.currentState, equals(AdapterConnectionState.error));
       expect(engine.activeAdapter?.adapterId, equals('yamaha_y_connect'));
 
       final maneuverSent = await engine.pushNavigationTurn(
@@ -118,17 +118,17 @@ void main() {
         distanceMeters: 200.0,
         maneuverCode: 2,
       );
-      expect(maneuverSent, isTrue);
+      expect(maneuverSent, isFalse, reason: 'Commands must fail when disconnected');
 
       final notifSent = await engine.pushClusterNotification(
         title: 'Incoming Call',
         body: 'Rider Support',
         category: 'telephony',
       );
-      expect(notifSent, isTrue);
+      expect(notifSent, isFalse, reason: 'Commands must fail when disconnected');
 
       final safeCmdSent = await engine.sendCommand(commandName: 'sync_clock');
-      expect(safeCmdSent, isTrue);
+      expect(safeCmdSent, isFalse, reason: 'Commands must fail when disconnected');
 
       final unsafeCmdBlocked = await engine.sendCommand(commandName: 'unauthorized_ecu_remap');
       expect(unsafeCmdBlocked, isFalse);

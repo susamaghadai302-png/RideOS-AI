@@ -59,8 +59,8 @@ void main() {
       adapter.simulateResult('Navigate', isFinal: false);
       adapter.simulateResult('Navigate home', isFinal: true);
       
-      // Wait for stream to deliver events
-      await Future.delayed(Duration.zero);
+      // Wait for stream to deliver events and internal timers to fire
+      await Future.delayed(const Duration(milliseconds: 100));
 
       expect(transcripts.length, 2);
       expect(transcripts.first.isFinal, false);

@@ -42,22 +42,22 @@ class SmartDisplayAdapter implements VehicleConnectivityAdapter {
   @override
   Future<bool> discover({Duration timeout = const Duration(seconds: 10)}) async {
     _updateState(AdapterConnectionState.discovering);
-    await Future.delayed(const Duration(milliseconds: 200));
-    _updateState(AdapterConnectionState.disconnected);
-    return true;
+    // Simulated discovery delay removed. Real transport missing.
+    _updateState(AdapterConnectionState.error);
+    return false;
   }
 
   @override
   Future<bool> connect(String targetIdentifier) async {
     _updateState(AdapterConnectionState.connecting);
-    await Future.delayed(const Duration(milliseconds: 350));
-    _updateState(AdapterConnectionState.connected);
-    return true;
+    // Simulated connection delay removed. Real transport missing.
+    _updateState(AdapterConnectionState.error);
+    return false;
   }
 
   @override
   Future<bool> authenticate({String? secretKey, String? pinCode}) async {
-    return true;
+    return false;
   }
 
   @override
@@ -72,8 +72,8 @@ class SmartDisplayAdapter implements VehicleConnectivityAdapter {
   Future<RawVehicleTelemetryPacket> readTelemetry() async {
     return RawVehicleTelemetryPacket(
       timestamp: DateTime.now(),
-      batteryVoltage: 12.6,
-      isSimulated: false,
+      batteryVoltage: null,
+      isSimulated: false // empty/unsupported state,
     );
   }
 
