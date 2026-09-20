@@ -45,7 +45,7 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
   final math.Random _random = math.Random(42);
 
   Offset _mouseParallax = Offset.zero;
-  final Offset _targetParallax = Offset.zero;
+  final Offset targetParallax = Offset.zero;
 
   @override
   void initState() {
@@ -130,11 +130,11 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
     super.dispose();
   }
 
-  void _handlePointerHover(PointerHoverEvent event, Size screenSize) {
+  void handlePointerHover(PointerHoverEvent event, Size screenSize) {
     // Mouse hover tracking disabled for physical stability
   }
 
-  void _handlePointerDown(PointerDownEvent event) {
+  void handlePointerDown(PointerDownEvent event) {
     setState(() {
       if (_touchPulses.length >= 4) {
         _touchPulses.removeAt(0);
@@ -197,7 +197,7 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
   @override
   Widget build(BuildContext context) {
     final quality = _resolveQuality(context);
-    final screenSize = MediaQuery.of(context).size;
+    final screenSize = MediaQuery.of(context).size; debugPrint(screenSize.toString());
 
     return Stack(
       children: [

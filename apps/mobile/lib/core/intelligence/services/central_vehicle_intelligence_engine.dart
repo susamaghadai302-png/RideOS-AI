@@ -1,12 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../bluetooth/bluetooth_engine.dart';
-import '../../bluetooth/models/bluetooth_connection_state.dart' as BleState;
+import '../../bluetooth/models/bluetooth_connection_state.dart' as ble_state;
 import '../../vehicle_resolution/providers/active_vehicle_context_provider.dart';
 import '../../vehicle_resolution/providers/my_vehicles_provider.dart';
 import '../../vehicle_resolution/services/vehicle_registry.dart';
 import '../../vehicle_health/services/vehicle_health_engine.dart';
 import '../../../features/fleet_analytics/services/fleet_analytics_engine.dart';
-import '../../../features/obd_tpms/core/services/obd_full_telemetry_service.dart';
 import '../models/vehicle_intelligence_models.dart';
 
 final vehicleIntelligenceProvider = Provider<VehicleIntelligenceSnapshot>((ref) {
@@ -14,15 +14,15 @@ final vehicleIntelligenceProvider = Provider<VehicleIntelligenceSnapshot>((ref) 
   final ownedVehicles = ref.watch(myVehiclesProvider);
   final bleState = ref.watch(bluetoothStateProvider);
 
-  final isConnected = bleState == BleState.BluetoothConnectionState.live ||
-      bleState == BleState.BluetoothConnectionState.connected;
+  final isConnected = bleState == ble_state.BluetoothConnectionState.live ||
+      bleState == ble_state.BluetoothConnectionState.connected;
 
   final vehicle = activeContext.hasActiveVehicle
       ? activeContext.profile!
       : (ownedVehicles.isNotEmpty ? ownedVehicles.first : VehicleRegistry().defaultProfile);
 
   final healthSummary = ref.watch(vehicleHealthProvider);
-  final analyticsSummary = FleetAnalyticsEngine().getSummary();
+  final analyticsSummary = FleetAnalyticsEngine().getSummary(); debugPrint(analyticsSummary.toString());
 
   // 1. Resolve Deterministic AI State & Explanation
   AiState aiState;

@@ -22,8 +22,8 @@ class RiderSafetyCenterScreen extends StatefulWidget {
 }
 
 class _RiderSafetyCenterScreenState extends State<RiderSafetyCenterScreen> {
-  final RiderSafetyAiEngine _safetyEngine = RiderSafetyAiEngine();
-  final double _simulatedSpeed = 84.0;
+  final RiderSafetyAiEngine safetyEngine = RiderSafetyAiEngine();
+  final double simulatedSpeed = 84.0;
   final double _simulatedLeanAngle = 28.0;
 
   @override

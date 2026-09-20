@@ -58,7 +58,7 @@ class AiCopilotEngine {
     bool isBleConnected = false,
   }) {
     final telemetry = ObdFullTelemetryService().getLatestTelemetry();
-    final isSimulated = false;
+    const isSimulated = false;
 
     final derivedSpeed = telemetry.engineRpm != null ? (telemetry.engineRpm! / 65.0).clamp(0.0, 299.0) : null;
     final intRpm = telemetry.engineRpm?.round();

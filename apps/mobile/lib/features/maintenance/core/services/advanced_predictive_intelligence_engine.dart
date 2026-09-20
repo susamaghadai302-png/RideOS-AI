@@ -7,7 +7,7 @@ class AdvancedPredictiveIntelligenceEngine {
   factory AdvancedPredictiveIntelligenceEngine() => _instance;
   AdvancedPredictiveIntelligenceEngine._internal();
 
-  final _telematicsEngine = FleetTelematicsEngine();
+  final telematicsEngine = FleetTelematicsEngine();
 
   /// Validates input telemetry data quality before intelligence calculations
   bool validateDataQuality(NormalizedTelemetrySnapshot snapshot) {

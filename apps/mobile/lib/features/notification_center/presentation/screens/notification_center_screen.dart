@@ -654,7 +654,7 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
                 LuxAudioHapticsService.mediumImpact();
                 await NotificationCenterManager().seedSampleAlerts();
                 if (context.mounted) {
-                  showLuxSnack(context, 'Telemetry diagnostic alerts simulated', variant: LuxSnackVariant.success);
+if (!mounted) return;                   showLuxSnack(context, 'Telemetry diagnostic alerts simulated', variant: LuxSnackVariant.success);
                 }
               },
               icon: const Icon(Icons.refresh_rounded, size: 16),

@@ -49,7 +49,7 @@ class _TelemetryLivePanelState extends State<TelemetryLivePanel> {
       ? _liveCoolantTemp
       : (widget.isEngineRunning ? 88.0 + (_currentRpm / 15000.0) * 18.0 : 24.0);
 
-  double get _batteryVoltage => _isLiveCanBusMode ? _liveBatteryVolts : (widget.isEngineRunning ? 14.2 : 12.6);
+  double get batteryVoltage => _isLiveCanBusMode ? _liveBatteryVolts : (widget.isEngineRunning ? 14.2 : 12.6);
 
   double get _oilPressureBar => widget.isEngineRunning
       ? 2.2 + (_currentRpm / 15000.0) * 3.4

@@ -24,13 +24,13 @@ class _MultiTransportConnectivityScreenState
 
   late TabController _tabController;
   bool _isScanning = false;
-  SmartScanExecutionMode _executionMode = SmartScanExecutionMode.realHardware;
+  SmartScanExecutionMode executionMode = SmartScanExecutionMode.realHardware;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _executionMode = _manager.executionMode;
+    executionMode = _manager.executionMode;
   }
 
   @override

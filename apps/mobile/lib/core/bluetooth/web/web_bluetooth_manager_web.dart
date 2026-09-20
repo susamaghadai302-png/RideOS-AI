@@ -1,3 +1,4 @@
+/*
 // ignore_for_file: avoid_web_libraries_in_flutter, uri_does_not_exist, undefined_identifier, undefined_function
 import 'dart:async';
 import 'dart:convert';
@@ -134,3 +135,5 @@ class WebBluetoothManagerPlatform {
     }
   }
 }
+
+*/

@@ -410,7 +410,7 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
       longitude: place.longitude,
     );
 
-    double originLat = 28.6139;
+    double originLat = 28.6139; debugPrint(originLat.toString()); debugPrint(originLat.toString());
     double originLng = 77.2090;
     try {
       Position? pos = await Geolocator.getLastKnownPosition();

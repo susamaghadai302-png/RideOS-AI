@@ -50,11 +50,11 @@ class _LiquidSurfaceInteractionState extends State<LiquidSurfaceInteraction> wit
     super.dispose();
   }
 
-  void _onHover(PointerHoverEvent event, Size size) {
+  void onHover(PointerHoverEvent event, Size size) {
     // Hovering with cursor does NOT tilt or shift cards (stable 3D requirement)
   }
 
-  void _onExit(PointerExitEvent event) {
+  void onExit(PointerExitEvent event) {
     if (!widget.interactive) return;
     setState(() {
       _scale = 1.0;

@@ -9,27 +9,34 @@ enum VehicleCategory {
 
   static VehicleCategory fromString(String str) {
     final lower = str.toLowerCase().replaceAll(' ', '_').replaceAll('-', '_');
-    if (lower.contains('electric_car') || lower.contains('ev_car'))
+    if (lower.contains('electric_car') || lower.contains('ev_car')) {
       return VehicleCategory.electricCar;
-    if (lower.contains('electric_scooter') || lower.contains('ev_scooter'))
+    }
+    if (lower.contains('electric_scooter') || lower.contains('ev_scooter')) {
       return VehicleCategory.electricScooter;
+    }
     if (lower.contains('electric_motorcycle') ||
-        lower.contains('ev_motorcycle'))
+        lower.contains('ev_motorcycle')) {
       return VehicleCategory.electricMotorcycle;
+    }
     if (lower.contains('car') ||
         lower.contains('sedan') ||
         lower.contains('suv') ||
         lower.contains('hatchback') ||
         lower.contains('crossover') ||
         lower.contains('van') ||
-        lower.contains('truck')) return VehicleCategory.car;
+        lower.contains('truck')) {
+      return VehicleCategory.car;
+    }
     if (lower.contains('scooter')) return VehicleCategory.scooter;
     if (lower.contains('motorcycle') ||
         lower.contains('superbike') ||
         lower.contains('naked') ||
         lower.contains('adventure') ||
         lower.contains('cruiser') ||
-        lower.contains('touring')) return VehicleCategory.motorcycle;
+        lower.contains('touring')) {
+      return VehicleCategory.motorcycle;
+    }
     return VehicleCategory.other;
   }
 }

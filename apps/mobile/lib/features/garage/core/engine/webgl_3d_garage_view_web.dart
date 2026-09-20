@@ -1,3 +1,4 @@
+/*
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:convert';
 import 'dart:html' as html;
@@ -168,3 +169,5 @@ class _WebGl3dGarageViewPlatformState extends State<WebGl3dGarageViewPlatform> {
     return const HtmlElementView(viewType: _viewType);
   }
 }
+
+*/

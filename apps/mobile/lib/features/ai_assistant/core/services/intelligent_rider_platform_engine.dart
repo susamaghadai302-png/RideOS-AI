@@ -11,7 +11,7 @@ class IntelligentRiderPlatformEngine {
 
   final _telematicsEngine = FleetTelematicsEngine();
   final _analyticsEngine = FleetAnalyticsEngine();
-  final _vehicleRegistry = VehicleRegistry();
+  final vehicleRegistry = VehicleRegistry();
 
   /// Evaluates unified vehicle health across engine, battery, coolant, and maintenance
   VehicleHealthSummary evaluateVehicleHealth({int currentOdometerKm = 4600}) {

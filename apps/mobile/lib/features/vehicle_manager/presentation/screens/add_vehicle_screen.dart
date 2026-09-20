@@ -92,7 +92,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 DropdownButtonFormField<String>(
-                  value: _category,
+                  initialValue: _category,
                   dropdownColor: const Color(0xFF1A1A1A),
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
@@ -102,7 +102,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                     focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: RoadOSColors.cyberCyan)),
                   ),
                   items: ['Car', 'Motorcycle', 'Scooter', 'Electric Vehicle', 'Electric Scooter']
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .map((c) => DropdownMenuItem<String>(value: c, child: Text(c)))
                       .toList(),
                   onChanged: (val) {
                     if (val != null) setState(() => _category = val);

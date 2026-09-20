@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/vehicle_protocols/models/normalized_telemetry.dart';
 import '../../../../core/bluetooth/bluetooth_engine.dart';
-import '../../../../core/bluetooth/models/bluetooth_connection_state.dart' as AppState;
+import '../../../../core/bluetooth/models/bluetooth_connection_state.dart' as app_state;
 
 class ConnectionMonitorScreen extends ConsumerWidget {
   const ConnectionMonitorScreen({super.key});
@@ -81,8 +81,8 @@ class ConnectionMonitorScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusCard(AppState.BluetoothConnectionState state, dynamic activeAdapter) {
-    bool isConnected = state == AppState.BluetoothConnectionState.connected || state == AppState.BluetoothConnectionState.streaming;
+  Widget _buildStatusCard(app_state.BluetoothConnectionState state, dynamic activeAdapter) {
+    bool isConnected = state == app_state.BluetoothConnectionState.connected || state == app_state.BluetoothConnectionState.streaming;
     
     return Container(
       padding: const EdgeInsets.all(24),

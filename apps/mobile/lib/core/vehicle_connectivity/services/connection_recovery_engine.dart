@@ -43,7 +43,7 @@ class ConnectionRecoveryEngine {
   int _attemptCount = 0;
   final int _maxAttempts = 5;
   Timer? _recoveryTimer;
-  StreamSubscription? _engineStateSubscription;
+  StreamSubscription? engineStateSubscription;
 
   String? _targetIdentifier;
   String? _protocolAdapterId;
@@ -64,7 +64,7 @@ class ConnectionRecoveryEngine {
   DateTime? _lastLostTimestamp;
 
   void _initListener() {
-    _engineStateSubscription = _engine.stateStream.listen((state) {
+    engineStateSubscription = _engine.stateStream.listen((state) {
       if (state == AdapterConnectionState.connected) {
         _onConnected();
       } else if (state == AdapterConnectionState.disconnected || state == AdapterConnectionState.error) {

@@ -62,7 +62,7 @@ void main() {
     });
 
     test('calculateRoute throws EvChargingUnavailableException when EV out of range with no charging', () async {
-      final profile = VehicleRoutingProfile(isEv: true, currentRangeKm: 15.0, connectorType: 'CCS2');
+      const profile = VehicleRoutingProfile(isEv: true, currentRangeKm: 15.0, connectorType: 'CCS2');
 
       expect(
         () => routeService.calculateRoute(

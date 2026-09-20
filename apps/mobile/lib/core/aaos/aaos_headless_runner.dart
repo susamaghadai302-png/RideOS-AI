@@ -9,7 +9,6 @@ import '../../features/navigation/domain/services/location_service.dart';
 import '../../features/navigation/domain/services/route_service.dart';
 import '../../features/navigation/domain/services/navigation_voice_service.dart';
 import '../../features/navigation/core/map_abstraction/map_engine_interface.dart';
-import '../../core/contracts/navigation_models.dart';
 
 const MethodChannel _aaosChannel = MethodChannel('com.rideos.mobile/aaos_bridge');
 

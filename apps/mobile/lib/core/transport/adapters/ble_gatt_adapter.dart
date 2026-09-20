@@ -279,7 +279,7 @@ class BleGattTransportAdapter implements TransportAdapter {
       _transition(TransportState.ready);
       return _activeConnection!;
     } catch (e) {
-      print('Caught exception in BleGattTransportAdapter.connect: $e');
+      debugPrint('Caught exception in BleGattTransportAdapter.connect: $e');
       _cleanupConnection();
       _transition(TransportState.error);
       if (e is TransportError) rethrow;

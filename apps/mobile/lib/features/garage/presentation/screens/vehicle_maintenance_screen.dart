@@ -97,7 +97,7 @@ class _VehicleMaintenanceScreenState
     final odoController = TextEditingController(
       text: MaintenanceManager().currentOdometer.toStringAsFixed(0),
     );
-    final providerController = TextEditingController();
+    final providerController = TextEditingController(); debugPrint(providerController.toString());
     String selectedType = 'engine_oil';
 
     showModalBottomSheet(

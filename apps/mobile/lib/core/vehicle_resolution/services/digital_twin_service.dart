@@ -22,7 +22,7 @@ class DigitalTwinService {
   final DigitalTwinStorageService _storageService = DigitalTwinStorageService();
   final VehicleIdentityConfidenceEngine _identityEngine = VehicleIdentityConfidenceEngine();
   final VehicleRegistry _registry = VehicleRegistry();
-  final VehicleModelRegistry _modelRegistry = VehicleModelRegistry();
+  final VehicleModelRegistry modelRegistry = VehicleModelRegistry();
   final ModelQualityValidator _qualityValidator = ModelQualityValidator();
   final Vehicle3DReconstructionService _reconstructionService = Vehicle3DReconstructionService();
 

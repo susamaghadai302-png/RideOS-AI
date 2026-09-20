@@ -10,7 +10,7 @@ class ProductionVehicleConnectionManager {
   factory ProductionVehicleConnectionManager() => _instance;
 
   final _capabilityEngine = ScalableVehicleCapabilityEngine();
-  final _telemetryEngine = VehicleTelemetryEngine();
+  final telemetryEngine = VehicleTelemetryEngine();
 
   final _diagnosticsController = StreamController<ConnectionDiagnosticsSession>.broadcast();
   Stream<ConnectionDiagnosticsSession> get diagnosticsStream => _diagnosticsController.stream;

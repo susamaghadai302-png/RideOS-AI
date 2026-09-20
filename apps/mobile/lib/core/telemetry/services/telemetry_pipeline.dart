@@ -9,8 +9,6 @@ import 'telemetry_normalizer.dart';
 import '../../diagnostics/models/diagnostic_types.dart';
 import '../../diagnostics/models/pid_definition.dart';
 import '../../diagnostics/services/ecu_diagnostic_manager.dart';
-import '../../transport/services/transport_manager.dart';
-import '../../vehicle_identification/services/smart_scan_orchestrator.dart';
 
 /// Central Live Telemetry Pipeline.
 ///
@@ -114,7 +112,7 @@ class TelemetryPipeline {
   }
 
   void _handleDiagnosticPidBatch(Map<int, DecodedPidMeasurement> batch) {
-    final isSim = false;
+    const isSim = false;
 
     for (final measurement in batch.values) {
       ingestPidMeasurement(

@@ -27,7 +27,7 @@ class AdvancedRealtimeDashboardScreen extends ConsumerStatefulWidget {
 class _AdvancedRealtimeDashboardScreenState extends ConsumerState<AdvancedRealtimeDashboardScreen> {
   final _engine = RealtimeDashboardTelemetryEngine();
   DashboardMode _currentMode = DashboardMode.driving;
-  String _aiOutput = '';
+  String aiOutput = '';
   final TextEditingController _queryController = TextEditingController();
 
   @override
@@ -44,11 +44,11 @@ class _AdvancedRealtimeDashboardScreenState extends ConsumerState<AdvancedRealti
     super.dispose();
   }
 
-  void _sendQuery(String prompt) {
+  void sendQuery(String prompt) {
     if (prompt.trim().isEmpty) return;
     final res = _engine.processDashboardAiQuery(prompt.trim());
     setState(() {
-      _aiOutput = res;
+      aiOutput = res;
       _queryController.clear();
     });
   }

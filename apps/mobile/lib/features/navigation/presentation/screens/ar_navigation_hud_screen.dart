@@ -184,8 +184,8 @@ class _ArNavigationHudScreenState extends State<ArNavigationHudScreen> with Sing
                       padding: const EdgeInsets.all(14),
                       child: Row(
                         children: [
-                          Icon(Icons.shield_rounded, color: RoadOSColors.apexEmerald, size: 28),
-                          SizedBox(width: 8),
+                          const Icon(Icons.shield_rounded, color: RoadOSColors.apexEmerald, size: 28),
+                          const SizedBox(width: 8),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [

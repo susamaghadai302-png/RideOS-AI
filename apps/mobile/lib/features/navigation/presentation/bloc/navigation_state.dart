@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../../core/contracts/navigation_models.dart';
 import '../../core/map_abstraction/map_engine_interface.dart';
-import '../../core/services/gps_tracking_service.dart';
 import '../../domain/entities/route_entity.dart';
 
 abstract class NavigationState extends Equatable {

@@ -165,7 +165,7 @@ class SosBloc extends Bloc<SosEvent, SosState> {
     } catch (_) {}
   }
 
-  Future<void> _queueOfflineSos(String id, double? lat, double? lng, String triggerType) async {
+  Future<void> queueOfflineSos(String id, double? lat, double? lng, String triggerType) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final queue = prefs.getStringList(_offlineQueueKey) ?? [];

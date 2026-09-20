@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/models/vehicle_identity_confidence.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/models/digital_twin_model.dart';

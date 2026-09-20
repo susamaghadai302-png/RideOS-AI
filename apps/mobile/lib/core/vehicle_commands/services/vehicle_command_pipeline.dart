@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../bluetooth/bluetooth_engine.dart';
@@ -103,7 +104,7 @@ class VehicleCommandPipeline {
       _logExecution(command, finalResult, device.remoteId.str);
       return finalResult;
     } catch (e) {
-      final latency = DateTime.now().difference(startTime).inMilliseconds;
+      final latency = DateTime.now().difference(startTime).inMilliseconds; debugPrint(latency.toString());
       final res = CommandResult.error(
         commandId: command.id,
         status: CommandResultStatus.protocolError,

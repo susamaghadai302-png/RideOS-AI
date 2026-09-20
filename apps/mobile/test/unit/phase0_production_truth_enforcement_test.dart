@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/features/obd_tpms/core/services/obd_full_telemetry_service.dart';
 import 'package:rideos_mobile/core/vehicle_health/services/predictive_vehicle_health_engine.dart';
@@ -25,7 +26,7 @@ void main() {
     });
 
     test('4. Predictive health engine returns hardware_not_connected classification without hardware', () {
-      final service = ObdFullTelemetryService();
+      final service = ObdFullTelemetryService(); debugPrint(service.toString());
       final engine = PredictiveVehicleHealthEngine();
       final report = engine.evaluateHealthReport();
       expect(report, isNotNull);

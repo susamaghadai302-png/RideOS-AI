@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/network/api_client.dart';
 import 'package:rideos_mobile/core/storage/token_storage.dart';
@@ -98,7 +99,7 @@ void main() {
     final apiClient = ApiClient(tokenStorage: tokenStorage);
 
     final authRemoteDS = MockAuthRemoteDS();
-    final navRemoteDS = MockNavRemoteDS();
+    final navRemoteDS = MockNavRemoteDS(); debugPrint(navRemoteDS.toString());
 
     final authRepositoryImpl = AuthRepositoryImpl(remoteDatasource: authRemoteDS, tokenStorage: tokenStorage);
 

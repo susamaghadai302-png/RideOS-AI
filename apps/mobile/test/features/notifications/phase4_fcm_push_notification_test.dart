@@ -7,7 +7,7 @@ import 'package:rideos_mobile/core/notifications/models/app_notification_model.d
 import 'package:rideos_mobile/core/notifications/services/notification_center_manager.dart';
 import 'package:rideos_mobile/core/notifications/services/push_notification_service.dart';
 import 'package:rideos_mobile/features/notifications/core/services/advanced_notification_engine.dart';
-import 'package:rideos_mobile/features/notifications/domain/models/advanced_notification_models.dart' as Adv;
+import 'package:rideos_mobile/features/notifications/domain/models/advanced_notification_models.dart' as adv;
 
 class MockApiClient extends ApiClient {
   final List<Map<String, dynamic>> recordedRequests = [];
@@ -97,8 +97,8 @@ void main() {
       // Verify delivery into NotificationCenterManager
       expect(notificationCenter.notifications.any((n) => n.notificationKey == 'fcm_notif_sos_99'), isTrue);
 
-      // Verify delivery into AdvancedNotificationEngine
-      final advNotifs = advEngine.getNotifications(severityFilter: Adv.AlertSeverity.critical);
+      // Verify delivery into advancedNotificationEngine
+      final advNotifs = advEngine.getNotifications(severityFilter: adv.AlertSeverity.critical);
       expect(advNotifs.any((n) => n.notificationKey == 'fcm_notif_sos_99'), isTrue);
 
       await sub.cancel();

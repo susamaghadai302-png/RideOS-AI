@@ -32,7 +32,7 @@ class _PredictiveRideIntelligenceScreenState extends State<PredictiveRideIntelli
     final roadmap = _engine.getPredictiveMaintenanceRoadmap();
     final trends = _engine.getBatteryThermalTrends();
     final score = _engine.getRideIntelligenceScore();
-    final alerts = _engine.getActiveSmartAlerts();
+    final alerts = _engine.getActiveSmartAlerts(); debugPrint(alerts.toString());
 
     return Scaffold(
       backgroundColor: Colors.transparent,

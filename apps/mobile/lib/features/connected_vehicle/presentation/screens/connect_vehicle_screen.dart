@@ -12,7 +12,7 @@ import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/theme_engine.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/bluetooth/bluetooth_engine.dart';
-import '../../../../core/bluetooth/models/bluetooth_connection_state.dart' as AppState;
+import '../../../../core/bluetooth/models/bluetooth_connection_state.dart' as app_state;
 import '../../../../core/bluetooth/web/web_bluetooth_manager.dart';
 import '../../../../core/bluetooth/web/web_bluetooth_models.dart';
 import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
@@ -581,14 +581,14 @@ class _ConnectVehicleScreenState extends ConsumerState<ConnectVehicleScreen>
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildBluetoothStatus(
-    AppState.BluetoothConnectionState state,
+    app_state.BluetoothConnectionState state,
     dynamic activeCtx,
     bool isDark,
   ) {
     final isConnected = _radioState == ConnectVehicleRadioState.connected ||
         _connectedWebDevice?.isConnected == true ||
-        state == AppState.BluetoothConnectionState.live ||
-        state == AppState.BluetoothConnectionState.connected;
+        state == app_state.BluetoothConnectionState.live ||
+        state == app_state.BluetoothConnectionState.connected;
 
     final isConnecting = _radioState == ConnectVehicleRadioState.connecting;
     final isScanning = _radioState == ConnectVehicleRadioState.scanning || _isScanning || _isWebBleScanning;
@@ -1963,7 +1963,7 @@ class _LuxBadge extends StatelessWidget {
 //  RADAR SWEEP LINE PAINTER
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SweepLinePainter extends CustomPainter {
+class SweepLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);

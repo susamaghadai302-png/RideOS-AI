@@ -5,7 +5,6 @@ import 'package:rideos_mobile/core/vehicle_resolution/models/vehicle_profile.dar
 import 'package:rideos_mobile/core/vehicle_resolution/models/active_vehicle_context.dart';
 import 'package:rideos_mobile/core/vehicle_protocols/models/normalized_telemetry.dart';
 import 'package:rideos_mobile/features/dashboard/domain/models/vehicle_capabilities_extension.dart';
-import 'package:rideos_mobile/core/device_providers/interfaces/device_provider.dart';
 import 'package:rideos_mobile/features/dashboard/domain/models/advanced_dashboard_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -105,7 +104,7 @@ void main() {
     });
 
     test('21-27. Vehicle Adaptation (CAR, BIKE, SCOOTER, EV)', () {
-      final carProfile = VehicleProfile(id: '1', manufacturer: 'Ford', model: 'Mustang', year: 2022, category: 'car', protocolAdapter: 'obd2', model3DUrl: '', thumbnailUrl: '');
+      const carProfile = VehicleProfile(id: '1', manufacturer: 'Ford', model: 'Mustang', year: 2022, category: 'car', protocolAdapter: 'obd2', model3DUrl: '', thumbnailUrl: '');
       final carCtx = ActiveVehicleContext(
         vehicleId: '1',
         profile: carProfile,
@@ -115,7 +114,7 @@ void main() {
       expect(carCtx.profile!.category, 'car');
       expect(carCtx.tpmsSensorCount, 4);
       
-      final bikeProfile = VehicleProfile(id: '2', manufacturer: 'Yamaha', model: 'R1', year: 2023, category: 'motorcycle', protocolAdapter: 'obd2', model3DUrl: '', thumbnailUrl: '');
+      const bikeProfile = VehicleProfile(id: '2', manufacturer: 'Yamaha', model: 'R1', year: 2023, category: 'motorcycle', protocolAdapter: 'obd2', model3DUrl: '', thumbnailUrl: '');
       final bikeCtx = ActiveVehicleContext(
         vehicleId: '2',
         profile: bikeProfile,
@@ -125,7 +124,7 @@ void main() {
       expect(bikeCtx.profile!.category, 'motorcycle');
       expect(bikeCtx.tpmsSensorCount, 2);
 
-      final evProfile = VehicleProfile(id: '3', manufacturer: 'Zero', model: 'SR/S', year: 2024, category: 'electric_motorcycle', protocolAdapter: 'obd2', model3DUrl: '', thumbnailUrl: '');
+      const evProfile = VehicleProfile(id: '3', manufacturer: 'Zero', model: 'SR/S', year: 2024, category: 'electric_motorcycle', protocolAdapter: 'obd2', model3DUrl: '', thumbnailUrl: '');
       final evCtx = ActiveVehicleContext(
         vehicleId: '3',
         profile: evProfile,
@@ -139,7 +138,7 @@ void main() {
     testWidgets('28-31. Mode functional enums and Content Rendering', (WidgetTester tester) async {
       final activeCtx = ActiveVehicleContext(
         vehicleId: 'test_id',
-        profile: VehicleProfile(id: 'test_id', manufacturer: 'Ford', model: 'Mustang', year: 2022, category: 'car', protocolAdapter: 'obd2', model3DUrl: '', thumbnailUrl: ''),
+        profile: const VehicleProfile(id: 'test_id', manufacturer: 'Ford', model: 'Mustang', year: 2022, category: 'car', protocolAdapter: 'obd2', model3DUrl: '', thumbnailUrl: ''),
         telemetry: NormalizedTelemetry.empty(),
         lastUpdated: DateTime.now(),
       );

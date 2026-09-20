@@ -11,7 +11,6 @@ import 'package:rideos_mobile/features/navigation/presentation/bloc/navigation_s
 import 'package:rideos_mobile/features/navigation/presentation/providers/navigation_notifier.dart';
 import 'package:rideos_mobile/features/navigation/presentation/providers/navigation_state.dart' as ui_nav;
 import 'package:rideos_mobile/features/navigation/domain/entities/route_entity.dart';
-import 'package:rideos_mobile/features/navigation/domain/entities/route_entity.dart';
 import 'package:rideos_mobile/features/navigation/domain/services/route_service.dart';
 import 'package:rideos_mobile/features/navigation/domain/services/location_service.dart';
 import 'package:rideos_mobile/features/navigation/domain/services/navigation_voice_service.dart';

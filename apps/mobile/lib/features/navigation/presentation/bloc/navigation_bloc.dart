@@ -49,7 +49,7 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
       if (e is RouteCalculationException) {
         emit(NavigationErrorState(message: e.message));
       } else {
-        emit(NavigationErrorState(message: 'Failed to calculate route'));
+        emit(const NavigationErrorState(message: 'Failed to calculate route'));
       }
     }
   }
@@ -139,7 +139,7 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
         isVoiceMuted: voiceService.currentState == VoiceState.disabled,
       ));
     } catch (e) {
-      emit(NavigationErrorState(message: 'Reroute failed: \${e.toString()}'));
+      emit(const NavigationErrorState(message: 'Reroute failed: \${e.toString()}'));
     }
   }
 

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'models/bluetooth_connection_state.dart' as AppState;
+import 'models/bluetooth_connection_state.dart' as app_state;
 import 'device_scanner.dart';
 import 'connection_manager.dart';
 import 'gatt_manager.dart';
@@ -10,7 +10,7 @@ import '../vehicle_protocols/protocol_adapter.dart';
 import '../vehicle_protocols/models/normalized_telemetry.dart';
 import '../vehicle_resolution/services/vehicle_identity_resolver.dart';
 
-final bluetoothStateProvider = StateProvider<AppState.BluetoothConnectionState>((ref) => AppState.BluetoothConnectionState.disconnected);
+final bluetoothStateProvider = StateProvider<app_state.BluetoothConnectionState>((ref) => app_state.BluetoothConnectionState.disconnected);
 final activeAdapterProvider = StateProvider<ProtocolAdapter?>((ref) => null);
 
 class BluetoothEngine {
@@ -37,7 +37,7 @@ class BluetoothEngine {
     _ref = ref;
     connectionManager.stateStream.stream.listen((state) {
       if (state == BluetoothConnectionState.disconnected) {
-        _updateState(AppState.BluetoothConnectionState.disconnected);
+        _updateState(app_state.BluetoothConnectionState.disconnected);
         _ref?.read(activeAdapterProvider.notifier).state = null;
         _activeAdapter = null;
       }
@@ -61,18 +61,18 @@ class BluetoothEngine {
     _telemetryController.add(telemetry);
   }
 
-  void _updateState(AppState.BluetoothConnectionState state) {
+  void _updateState(app_state.BluetoothConnectionState state) {
     if (_ref != null) {
       _ref!.read(bluetoothStateProvider.notifier).state = state;
     }
   }
 
   Future<void> connectAndResolve(BluetoothDevice device, bool isProduction) async {
-    _updateState(AppState.BluetoothConnectionState.connecting);
+    _updateState(app_state.BluetoothConnectionState.connecting);
     
     try {
       await connectionManager.connect(device);
-      _updateState(AppState.BluetoothConnectionState.discoveringServices);
+      _updateState(app_state.BluetoothConnectionState.discoveringServices);
       
       final services = await gattManager.discoverServices(device);
       
@@ -86,7 +86,7 @@ class BluetoothEngine {
           if (_ref != null) _ref!.read(activeAdapterProvider.notifier).state = adapter;
           
           await adapter.discoverCapabilities(device, services);
-          _updateState(AppState.BluetoothConnectionState.syncing);
+          _updateState(app_state.BluetoothConnectionState.syncing);
           
           await adapter.startTelemetry();
           _adapterTelemetrySub?.cancel();
@@ -94,26 +94,26 @@ class BluetoothEngine {
             _telemetryController.add(data);
           });
           
-          _updateState(AppState.BluetoothConnectionState.live);
+          _updateState(app_state.BluetoothConnectionState.live);
         } else {
-          _updateState(AppState.BluetoothConnectionState.unsupported);
+          _updateState(app_state.BluetoothConnectionState.unsupported);
           await connectionManager.disconnect();
         }
       } else {
         // Device connected, but identity unknown (requires UI to prompt SELECT VEHICLE)
-        _updateState(AppState.BluetoothConnectionState.connected);
+        _updateState(app_state.BluetoothConnectionState.connected);
       }
     } catch (e) {
-      _updateState(AppState.BluetoothConnectionState.error);
+      _updateState(app_state.BluetoothConnectionState.error);
     }
   }
 
   Future<void> disconnect() async {
-    _updateState(AppState.BluetoothConnectionState.reconnecting);
+    _updateState(app_state.BluetoothConnectionState.reconnecting);
     _adapterTelemetrySub?.cancel();
     final adapter = _ref?.read(activeAdapterProvider);
     if (adapter != null) await adapter.stopTelemetry();
     await connectionManager.disconnect();
-    _updateState(AppState.BluetoothConnectionState.disconnected);
+    _updateState(app_state.BluetoothConnectionState.disconnected);
   }
 }

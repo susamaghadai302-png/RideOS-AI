@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/device_providers/models/field_bench_models.dart';
 import 'package:rideos_mobile/core/device_providers/models/normalized_telemetry_models.dart';
@@ -42,7 +43,7 @@ void main() {
     });
 
     test('Records reconnect drop counter on transient Bluetooth signal drops', () {
-      final initialDrops = benchService.latestHealthSnapshot?.reconnectCount ?? 0;
+      final initialDrops = benchService.latestHealthSnapshot?.reconnectCount ?? 0; debugPrint(initialDrops.toString());
       benchService.recordConnectionDrop();
       benchService.recordConnectionDrop();
 

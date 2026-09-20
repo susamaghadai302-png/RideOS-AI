@@ -88,7 +88,7 @@ class GarageStorageService {
         );
       }).toList();
     } catch (e) {
-      print('Error fetching garage from backend: $e');
+      debugPrint('Error fetching garage from backend: $e');
       // Fallback to local
       return [];
     }

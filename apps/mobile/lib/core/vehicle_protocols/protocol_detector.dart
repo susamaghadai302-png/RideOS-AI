@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 enum ProtocolDetectionState {
@@ -52,7 +53,7 @@ class ProtocolDetector {
     final serviceUuids = advertisementData.serviceUuids.map((u) => u.str128.toLowerCase()).toList();
     final deviceName = advertisementData.advName.isNotEmpty ? advertisementData.advName : device.platformName;
     final nameLower = deviceName.toLowerCase();
-    final mfgData = advertisementData.manufacturerData;
+    final mfgData = advertisementData.manufacturerData; debugPrint(mfgData.toString());
 
     // 1. Yamaha Y-Connect Protocol Match
     final hasYamahaUuid = serviceUuids.any((u) => u.contains(uuidYamahaYConnect));

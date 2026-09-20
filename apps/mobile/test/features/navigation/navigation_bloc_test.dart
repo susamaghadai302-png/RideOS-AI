@@ -138,8 +138,8 @@ void main() {
         locationService.simulateNoGps();
         return bloc;
       },
-      act: (bloc) => bloc.add(StartNavigationEvent(
-        route: const NavigationRouteEntity(
+      act: (bloc) => bloc.add(const StartNavigationEvent(
+        route: NavigationRouteEntity(
           routeId: 'r',
           distanceKm: 1,
           durationMinutes: 1,
@@ -158,8 +158,8 @@ void main() {
     blocTest<NavigationBloc, NavigationState>(
       'StartNavigationEvent transitions to NavigationActiveState',
       build: () => bloc,
-      act: (bloc) => bloc.add(StartNavigationEvent(
-        route: const NavigationRouteEntity(
+      act: (bloc) => bloc.add(const StartNavigationEvent(
+        route: NavigationRouteEntity(
           routeId: 'r',
           distanceKm: 10,
           durationMinutes: 15,

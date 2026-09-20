@@ -1,11 +1,11 @@
+import 'package:rideos_mobile/features/notifications/core/services/advanced_notification_engine.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/notifications/models/app_notification_model.dart';
 import '../../../core/notifications/services/notification_center_manager.dart';
-import '../../../features/notifications/core/services/advanced_notification_engine.dart';
-import '../../../features/notifications/domain/models/advanced_notification_models.dart' as Adv;
+import '../../../features/notifications/domain/models/advanced_notification_models.dart' as adv;
 
 class PushNotificationService {
   static final PushNotificationService _instance = PushNotificationService._internal();
@@ -106,13 +106,13 @@ class PushNotificationService {
         deepLinkRoute: deepLinkUrl,
       );
 
-      // Dispatch to AdvancedNotificationEngine for heads-up and in-app alerts
+      // Dispatch to advancedNotificationEngine for heads-up and in-app alerts
       AdvancedNotificationEngine().dispatchNotification(
         notificationKey: id,
         title: title,
         message: body,
-        category: _mapAdvCategory(categoryStr),
-        severity: _mapAdvSeverity(priority),
+        category: _mapadvCategory(categoryStr),
+        severity: _mapadvSeverity(priority),
         vehicleName: 'Connected Motorcycle',
         deepLinkRoute: deepLinkUrl,
       );
@@ -147,25 +147,25 @@ class PushNotificationService {
     return NotificationPriority.info;
   }
 
-  Adv.AlertCategory _mapAdvCategory(String cat) {
+  adv.AlertCategory _mapadvCategory(String cat) {
     final lower = cat.toLowerCase();
-    if (lower.contains('maint')) return Adv.AlertCategory.maintenance;
-    if (lower.contains('tpms') || lower.contains('tire') || lower.contains('battery')) return Adv.AlertCategory.vehicleHealth;
-    if (lower.contains('weather') || lower.contains('hazard') || lower.contains('curve')) return Adv.AlertCategory.navigationTrip;
-    return Adv.AlertCategory.safety;
+    if (lower.contains('maint')) return adv.AlertCategory.maintenance;
+    if (lower.contains('tpms') || lower.contains('tire') || lower.contains('battery')) return adv.AlertCategory.vehicleHealth;
+    if (lower.contains('weather') || lower.contains('hazard') || lower.contains('curve')) return adv.AlertCategory.navigationTrip;
+    return adv.AlertCategory.safety;
   }
 
-  Adv.AlertSeverity _mapAdvSeverity(NotificationPriority priority) {
+  adv.AlertSeverity _mapadvSeverity(NotificationPriority priority) {
     switch (priority) {
       case NotificationPriority.critical:
-        return Adv.AlertSeverity.critical;
+        return adv.AlertSeverity.critical;
       case NotificationPriority.warning:
-        return Adv.AlertSeverity.high;
+        return adv.AlertSeverity.high;
       case NotificationPriority.notice:
-        return Adv.AlertSeverity.normal;
+        return adv.AlertSeverity.normal;
       case NotificationPriority.info:
       default:
-        return Adv.AlertSeverity.info;
+        return adv.AlertSeverity.info;
     }
   }
 

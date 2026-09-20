@@ -14,7 +14,7 @@ class FieldTestBenchScreen extends StatefulWidget {
 
 class _FieldTestBenchScreenState extends State<FieldTestBenchScreen> {
   final _benchService = PhysicalFieldBenchService();
-  final _telematicsEngine = FleetTelematicsEngine();
+  final telematicsEngine = FleetTelematicsEngine();
   RecordedRideSession? _completedSession;
 
   @override

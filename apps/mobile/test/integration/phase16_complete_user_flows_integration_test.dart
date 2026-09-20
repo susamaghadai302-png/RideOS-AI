@@ -7,8 +7,6 @@ import 'package:rideos_mobile/features/maps/core/map_provider_factory.dart';
 import 'package:rideos_mobile/features/maps/core/map_provider.dart';
 import 'package:rideos_mobile/features/navigation/core/services/advanced_trip_navigation_engine.dart';
 import 'package:rideos_mobile/features/maintenance/core/services/advanced_predictive_intelligence_engine.dart';
-import 'package:rideos_mobile/features/maintenance/domain/models/predictive_intelligence_models.dart';
-import 'package:rideos_mobile/features/sos_safety/domain/models/advanced_safety_models.dart';
 import 'package:rideos_mobile/features/sos_safety/core/services/advanced_safety_protection_engine.dart';
 import 'package:rideos_mobile/features/notifications/domain/models/advanced_notification_models.dart';
 import 'package:rideos_mobile/features/notifications/core/services/advanced_notification_engine.dart';

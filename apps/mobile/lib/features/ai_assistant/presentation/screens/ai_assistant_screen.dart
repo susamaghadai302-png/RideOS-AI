@@ -8,7 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/ai_assistant_bloc.dart';
 import '../bloc/ai_assistant_event.dart';
 import '../bloc/ai_assistant_state.dart';
-import '../widgets/ai_assistant_widgets.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/contracts/text_to_speech_gateway.dart';
 import '../../../voice_assistant/presentation/bloc/voice_bloc.dart';

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/services/vehicle_registry.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/services/vehicle_model_registry.dart';

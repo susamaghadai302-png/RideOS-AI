@@ -5,7 +5,6 @@ import 'package:rideos_mobile/core/vehicle_connectivity/registry/vehicle_compati
 import 'package:rideos_mobile/core/vehicle_connectivity/services/universal_vehicle_connection_manager.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/transports/vehicle_transport.dart';
 import 'package:rideos_mobile/core/transport/services/transport_manager.dart';
-import 'package:rideos_mobile/core/transport/models/transport_types.dart';
 import 'mocks/simulator_transport.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

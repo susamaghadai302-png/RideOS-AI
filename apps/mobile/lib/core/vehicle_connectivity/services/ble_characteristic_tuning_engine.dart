@@ -170,8 +170,8 @@ class BleCharacteristicTuningEngine {
       rssi = -85 - (_counter % 5);
     }
 
-    final double speed = 0.0;
-    final double rpm = 0.0;
+    const double speed = 0.0;
+    const double rpm = 0.0;
 
     final metrics = SignalCalibrationMetrics(
       rssi: rssi,

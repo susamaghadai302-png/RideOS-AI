@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide LatLng;
+import 'package:flutter/material.dart' ;
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:latlong2/latlong.dart' as ll;
 import 'map_provider.dart';
@@ -8,7 +8,7 @@ import '../../../../core/config/google_maps_config.dart';
 
 class GoogleMapsProvider implements MapProvider {
   final LocalGraphMapProvider _fallbackProvider = LocalGraphMapProvider();
-  gmaps.GoogleMapController? _mapController;
+  gmaps.GoogleMapController? mapController;
 
   static const String _darkThemeJson = '''
 [
@@ -83,7 +83,7 @@ class GoogleMapsProvider implements MapProvider {
           tilt: options.enableTilt ? 35.0 : 0.0,
         ),
         onMapCreated: (controller) {
-          _mapController = controller;
+          mapController = controller;
         },
         markers: gmarkers,
         polylines: gpolylines,

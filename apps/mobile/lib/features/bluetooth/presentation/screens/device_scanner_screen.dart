@@ -3,7 +3,7 @@ import '../../../../core/services/lux_haptics_audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../../../../core/bluetooth/bluetooth_engine.dart';
-import '../../../../core/bluetooth/models/bluetooth_connection_state.dart' as AppState;
+import '../../../../core/bluetooth/models/bluetooth_connection_state.dart' as app_state;
 import 'gatt_diagnostic_screen.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 
@@ -30,7 +30,7 @@ class _DeviceScannerScreenState extends ConsumerState<DeviceScannerScreen> {
       final stream = await BluetoothEngine().scanner.startScan();
       setState(() => _scanStream = stream);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+if (!mounted) return;       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -71,7 +71,7 @@ class _DeviceScannerScreenState extends ConsumerState<DeviceScannerScreen> {
       ),
       body: Column(
         children: [
-          if (connectionState != AppState.BluetoothConnectionState.idle && connectionState != AppState.BluetoothConnectionState.disconnected)
+          if (connectionState != app_state.BluetoothConnectionState.idle && connectionState != app_state.BluetoothConnectionState.disconnected)
             Container(
               padding: const EdgeInsets.all(16),
               color: Colors.cyan.withValues(alpha: 0.1),

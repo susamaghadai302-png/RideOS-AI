@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/device_providers/services/fleet_telematics_engine.dart';
 import 'package:rideos_mobile/features/maintenance/core/services/advanced_predictive_intelligence_engine.dart';
-import 'package:rideos_mobile/features/maintenance/domain/models/predictive_intelligence_models.dart';
 
 void main() {
   group('Phase 10 — Predictive Maintenance & Advanced Ride Intelligence Tests', () {

@@ -166,7 +166,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                                 scanQuality: twin.quality.code,
                               );
                               await ref.read(myVehiclesProvider.notifier).addVehicle(profile);
-                              if (mounted) Navigator.pop(context);
+if (!mounted) return;                               if (mounted) Navigator.pop(context);
                             }
                           },
                           label: const Text('SCAN VEHICLE (CREATE 3D TWIN)', style: TextStyle(color: Colors.cyan, fontWeight: FontWeight.bold)),

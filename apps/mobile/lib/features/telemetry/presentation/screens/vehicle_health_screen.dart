@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_protocols/models/normalized_telemetry.dart';
 import '../../../../core/bluetooth/bluetooth_engine.dart';
-import '../../../../core/bluetooth/models/bluetooth_connection_state.dart' as AppState;
+import '../../../../core/bluetooth/models/bluetooth_connection_state.dart' as app_state;
 
 class VehicleHealthScreen extends ConsumerWidget {
   const VehicleHealthScreen({super.key});
@@ -26,7 +26,7 @@ class VehicleHealthScreen extends ConsumerWidget {
           : StreamBuilder<NormalizedTelemetry>(
               stream: activeAdapter.telemetryStream,
               builder: (context, snapshot) {
-                if (state != AppState.BluetoothConnectionState.streaming) {
+                if (state != app_state.BluetoothConnectionState.streaming) {
                   return const Center(child: Text('AWAITING TELEMETRY STREAM...', style: TextStyle(color: Colors.white54)));
                 }
                 

@@ -49,7 +49,7 @@ class PredictiveVehicleHealthEngine {
     NormalizedTelemetry? normalizedTelemetry,
   }) {
     final obd = ObdFullTelemetryService().getLatestTelemetry();
-    final isSimulated = false;
+    const isSimulated = false;
 
     String classification = 'HISTORICAL / OFFLINE';
     if (isSimulated) {
@@ -69,8 +69,8 @@ class PredictiveVehicleHealthEngine {
         overallHealthScore: 0,
         overallStatus: 'DATA_UNAVAILABLE',
         dataClassification: classification,
-        subsystems: [],
-        predictiveRecommendations: [],
+        subsystems: const [],
+        predictiveRecommendations: const [],
         timestamp: now,
       );
     }

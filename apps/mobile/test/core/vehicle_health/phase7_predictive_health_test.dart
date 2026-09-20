@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/vehicle_health/services/predictive_vehicle_health_engine.dart';
-import 'package:rideos_mobile/features/obd_tpms/core/services/obd_full_telemetry_service.dart';
 
 void main() {
   group('Phase 7 - Predictive Vehicle Health Engine Tests', () {

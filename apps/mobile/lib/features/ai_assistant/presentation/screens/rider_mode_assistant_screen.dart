@@ -21,7 +21,7 @@ class _RiderModeAssistantScreenState extends ConsumerState<RiderModeAssistantScr
   final _queryController = TextEditingController();
 
   bool _isListening = false;
-  bool _isProcessing = false;
+  bool isProcessing = false;
   AssistantResponse? _latestResponse;
   PersonalizedRideBriefing? _briefing;
 
@@ -41,7 +41,7 @@ class _RiderModeAssistantScreenState extends ConsumerState<RiderModeAssistantScr
 
   Future<void> _handleQuery(String query) async {
     if (query.trim().isEmpty) return;
-    setState(() => _isProcessing = true);
+    setState(() => isProcessing = true);
     _queryController.text = query;
 
     final activeContext = ref.read(activeVehicleContextProvider);
@@ -52,7 +52,7 @@ class _RiderModeAssistantScreenState extends ConsumerState<RiderModeAssistantScr
     if (mounted) {
       setState(() {
         _latestResponse = resp;
-        _isProcessing = false;
+        isProcessing = false;
       });
     }
   }

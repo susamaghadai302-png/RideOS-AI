@@ -7,7 +7,7 @@ class BluetoothManager {
   BluetoothManager._internal();
 
   BluetoothDevice? connectedDevice;
-  StreamSubscription<List<ScanResult>>? _scanSubscription;
+  StreamSubscription<List<ScanResult>>? scanSubscription;
 
   /// Ensures adapter is ON and starts scanning
   Future<void> startScan({List<Guid> withServices = const [], Duration timeout = const Duration(seconds: 15)}) async {

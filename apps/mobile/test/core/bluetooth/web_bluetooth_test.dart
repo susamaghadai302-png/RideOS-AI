@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/bluetooth/web/web_bluetooth_models.dart';
 import 'package:rideos_mobile/core/bluetooth/web/web_bluetooth_manager.dart';

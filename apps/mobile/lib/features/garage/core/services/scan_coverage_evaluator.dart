@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 
 enum ScanSector {
@@ -89,7 +90,7 @@ class ScanCoverageEvaluator {
     }
 
     final missing = <ScanSector>[];
-    int coveredSectorsCount = 0;
+    int coveredSectorsCount = 0; debugPrint(coveredSectorsCount.toString());
 
     for (final sector in ScanSector.values) {
       final count = sectorCounts[sector] ?? 0;

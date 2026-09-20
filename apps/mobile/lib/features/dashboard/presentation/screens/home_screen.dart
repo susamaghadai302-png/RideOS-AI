@@ -1,11 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/graphics/liquid_glass_engine.dart';
 import '../../../../core/widgets/cinematic_background.dart';
 import '../../../../core/widgets/rideos_3d_model_viewer.dart';
-import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/bluetooth/bluetooth_engine.dart';
 import '../../../../core/bluetooth/models/bluetooth_connection_state.dart' as ble_state;
 import '../../../../core/vehicle_resolution/models/vehicle_profile.dart';
@@ -20,7 +18,6 @@ import '../../../garage/presentation/screens/luxury_garage_showroom_screen.dart'
 import '../../../navigation/presentation/screens/three_d_navigation_screen.dart';
 import '../../../diagnostics/presentation/screens/vehicle_health_dashboard_screen.dart';
 import '../../../connected_vehicle/presentation/screens/connect_vehicle_screen.dart';
-import '../../../obd_tpms/core/services/obd_full_telemetry_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  HOME SCREEN — 3D Spatial Holographic Command Center
