@@ -39,12 +39,6 @@ class ProductionVehicleConnectionManager {
       isSimulated: isSimulated,
     ));
 
-    await Future.delayed(const Duration(milliseconds: 300));
-    _updateSession(_currentSession.copyWith(state: ConnectionLifecycleState.deviceFound));
-
-    await Future.delayed(const Duration(milliseconds: 300));
-    _updateSession(_currentSession.copyWith(state: ConnectionLifecycleState.identifying));
-
     // Resolve capabilities
     final variant = await _capabilityEngine.resolveCapabilities(
       deviceName: deviceName,
@@ -61,34 +55,11 @@ class ProductionVehicleConnectionManager {
       return;
     }
 
-    await Future.delayed(const Duration(milliseconds: 250));
     _updateSession(_currentSession.copyWith(
-      state: ConnectionLifecycleState.pairing,
+      state: ConnectionLifecycleState.connectionFailed,
       resolvedVariant: variant,
       protocolName: variant.protocol.protocolName,
-    ));
-
-    await Future.delayed(const Duration(milliseconds: 250));
-    _updateSession(_currentSession.copyWith(state: ConnectionLifecycleState.connecting));
-
-    await Future.delayed(const Duration(milliseconds: 250));
-    _updateSession(_currentSession.copyWith(state: ConnectionLifecycleState.authenticating));
-
-    await Future.delayed(const Duration(milliseconds: 250));
-    _updateSession(_currentSession.copyWith(state: ConnectionLifecycleState.capabilityDiscovery));
-
-    await Future.delayed(const Duration(milliseconds: 250));
-    _updateSession(_currentSession.copyWith(
-      state: ConnectionLifecycleState.connected,
-      rssi: -58,
-      latencyMs: 24,
-    ));
-
-    await Future.delayed(const Duration(milliseconds: 200));
-    _updateSession(_currentSession.copyWith(
-      state: ConnectionLifecycleState.telemetryActive,
-      packetsReceived: 1,
-      lastPacketTimestamp: DateTime.now(),
+      failureReason: 'Physical transport layer unavailable.',
     ));
   }
 

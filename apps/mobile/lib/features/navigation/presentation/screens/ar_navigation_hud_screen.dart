@@ -5,7 +5,18 @@ import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/widgets/cinematic_background.dart';
 
 class ArNavigationHudScreen extends StatefulWidget {
-  const ArNavigationHudScreen({super.key});
+  final double? speed;
+  final String? nextInstruction;
+  final String? speedLimit;
+  final String? hazardStatus;
+
+  const ArNavigationHudScreen({
+    super.key,
+    this.speed,
+    this.nextInstruction,
+    this.speedLimit,
+    this.hazardStatus,
+  });
 
   @override
   State<ArNavigationHudScreen> createState() => _ArNavigationHudScreenState();
@@ -13,8 +24,6 @@ class ArNavigationHudScreen extends StatefulWidget {
 
 class _ArNavigationHudScreenState extends State<ArNavigationHudScreen> with SingleTickerProviderStateMixin {
   late AnimationController _arPulseController;
-  final double _speed = 84.0;
-  final String _nextInstruction = 'In 180m | Turn Right onto Alpine Pass Way';
 
   @override
   void initState() {
@@ -128,7 +137,7 @@ class _ArNavigationHudScreenState extends State<ArNavigationHudScreen> with Sing
                             children: [
                               const Text('AUGMENTED MANEUVER', style: TextStyle(color: RoadOSColors.cyberCyan, fontSize: 10, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 2),
-                              Text(_nextInstruction, style: const TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold, fontSize: 13)),
+                              Text(widget.nextInstruction ?? 'NO ACTIVE ROUTE', style: const TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold, fontSize: 13)),
                             ],
                           ),
                         ),
@@ -154,15 +163,15 @@ class _ArNavigationHudScreenState extends State<ArNavigationHudScreen> with Sing
                       child: Row(
                         children: [
                           Text(
-                            _speed.toInt().toString(),
+                            widget.speed?.toInt().toString() ?? '--',
                             style: const TextStyle(color: RoadOSColors.platinumWhite, fontSize: 36, fontWeight: FontWeight.w900),
                           ),
                           const SizedBox(width: 8),
-                          const Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('KM/H', style: TextStyle(color: RoadOSColors.hyperOrange, fontWeight: FontWeight.w900, fontSize: 11)),
-                              Text('LIMIT 90', style: TextStyle(color: RoadOSColors.textMuted, fontSize: 10)),
+                              const Text('KM/H', style: TextStyle(color: RoadOSColors.hyperOrange, fontWeight: FontWeight.w900, fontSize: 11)),
+                              Text(widget.speedLimit ?? 'LIMIT UNKNOWN', style: const TextStyle(color: RoadOSColors.textMuted, fontSize: 10)),
                             ],
                           ),
                         ],
@@ -180,8 +189,8 @@ class _ArNavigationHudScreenState extends State<ArNavigationHudScreen> with Sing
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('AR HAZARD SCAN', style: TextStyle(color: RoadOSColors.apexEmerald, fontWeight: FontWeight.bold, fontSize: 10)),
-                              Text('ROAD CLEAR', style: TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold, fontSize: 11)),
+                              const Text('AR HAZARD SCAN', style: TextStyle(color: RoadOSColors.apexEmerald, fontWeight: FontWeight.bold, fontSize: 10)),
+                              Text(widget.hazardStatus ?? 'SCANNING UNAVAILABLE', style: const TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold, fontSize: 11)),
                             ],
                           ),
                         ],

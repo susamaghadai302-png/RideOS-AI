@@ -53,7 +53,7 @@ final vehicleIntelligenceProvider = Provider<VehicleIntelligenceSnapshot>((ref) 
       AiInsight(
         id: 'ins_link_stable',
         title: 'Hardware Telemetry Synchronized',
-        explanation: 'BLE GATT telemetry link stable with 0 frame drops over current session.',
+        explanation: 'BLE GATT telemetry link stable.',
         whyItMatters: 'Ensures real-time crash detection, ECU telemetry, and trip logging work reliably.',
         severity: InsightSeverity.success,
         timestamp: DateTime.now(),
@@ -66,9 +66,9 @@ final vehicleIntelligenceProvider = Provider<VehicleIntelligenceSnapshot>((ref) 
     insights.add(
       AiInsight(
         id: 'ins_thermal_nominal',
-        title: 'Thermal & Powertrain Equilibrium',
-        explanation: 'Engine coolant temp is optimal at 89 degC. No thermal throttling required.',
-        whyItMatters: 'Maintains maximum engine horsepower while preventing cylinder head warping.',
+        title: 'Thermal & Powertrain Status',
+        explanation: 'Powertrain telemetry is active.',
+        whyItMatters: 'Maintains engine health and operating limits.',
         severity: InsightSeverity.success,
         timestamp: DateTime.now(),
         source: 'Predictive Ride Intelligence',
@@ -141,8 +141,8 @@ final vehicleIntelligenceProvider = Provider<VehicleIntelligenceSnapshot>((ref) 
     isSimulator: false,
     activeInsights: insights,
     recommendations: recommendations,
-    rideReadinessPercent: isConnected ? 98.0 : 75.0,
-    thermalStatus: isConnected ? 'OPTIMAL' : 'STANDBY',
+    rideReadinessPercent: isConnected ? 100.0 : 0.0,
+    thermalStatus: isConnected ? 'UNKNOWN' : 'STANDBY',
     healthGrade: (healthSummary.activeDtcCount > 0 || healthSummary.activeAlertCount > 0) ? 'ATTENTION' : 'GOOD',
     lastUpdated: DateTime.now(),
   );

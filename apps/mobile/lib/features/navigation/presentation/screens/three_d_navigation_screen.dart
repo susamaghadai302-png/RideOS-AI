@@ -565,8 +565,8 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
         'distance': '$dist km',
         'duration': '$mins min',
         'avgSpeed': '${_currentSpeedKmh.round()} km/h',
-        'maxLean': '42 deg',
-        'score': '98/100',
+        'maxLean': 'UNAVAILABLE',
+        'score': 'UNAVAILABLE',
         'lat': _activeDestination?.latitude ?? 20.2961,
         'lng': _activeDestination?.longitude ?? 85.8245,
       });

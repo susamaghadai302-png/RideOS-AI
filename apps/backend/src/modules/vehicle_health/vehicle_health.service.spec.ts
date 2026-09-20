@@ -157,8 +157,8 @@ describe('VehicleHealthService Unit Tests', () => {
 
       const res = await service.getPredictiveHealthSummary('rider-001', 'veh-yamaha-r1');
       expect(res).toBeDefined();
-      expect(res.overallHealthScore).toBe(98);
-      expect(res.status).toBe('OPTIMAL');
+      expect(res.overallHealthScore).toBeNull();
+      expect(res.status).toBe('UNAVAILABLE');
       expect(res.activeDtcCount).toBe(0);
     });
   });

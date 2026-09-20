@@ -85,9 +85,9 @@ class ProductionGlobalMobilityPlatformCertificationEngine {
       '========================================================================\n'
       'RIDEOS AI STEP 100 OF 100 — FINAL GLOBAL ENTERPRISE CERTIFICATION\n'
       'Certificate ID: ${scorecard.globalCertificationCertificateId}\n'
-      'Status: CERTIFIED GLOBAL MOBILITY PLATFORM (v1.0 STABLE)\n'
+      'Status: PENDING_CERTIFICATION\n'
       'Overall Quality Index: ${scorecard.overallQualityIndex}%\n'
-      'Architecture: 100% | Security: 100% | SLA: 99.99%\n'
+      'Architecture: ${scorecard.architectureScore}% | Security: ${scorecard.securityZeroTrustScore}% | SLA: ${scorecard.reliabilitySlaScore}%\n'
       '========================================================================',
       name: 'RideOS.Step100GlobalCertification',
     );

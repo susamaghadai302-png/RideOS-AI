@@ -5,9 +5,9 @@ class MotorcycleEntity extends Equatable {
   final String bikeId;
   final String make;
   final String model;
-  final int year;
-  final int engineCC;
-  final double maxLeanAngleLimit;
+  final int? year;
+  final int? engineCC;
+  final double? maxLeanAngleLimit;
   final bool isPrimary;
   final double? frontPsi;
   final double? rearPsi;
@@ -15,25 +15,25 @@ class MotorcycleEntity extends Equatable {
   final String? topSpeed;
   final String? horsePower;
   final String? weightKg;
-  final double aiHealthScore;
+  final double? aiHealthScore;
   final String? liveryColorHex;
 
   const MotorcycleEntity({
     required this.bikeId,
     required this.make,
     required this.model,
-    required this.year,
-    required this.engineCC,
-    required this.maxLeanAngleLimit,
+    this.year,
+    this.engineCC,
+    this.maxLeanAngleLimit,
     required this.isPrimary,
-    this.frontPsi = 36.0,
-    this.rearPsi = 42.0,
+    this.frontPsi,
+    this.rearPsi,
     this.imageUrl,
-    this.topSpeed = '299 km/h',
-    this.horsePower = '200 HP',
-    this.weightKg = '198 kg',
-    this.aiHealthScore = 98.0,
-    this.liveryColorHex = 'FF5E00',
+    this.topSpeed,
+    this.horsePower,
+    this.weightKg,
+    this.aiHealthScore,
+    this.liveryColorHex,
   });
 
   MotorcycleEntity copyWith({

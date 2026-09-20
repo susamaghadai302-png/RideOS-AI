@@ -37,7 +37,6 @@ class UniversalVehicleDiscoveryPipeline {
 
     // 1. Permission Check
     _transitionTo(PipelineLifecycleState.permissionCheck, macAddress, 'Verifying Bluetooth and Nearby permissions');
-    await Future.delayed(const Duration(milliseconds: 100));
     if (!hasPermissions) {
       _transitionTo(PipelineLifecycleState.error, macAddress, 'Bluetooth permissions denied');
       return false;
@@ -46,7 +45,6 @@ class UniversalVehicleDiscoveryPipeline {
 
     // 2. Bluetooth Check
     _transitionTo(PipelineLifecycleState.bluetoothCheck, macAddress, 'Checking Bluetooth radio state');
-    await Future.delayed(const Duration(milliseconds: 100));
     if (!isBluetoothEnabled) {
       _transitionTo(PipelineLifecycleState.error, macAddress, 'Bluetooth adapter disabled');
       return false;
@@ -55,12 +53,10 @@ class UniversalVehicleDiscoveryPipeline {
 
     // 3. Scanning
     _transitionTo(PipelineLifecycleState.scanning, macAddress, 'Scanning nearby vehicle advertisements');
-    await Future.delayed(const Duration(milliseconds: 150));
     if (_isCanceled) return false;
 
     // 4. Device Found
     _transitionTo(PipelineLifecycleState.deviceFound, macAddress, 'Device discovered: $deviceName');
-    await Future.delayed(const Duration(milliseconds: 100));
     if (_isCanceled) return false;
 
     // 5. Identification
@@ -70,7 +66,6 @@ class UniversalVehicleDiscoveryPipeline {
       advertisedServices: advertisedServices,
       macAddress: macAddress,
     );
-    await Future.delayed(const Duration(milliseconds: 100));
     if (_isCanceled) return false;
 
     // 6. Capability Discovery
@@ -81,7 +76,6 @@ class UniversalVehicleDiscoveryPipeline {
           ? DisplayIntegrationType.tripperPod
           : DisplayIntegrationType.tftMirror;
     }
-    await Future.delayed(const Duration(milliseconds: 100));
     if (_isCanceled) return false;
 
     // 7. Compatibility Check
@@ -89,13 +83,12 @@ class UniversalVehicleDiscoveryPipeline {
     _latestDiscovery = PipelineDiscoveryResult(
       deviceName: deviceName,
       deviceMac: macAddress,
-      rssi: -58,
+      rssi: 0,
       compatibility: compatibility,
       displayType: displayType,
       verificationStatus: compatibility.verificationStatus,
       isUserConfirmed: autoConfirm,
     );
-    await Future.delayed(const Duration(milliseconds: 100));
     if (_isCanceled) return false;
 
     // 8. User Confirmation
@@ -123,7 +116,6 @@ class UniversalVehicleDiscoveryPipeline {
 
     // 10. Connected
     _transitionTo(PipelineLifecycleState.connected, macAddress, 'Connected to peripheral');
-    await Future.delayed(const Duration(milliseconds: 100));
     if (_isCanceled) return false;
 
     // 11. Streaming

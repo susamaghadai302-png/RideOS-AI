@@ -50,25 +50,25 @@ class ProductionCertificationEngine {
     developer.log('Executing Step 50 Global Production Certification Program Audit...', name: 'RideOS.ProductionCertification');
     return const ProductionCertificationReport(
       versionTag: 'v10.0.0-RC1',
-      qualityScore: 99.8,
-      securityScore: 100.0,
-      performanceScore: 99.5,
-      compatibilityScore: 98.9,
-      overallProductionReadinessScore: 99.55,
-      releaseCandidateStatus: 'RC_CERTIFIED_GLOBAL_LAUNCH_READY',
-      isLaunchApproved: true,
+      qualityScore: 0.0,
+      securityScore: 0.0,
+      performanceScore: 0.0,
+      compatibilityScore: 0.0,
+      overallProductionReadinessScore: 0.0,
+      releaseCandidateStatus: 'PENDING_CERTIFICATION',
+      isLaunchApproved: false,
     );
   }
 
   EngineeringKpiScorecard fetchEngineeringScorecard() {
     return const EngineeringKpiScorecard(
-      architectureScore: 100.0,
-      codeQualityScore: 99.8,
-      securityTrustScore: 100.0,
-      performanceScore: 99.5,
-      reliabilityScore: 99.98,
-      testCoverageScore: 94.8,
-      zeroTechnicalDebtScore: 100.0,
+      architectureScore: 0.0,
+      codeQualityScore: 0.0,
+      securityTrustScore: 0.0,
+      performanceScore: 0.0,
+      reliabilityScore: 0.0,
+      testCoverageScore: 0.0,
+      zeroTechnicalDebtScore: 0.0,
     );
   }
 }

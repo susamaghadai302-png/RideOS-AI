@@ -102,7 +102,7 @@ class ProductionEnterpriseExcellenceCertificationEngine {
 
     _scorecardStreamController.add(scorecard);
     developer.log(
-      'ENTERPRISE EXCELLENCE CERTIFICATION: Status [${scorecard.certificationStatus}] | Overall Quality Index: ${scorecard.overallQualityIndex}% | Security: 100% | Reliability: 99.99%',
+      'ENTERPRISE EXCELLENCE CERTIFICATION: Status [${scorecard.certificationStatus}] | Overall Quality Index: ${scorecard.overallQualityIndex}% | Security: ${scorecard.securityAuditScore}% | Reliability: ${scorecard.reliabilityAvailabilityScore}%',
       name: 'RideOS.EnterpriseCertification',
     );
     return scorecard;

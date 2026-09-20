@@ -9,11 +9,11 @@ export interface FleetAggregatedSummary {
   totalDurationMinutes: number;
   overallAverageSpeedKmh: number;
   topMaxSpeedKmh: number;
-  overallMaxRpm: number;
-  peakLeanAngleDeg: number;
-  averagePacketLossPct: number;
-  batteryHealthIndexPct: number;
-  coolantThermalStabilityPct: number;
+  overallMaxRpm: number | null;
+  peakLeanAngleDeg: number | null;
+  averagePacketLossPct: number | null;
+  batteryHealthIndexPct: number | null;
+  coolantThermalStabilityPct: number | null;
   activeDtcCount: number;
   fleetSafetyScore: number;
   recentRides: Array<{
@@ -48,8 +48,8 @@ export class AnalyticsService {
     return {
       riderId,
       overallSafetyScore: trips.length > 0 ? safety : 0,
-      smoothnessScore: trips.length > 0 ? 80 : 0, // Mock fallback for unused metrics
-      corneringConsistencyScore: trips.length > 0 ? 80 : 0,
+      smoothnessScore: null,
+      corneringConsistencyScore: null,
       totalKmRiddenLifetime: totalKm,
       totalTripsCompleted: trips.length,
       riderRank: trips.length > 0 ? 'Active Rider' : 'Rookie',
@@ -94,11 +94,11 @@ export class AnalyticsService {
       totalDurationMinutes: totalDur / 60,
       overallAverageSpeedKmh: avgSpeed,
       topMaxSpeedKmh: topSpeed,
-      overallMaxRpm: trips.length > 0 ? 8000 : 0, // Placeholder
-      peakLeanAngleDeg: 0,
-      averagePacketLossPct: 0,
-      batteryHealthIndexPct: trips.length > 0 ? 100 : 0,
-      coolantThermalStabilityPct: trips.length > 0 ? 100 : 0,
+      overallMaxRpm: null,
+      peakLeanAngleDeg: null,
+      averagePacketLossPct: null,
+      batteryHealthIndexPct: null,
+      coolantThermalStabilityPct: null,
       activeDtcCount: 0,
       fleetSafetyScore: safety,
       recentRides,

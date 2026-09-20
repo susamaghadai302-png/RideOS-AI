@@ -25,13 +25,13 @@ class UniversalProtocolDetector {
       final model = isR15 ? 'YZF-R15M' : (isAerox ? 'Aerox 155' : 'FZ-S Fi Hybrid');
       final type = isAerox ? VehicleClassificationType.scooterIce : VehicleClassificationType.motorcycleIce;
       final variant = preferredVariant ?? 'Top Premium TFT';
-      final year = modelYear ?? 2024;
+      final year = modelYear;
 
       return DetailedCompatibilityBreakdown(
         manufacturer: 'Yamaha Motor Co.',
         modelName: model,
         variantTrim: variant,
-        modelYear: year,
+        modelYear: year ?? DateTime.now().year,
         vehicleType: type,
         protocolName: 'Yamaha Y-Connect GATT v2.1 (0xFEE0)',
         confidenceScore: 0.95,
@@ -57,13 +57,13 @@ class UniversalProtocolDetector {
       final isHimalayan = lowerName.contains('himalayan') || lowerName.contains('450');
       final model = isHimalayan ? 'Himalayan 450' : 'Meteor 350';
       final variant = preferredVariant ?? 'Tripper TFT';
-      final year = modelYear ?? 2024;
+      final year = modelYear;
 
       return DetailedCompatibilityBreakdown(
         manufacturer: 'Royal Enfield',
         modelName: model,
         variantTrim: variant,
-        modelYear: year,
+        modelYear: year ?? DateTime.now().year,
         vehicleType: VehicleClassificationType.motorcycleIce,
         protocolName: 'Royal Enfield Tripper GATT v1.8 (0xFE50)',
         confidenceScore: 0.92,
@@ -90,7 +90,7 @@ class UniversalProtocolDetector {
         manufacturer: 'Ather Energy',
         modelName: '450X Gen 3',
         variantTrim: 'Pro Pack 3.7 kWh',
-        modelYear: modelYear ?? 2024,
+        modelYear: modelYear ?? DateTime.now().year,
         vehicleType: VehicleClassificationType.scooterEv,
         protocolName: 'Ather Telematics Gateway v3.0 (0x18F0)',
         confidenceScore: 0.90,
@@ -117,7 +117,7 @@ class UniversalProtocolDetector {
         manufacturer: 'KTM Sportmotorcycle',
         modelName: '390 Duke',
         variantTrim: 'TFT Dash',
-        modelYear: modelYear ?? 2024,
+        modelYear: modelYear ?? DateTime.now().year,
         vehicleType: VehicleClassificationType.motorcycleIce,
         protocolName: 'KTM My Ride BLE v1.4 (0x18D0)',
         confidenceScore: 0.88,
@@ -145,7 +145,7 @@ class UniversalProtocolDetector {
         manufacturer: 'TVS Motor Company',
         modelName: isApache ? 'Apache RTR 310' : 'Ntorq 125',
         variantTrim: 'SmartXonnect TFT',
-        modelYear: modelYear ?? 2024,
+        modelYear: modelYear ?? DateTime.now().year,
         vehicleType: isApache ? VehicleClassificationType.motorcycleIce : VehicleClassificationType.scooterIce,
         protocolName: 'TVS SmartXonnect BLE v2.0 (0xFE90)',
         confidenceScore: 0.89,
@@ -172,7 +172,7 @@ class UniversalProtocolDetector {
         manufacturer: 'Universal Standards',
         modelName: 'Generic Two-Wheeler Diagnostic Gateway',
         variantTrim: 'ISO 15765-4 CAN Gateway',
-        modelYear: modelYear ?? 2024,
+        modelYear: modelYear ?? DateTime.now().year,
         vehicleType: VehicleClassificationType.motorcycleIce,
         protocolName: 'SAE J1979 Standard OBD-II (0xFFF0)',
         confidenceScore: 0.85,
@@ -198,7 +198,7 @@ class UniversalProtocolDetector {
       manufacturer: 'Unknown Manufacturer',
       modelName: 'Unrecognized Two-Wheeler',
       variantTrim: 'Standard Gateway Required',
-      modelYear: modelYear ?? 2024,
+      modelYear: modelYear ?? DateTime.now().year,
       vehicleType: VehicleClassificationType.motorcycleIce,
       protocolName: 'Unidentified GATT Protocol',
       confidenceScore: 0.15,

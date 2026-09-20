@@ -71,12 +71,12 @@ class BleCharacteristicTuningEngine {
     telemetry: CalibratedTelemetrySnapshot(
       speedKmh: 0,
       rpm: 0,
-      batteryVoltage: 13.5,
-      coolantTempCelsius: 85,
-      fuelPercent: 80,
-      validationMode: HardwareValidationMode.simulator,
-      verificationStatus: HardwareVerificationStatus.partiallyVerified,
-      sourceTag: 'SIMULATED',
+      batteryVoltage: 0.0,
+      coolantTempCelsius: 0,
+      fuelPercent: 0,
+      validationMode: HardwareValidationMode.production,
+      verificationStatus: HardwareVerificationStatus.unverified,
+      sourceTag: 'UNAVAILABLE',
       timestamp: DateTime.now(),
       metrics: const SignalCalibrationMetrics(),
     ),
@@ -170,8 +170,8 @@ class BleCharacteristicTuningEngine {
       rssi = -85 - (_counter % 5);
     }
 
-    final double speed = (30 + (_counter % 50)).toDouble();
-    final double rpm = (3500 + (_counter * 50) % 4000).toDouble();
+    final double speed = 0.0;
+    final double rpm = 0.0;
 
     final metrics = SignalCalibrationMetrics(
       rssi: rssi,
@@ -186,12 +186,12 @@ class BleCharacteristicTuningEngine {
     final telemetry = CalibratedTelemetrySnapshot(
       speedKmh: speed,
       rpm: rpm,
-      batteryVoltage: 13.8,
-      coolantTempCelsius: 88,
-      fuelPercent: 78,
-      validationMode: HardwareValidationMode.simulator,
-      verificationStatus: HardwareVerificationStatus.partiallyVerified,
-      sourceTag: 'SIMULATED',
+      batteryVoltage: 0.0,
+      coolantTempCelsius: 0,
+      fuelPercent: 0,
+      validationMode: HardwareValidationMode.production,
+      verificationStatus: HardwareVerificationStatus.unverified,
+      sourceTag: 'UNAVAILABLE',
       timestamp: DateTime.now(),
       metrics: metrics,
     );

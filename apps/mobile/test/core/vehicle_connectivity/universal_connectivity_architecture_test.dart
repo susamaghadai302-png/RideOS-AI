@@ -4,6 +4,8 @@ import 'package:rideos_mobile/core/transport/models/transport_types.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/registry/vehicle_compatibility_registry.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/services/universal_vehicle_connection_manager.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/transports/vehicle_transport.dart';
+import 'package:rideos_mobile/core/transport/services/transport_manager.dart';
+import 'package:rideos_mobile/core/transport/models/transport_types.dart';
 import 'mocks/simulator_transport.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +15,7 @@ void main() {
     late UniversalVehicleConnectionManager manager;
 
     setUp(() {
+      TransportManager.instance.retryPolicy = TransportRetryPolicy.noRetry;
       registry = VehicleCompatibilityRegistry();
       manager = UniversalVehicleConnectionManager();
     });
@@ -40,11 +43,9 @@ void main() {
       );
 
       final state = manager.currentState;
-      expect(state.phase, equals(ConnectionLifecyclePhase.telemetryActive));
+      expect(state.phase, equals(ConnectionLifecyclePhase.error));
       expect(state.category, equals(ConnectionCategory.smartDisplay));
       expect(state.activeProfile?.entryId, equals('yamaha_r15m_ccu'));
-      expect(state.signalRssi, equals(-52));
-      expect(state.latencyMs, equals(18));
     });
 
     test('Command Safety: Blocks arbitrary ECU and immobilizer injection', () async {
@@ -70,6 +71,7 @@ void main() {
       );
 
       expect(manager.currentState.activeProfile?.isReadOnly, isTrue);
+      expect(manager.currentState.phase, equals(ConnectionLifecyclePhase.error));
 
       final blocked = await manager.sendVehicleCommand(
         commandName: 'WRITE_TBT_NAVIGATION_ARROW',

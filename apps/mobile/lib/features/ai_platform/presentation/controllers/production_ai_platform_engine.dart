@@ -55,28 +55,12 @@ class SimulationAiProvider implements IAiModelProvider {
 
   @override
   Stream<AiStreamChunk> streamResponse(AiPromptRequest request) async* {
-    final tokens = [
-      'AI ',
-      'service ',
-      'is ',
-      'not ',
-      'configured. ',
-      'Please ',
-      'connect ',
-      'a ',
-      'valid ',
-      'provider.'
-    ];
-
-    for (int i = 0; i < tokens.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 30));
-      yield AiStreamChunk(
-        tokenText: tokens[i],
-        isFinalChunk: i == tokens.length - 1,
-        activeProvider: providerType,
-        latencyMs: 35 + (i * 5),
-      );
-    }
+    yield AiStreamChunk(
+      tokenText: 'Error: No active AI provider configured. Internet connection required.',
+      isFinalChunk: true,
+      activeProvider: providerType,
+      latencyMs: 0,
+    );
   }
 }
 

@@ -96,8 +96,8 @@ class VehicleHealthState {
     return categories[category] ?? CategoryHealthState.insufficientData(category);
   }
 
-  int get overallScore {
-    if (!isConnected) return 98; // Default demo baseline
+  int? get overallScore {
+    if (!isConnected) return null;
     final penalty = (activeDtcCount * 15) + (activeAlertCount * 5);
     return (100 - penalty).clamp(10, 100);
   }

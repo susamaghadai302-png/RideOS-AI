@@ -240,21 +240,23 @@ class _VehicleHealthDashboardScreenState
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'OVERALL VEHICLE HEALTH: 98 / 100',
-                  style: TextStyle(
+                  health.overallScore != null
+                      ? 'OVERALL VEHICLE HEALTH: ${health.overallScore} / 100'
+                      : 'OVERALL VEHICLE HEALTH: UNAVAILABLE',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.5,
                   ),
                 ),
-                SizedBox(height: 3),
-                Text(
+                const SizedBox(height: 3),
+                const Text(
                   'All major telemetric telemetry nodes operating in optimal parameters.',
                   style: TextStyle(
                     color: RoadOSColors.textSecondary,
@@ -265,9 +267,9 @@ class _VehicleHealthDashboardScreenState
               ],
             ),
           ),
-          const RoadOSStatusPill(
-            label: 'OPTIMAL',
-            color: RoadOSColors.apexEmerald,
+          RoadOSStatusPill(
+            label: health.isConnected ? 'OPTIMAL' : 'DISCONNECTED',
+            color: health.isConnected ? RoadOSColors.apexEmerald : RoadOSColors.textMuted,
           ),
         ],
       ),
@@ -472,9 +474,9 @@ class _VehicleHealthDashboardScreenState
                   color: RoadOSColors.apexEmerald.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text(
-                  '0 ACTIVE FAULTS',
-                  style: TextStyle(
+                child: Text(
+                  dtcs.isEmpty ? '0 ACTIVE FAULTS' : '${dtcs.length} ACTIVE FAULTS',
+                  style: const TextStyle(
                     color: RoadOSColors.apexEmerald,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w900,

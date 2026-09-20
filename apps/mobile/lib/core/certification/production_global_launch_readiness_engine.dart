@@ -84,12 +84,12 @@ class ProductionGlobalLaunchReadinessEngine {
   /// Evaluates Go/No-Go release criteria for global production launch.
   GlobalLaunchChecklistScorecard evaluateGlobalLaunchReadiness() {
     const scorecard = GlobalLaunchChecklistScorecard(
-      goNoGoRecommendation: 'GO_FOR_GLOBAL_LAUNCH',
-      launchReadinessPercentage: 100.0,
-      expectedCrashFreeSessionPct: 99.95,
-      totalBlockingLaunchRisks: 0,
-      rollbackProcedureVerified: true,
-      supportDeskOperational: true,
+      goNoGoRecommendation: 'PENDING_TELEMETRY',
+      launchReadinessPercentage: 0.0,
+      expectedCrashFreeSessionPct: 0.0,
+      totalBlockingLaunchRisks: -1,
+      rollbackProcedureVerified: false,
+      supportDeskOperational: false,
     );
 
     _launchReadinessStreamController.add(scorecard);
@@ -110,9 +110,9 @@ class ProductionGlobalLaunchReadinessEngine {
         'Spanish (es-ES)',
         'German (de-DE)',
       ],
-      rtlLayoutSupported: true,
-      regionalDateFormattingActive: true,
-      translationCompletenessPct: 100.0,
+      rtlLayoutSupported: false,
+      regionalDateFormattingActive: false,
+      translationCompletenessPct: 0.0,
     );
   }
 
@@ -123,8 +123,8 @@ class ProductionGlobalLaunchReadinessEngine {
       shortDescription: 'Enterprise two-wheeler navigation, telematics, and AI assistant platform.',
       privacyPolicyUrl: 'https://rideos.ai/privacy-policy',
       contentRating: 'Everyone 10+',
-      featureGraphicsGenerated: true,
-      storeScreenshotsValidated: true,
+      featureGraphicsGenerated: false,
+      storeScreenshotsValidated: false,
     );
   }
 
@@ -132,11 +132,11 @@ class ProductionGlobalLaunchReadinessEngine {
   LaunchRehearsalDryRunResult executeGlobalLaunchRehearsal() {
     developer.log('LAUNCH OPERATIONS: Executing global production dry-run deployment rehearsal...', name: 'RideOS.LaunchOps');
     return const LaunchRehearsalDryRunResult(
-      dryRunDeploymentSuccess: true,
-      rollbackSimulationPassed: true,
-      trafficSwitchDurationMs: 420,
-      monitoringAlertsActive: true,
-      rehearsalStatus: 'DRY_RUN_PASSED_CLEANLY',
+      dryRunDeploymentSuccess: false,
+      rollbackSimulationPassed: false,
+      trafficSwitchDurationMs: 0,
+      monitoringAlertsActive: false,
+      rehearsalStatus: 'PENDING_REHEARSAL',
     );
   }
 

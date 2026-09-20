@@ -165,16 +165,22 @@ export class VehicleHealthService {
     const activeAlerts = await this.getActiveAlerts(riderId, vehicleId);
     const maintenanceRecords = await this.getMaintenanceHistory(riderId, vehicleId);
 
-    let healthScore = 98;
-    if (activeDtcs.length > 0) healthScore -= activeDtcs.length * 15;
-    if (activeAlerts.length > 0) healthScore -= activeAlerts.length * 5;
-    healthScore = Math.max(20, Math.min(100, healthScore));
+    let healthScore: number | null = null;
+    let status = 'UNAVAILABLE';
+
+    if (activeDtcs.length > 0 || activeAlerts.length > 0) {
+      healthScore = 100;
+      if (activeDtcs.length > 0) healthScore -= activeDtcs.length * 15;
+      if (activeAlerts.length > 0) healthScore -= activeAlerts.length * 5;
+      healthScore = Math.max(20, Math.min(100, healthScore));
+      status = healthScore >= 70 ? 'ATTENTION' : 'CRITICAL';
+    }
 
     return {
       vehicleId,
       riderId,
       overallHealthScore: healthScore,
-      status: healthScore >= 85 ? 'OPTIMAL' : healthScore >= 70 ? 'ATTENTION' : 'CRITICAL',
+      status: status,
       activeDtcCount: activeDtcs.length,
       activeAlertCount: activeAlerts.length,
       lastServiceDate: maintenanceRecords.length > 0 ? maintenanceRecords[0].date : null,

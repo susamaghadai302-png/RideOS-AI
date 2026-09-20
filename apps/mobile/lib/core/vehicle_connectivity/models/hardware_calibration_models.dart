@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 enum HardwareValidationMode {
   realDevice,
   simulator,
-  offline;
+  offline,
+  production;
 
   String get label {
     switch (this) {

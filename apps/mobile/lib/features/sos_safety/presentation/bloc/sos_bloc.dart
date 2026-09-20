@@ -138,14 +138,10 @@ class SosBloc extends Bloc<SosEvent, SosState> {
         isOfflineQueued: false,
       ));
     } catch (_) {
-      // Offline fallback: Queue emergency payload locally
-      final incidentId = 'offline-${DateTime.now().millisecondsSinceEpoch}';
-      await _queueOfflineSos(incidentId, lat, lng, triggerType);
-
-      emit(SosDispatchedState(
-        incidentId: incidentId,
-        liveTrackingUrl: 'https://rideos.ai/track/sos/$incidentId',
-        isOfflineQueued: true,
+      emit(SosFailedState(
+        errorMessage: 'Emergency dispatch failed. No cellular connection available.',
+        lat: lat,
+        lng: lng,
       ));
     }
   }

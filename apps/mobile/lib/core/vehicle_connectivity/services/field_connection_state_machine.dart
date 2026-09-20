@@ -48,12 +48,10 @@ class FieldConnectionStateMachine {
 
     // 3. Scanning
     _transitionTo(FieldConnectionState.scanning, macAddress, 'Scanning nearby signals');
-    await Future.delayed(const Duration(milliseconds: 150));
     if (_isCanceled) return false;
 
     // 4. Device Found
     _transitionTo(FieldConnectionState.deviceFound, macAddress, 'Device discovered: $deviceName');
-    await Future.delayed(const Duration(milliseconds: 150));
     if (_isCanceled) return false;
 
     // 5. Connecting
@@ -67,32 +65,26 @@ class FieldConnectionStateMachine {
 
     // 6. Discovering Services
     _transitionTo(FieldConnectionState.discoveringServices, macAddress, 'Querying GATT primary services');
-    await Future.delayed(const Duration(milliseconds: 150));
     if (_isCanceled) return false;
 
     // 7. Discovering Characteristics
     _transitionTo(FieldConnectionState.discoveringCharacteristics, macAddress, 'Resolving GATT telemetry characteristics');
-    await Future.delayed(const Duration(milliseconds: 150));
     if (_isCanceled) return false;
 
     // 8. Subscribing
     _transitionTo(FieldConnectionState.subscribing, macAddress, 'Subscribing to notification descriptors');
-    await Future.delayed(const Duration(milliseconds: 150));
     if (_isCanceled) return false;
 
     // 9. Connected
     _transitionTo(FieldConnectionState.connected, macAddress, 'GATT link active');
-    await Future.delayed(const Duration(milliseconds: 100));
     if (_isCanceled) return false;
 
     // 10. Identifying
     _transitionTo(FieldConnectionState.identifying, macAddress, 'Matching vehicle profile');
-    await Future.delayed(const Duration(milliseconds: 100));
     if (_isCanceled) return false;
 
     // 11. Identified
-    _transitionTo(FieldConnectionState.identified, macAddress, 'Matched profile: Yamaha R15M CCU');
-    await Future.delayed(const Duration(milliseconds: 100));
+    _transitionTo(FieldConnectionState.identified, macAddress, 'Matched profile: Unknown');
     if (_isCanceled) return false;
 
     // 12. Streaming
@@ -104,12 +96,12 @@ class FieldConnectionStateMachine {
       deviceName: deviceName,
       deviceMac: macAddress,
       transport: transport.transportType,
-      matchedProfile: 'Yamaha YZF-R15M (Top Premium TFT)',
+      matchedProfile: 'Unknown',
       verificationLevel: isSimulated ? FieldVerificationLevel.benchVerified : FieldVerificationLevel.supported,
-      rssi: -58,
-      mtu: 185,
-      totalPacketsReceived: 10,
-      notificationFrequencyHz: 10.0,
+      rssi: 0,
+      mtu: 0,
+      totalPacketsReceived: 0,
+      notificationFrequencyHz: 0.0,
     );
 
     return true;
@@ -123,12 +115,8 @@ class FieldConnectionStateMachine {
     _reconnectAttempts++;
     _transitionTo(FieldConnectionState.reconnecting, macAddress, 'Attempt $_reconnectAttempts to re-establish link');
 
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (_reconnectAttempts <= 3) {
-      _transitionTo(FieldConnectionState.streaming, macAddress, 'Reconnected successfully');
-    } else {
-      _transitionTo(FieldConnectionState.disconnected, macAddress, 'Reconnection timed out after 3 attempts');
-    }
+    // Real reconnect would happen here via transport
+    _transitionTo(FieldConnectionState.disconnected, macAddress, 'Reconnection failed');
   }
 
   void cancel() {

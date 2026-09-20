@@ -79,10 +79,7 @@ class UniversalVehicleConnectionManager {
       isSimulated: isSimulated,
     ));
 
-    await Future.delayed(const Duration(milliseconds: 150));
     _updateState(_currentState.copyWith(phase: ConnectionLifecyclePhase.discovered));
-
-    await Future.delayed(const Duration(milliseconds: 150));
     _updateState(_currentState.copyWith(phase: ConnectionLifecyclePhase.identifying));
 
     // Match signature from compatibility registry
@@ -107,35 +104,13 @@ class UniversalVehicleConnectionManager {
       category: category,
     ));
 
-    await Future.delayed(const Duration(milliseconds: 150));
     _updateState(_currentState.copyWith(phase: ConnectionLifecyclePhase.connecting));
 
     TransportConnection? connected;
-    if (isSimulated) {
-      connected = TransportConnection(
-        connectionId: 'sim',
-        device: TransportDevice(
-          deviceId: 'sim',
-          displayName: 'Simulated',
-          address: 'sim',
-          lastSeen: DateTime.now(),
-          transportType: TransportType.bluetoothLowEnergy,
-        ),
-        state: TransportState.ready,
-        connectedAt: DateTime.now(),
-        capabilities: const TransportCapabilities(
-          transportType: TransportType.bluetoothLowEnergy,
-          isAvailableOnPlatform: true,
-          isAdapterEnabled: true,
-          hasPermission: true,
-        ),
-      );
-    } else {
-      try {
-        connected = await TransportManager.instance.autoConnect();
-      } catch (e) {
-        connected = null;
-      }
+    try {
+      connected = await TransportManager.instance.autoConnect();
+    } catch (e) {
+      connected = null;
     }
 
     if (connected == null) {
@@ -148,14 +123,12 @@ class UniversalVehicleConnectionManager {
 
     _updateState(_currentState.copyWith(phase: ConnectionLifecyclePhase.negotiatingCapabilities));
 
-    await Future.delayed(const Duration(milliseconds: 150));
     _updateState(_currentState.copyWith(
       phase: ConnectionLifecyclePhase.connected,
-      signalRssi: -52,
-      latencyMs: 18,
+      signalRssi: 0,
+      latencyMs: 0,
     ));
 
-    await Future.delayed(const Duration(milliseconds: 100));
     _updateState(_currentState.copyWith(phase: ConnectionLifecyclePhase.telemetryActive));
   }
 
