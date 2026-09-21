@@ -22,8 +22,7 @@ class AaosHeadlessLocationService implements LocationService {
   @override
   Future<MapCoordinates> getCurrentLocation() async {
     // AAOS headless service — location is provided by the native Android Auto session via pushLocation.
-    // Returns a zero coordinate until the first native push arrives.
-    return const MapCoordinates(latitude: 0, longitude: 0);
+    throw Exception('Location is only available via locationStream in AAOS headless mode.');
   }
 
   @override
@@ -65,12 +64,12 @@ void aaosHeadlessEntrypoint() async {
       final step = state.currentStep;
       _aaosChannel.invokeMethod('onNavigationUpdate', {
         'instruction': step?.instruction ?? '',
-        'stepDistanceMeters': step?.distanceMeters ?? 0.0,
+        'stepDistanceMeters': step?.distanceMeters,
         'etaMinutes': state.durationRemainingMins,
         'totalDistanceKm': state.distanceRemainingKm,
         'destinationTitle': 'Destination',
-        'currentLat': fix?.coordinates.latitude ?? 0.0,
-        'currentLng': fix?.coordinates.longitude ?? 0.0,
+        'currentLat': fix?.coordinates.latitude,
+        'currentLng': fix?.coordinates.longitude,
       });
     } else if (state is NavigationIdleState) {
       _aaosChannel.invokeMethod('onNavigationIdle');

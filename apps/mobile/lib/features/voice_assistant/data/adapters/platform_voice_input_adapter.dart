@@ -105,9 +105,11 @@ class PlatformVoiceInputAdapter implements VoiceGateway {
           });
         }
       },
-      localeId: request.locale,
-      cancelOnError: true,
-      partialResults: true,
+      listenOptions: SpeechListenOptions(
+        localeId: request.locale,
+        cancelOnError: true,
+        partialResults: true,
+      ),
     );
   }
 

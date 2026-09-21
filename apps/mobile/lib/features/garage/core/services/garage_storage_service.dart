@@ -108,7 +108,7 @@ class GarageStorageService {
         'vehicleId': vehicleId,
       });
     } catch (e) {
-      print('Error setting primary vehicle: $e');
+      debugPrint('Error setting primary vehicle: $e');
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('garage_primary_vehicle_id', vehicleId);
@@ -143,7 +143,7 @@ class GarageStorageService {
         }
       });
     } catch (e) {
-      print('Error saving customization: $e');
+      debugPrint('Error saving customization: $e');
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('$_kCustomizationsPrefix$vehicleId', jsonEncode(state.toJson()));

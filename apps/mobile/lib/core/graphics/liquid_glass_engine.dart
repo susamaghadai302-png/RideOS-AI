@@ -81,7 +81,7 @@ class _LiquidSurfaceInteractionState extends State<LiquidSurfaceInteraction> wit
       builder: (context, constraints) {
         // Elements remain stably aligned in 3D space with zero tilt during passive pointer movement
         final transform = Matrix4.identity()
-          ..scale(_scale);
+          ..multiply(Matrix4.diagonal3Values(_scale, _scale, _scale));
 
         return GestureDetector(
           onTapDown: _onTapDown,
@@ -223,8 +223,8 @@ class SpatialFloatingWidget extends StatelessWidget {
       ..setEntry(3, 2, 0.001) // Strong spatial perspective
       ..rotateX(tiltX)
       ..rotateY(tiltY)
-      ..translate(0.0, 0.0, zDepth) // Physical depth translation
-      ..scale(scale);
+      ..multiply(Matrix4.translationValues(0.0, 0.0, zDepth)) // Physical depth translation
+      ..multiply(Matrix4.diagonal3Values(scale, scale, scale));
 
     return Transform(
       transform: transform,

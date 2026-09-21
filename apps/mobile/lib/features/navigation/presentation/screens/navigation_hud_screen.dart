@@ -17,7 +17,7 @@ class NavigationHudScreen extends StatefulWidget {
 class _NavigationHudScreenState extends State<NavigationHudScreen> {
   int _activeDockIndex = 1; // 1 = Navigation
   // Initial camera position — will be updated to rider's actual location once navigation starts.
-  gm.LatLng _gmCenterCoords = const gm.LatLng(0.0, 0.0);
+  final gm.LatLng _gmCenterCoords = const gm.LatLng(0.0, 0.0);
 
   IconData _getTurnIcon(String type) {
     switch (type.toUpperCase()) {

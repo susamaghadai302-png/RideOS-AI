@@ -10,15 +10,14 @@ class CarPlayStateBridge {
       
       final currentStep = state.currentStep;
       final totalDistanceKm = state.route.distanceKm;
-      final etaMinutes = ((totalDistanceKm / 40.0) * 60).round();
       
       await _channel.invokeMethod('onNavigationUpdate', {
         'instruction': currentStep?.instruction ?? '',
-        'stepDistanceMeters': currentStep?.distanceMeters.toDouble() ?? 0.0,
-        'etaMinutes': etaMinutes,
+        'stepDistanceMeters': currentStep?.distanceMeters.toDouble(),
+        'etaMinutes': state.durationRemainingMins,
         'totalDistanceKm': totalDistanceKm,
-        'currentLat': state.currentFix?.coordinates.latitude ?? 0.0,
-        'currentLng': state.currentFix?.coordinates.longitude ?? 0.0,
+        'currentLat': state.currentFix?.coordinates.latitude,
+        'currentLng': state.currentFix?.coordinates.longitude,
         'destinationTitle': 'Active Route',
       });
     } else if (state is NavigationIdleState) {

@@ -110,8 +110,7 @@ class _MyVehiclesScreenState extends ConsumerState<MyVehiclesScreen> {
                   double opacity = 1.0 - (relativePosition.abs() * 0.5).clamp(0.0, 0.8);
 
                   return Transform(
-                    transform: Matrix4.identity()
-                      ..scale(scale, scale, 1.0),
+                    transform: Matrix4.diagonal3Values(scale, scale, 1.0),
                     alignment: FractionalOffset.center,
                     child: Opacity(
                       opacity: opacity,

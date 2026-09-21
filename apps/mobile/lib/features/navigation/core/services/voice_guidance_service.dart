@@ -92,9 +92,11 @@ class VoiceGuidanceService {
             onResult(result.recognizedWords);
           }
         },
-        localeId: currentLanguage.code,
-        cancelOnError: true,
-        partialResults: false,
+        listenOptions: SpeechListenOptions(
+          localeId: currentLanguage.code,
+          cancelOnError: true,
+          partialResults: false,
+        ),
       );
       return true;
     } else {
