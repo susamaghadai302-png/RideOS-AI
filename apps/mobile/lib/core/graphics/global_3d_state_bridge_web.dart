@@ -1,4 +1,3 @@
-/*
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:convert';
 import 'dart:js' as js;
@@ -128,5 +127,3 @@ class Global3DStateBridgeImpl {
     } catch (_) {}
   }
 }
-
-*/

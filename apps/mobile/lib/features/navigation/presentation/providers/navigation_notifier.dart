@@ -31,8 +31,8 @@ class NavigationNotifier extends StateNotifier<ui_state.NavigationState> {
         if (bState is bloc_state.NavigationActiveState) {
           state = state.copyWith(
             status: ui_state.NavigationStatus.navigating,
-            currentManeuverText: bState.currentStep.instruction,
-            distanceToNextTurnMeters: bState.distanceRemainingKm * 1000.0,
+            currentManeuverText: bState.currentStep?.instruction ?? '',
+            distanceToNextTurnMeters: (bState.distanceRemainingKm ?? 0.0) * 1000.0,
             speedKmh: bState.currentFix?.speedMetersPerSecond != null
               ? (bState.currentFix!.speedMetersPerSecond! * 3.6)
               : state.speedKmh,

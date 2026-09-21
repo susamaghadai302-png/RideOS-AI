@@ -49,12 +49,8 @@ class PredictiveVehicleHealthEngine {
     NormalizedTelemetry? normalizedTelemetry,
   }) {
     final obd = ObdFullTelemetryService().getLatestTelemetry();
-    const isSimulated = false;
-
     String classification = 'HISTORICAL / OFFLINE';
-    if (isSimulated) {
-      classification = 'SIMULATED DATA';
-    } else if (isBleConnected) {
+    if (isBleConnected) {
       classification = 'LIVE BLE VEHICLE';
     } else {
       classification = 'HARDWARE_NOT_CONNECTED';
@@ -64,7 +60,7 @@ class PredictiveVehicleHealthEngine {
     final recommendations = <AiRecommendationEntity>[];
     final now = DateTime.now();
 
-    if (!isBleConnected && !isSimulated) {
+    if (!isBleConnected) {
       return OverallVehicleHealthReport(
         overallHealthScore: 0,
         overallStatus: 'DATA_UNAVAILABLE',

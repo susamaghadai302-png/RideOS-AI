@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,9 +6,6 @@ import 'package:rideos_mobile/core/vehicle_resolution/services/digital_twin_serv
 import 'package:rideos_mobile/core/vehicle_resolution/services/vehicle_registry.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/services/vehicle_model_registry.dart';
 import 'package:rideos_mobile/features/garage/core/services/scan_coverage_evaluator.dart';
-import 'package:rideos_mobile/features/garage/core/services/model_quality_validator.dart';
-
-@Timeout(Duration(seconds: 120))
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -18,16 +14,12 @@ void main() {
     late DigitalTwinService digitalTwinService;
     late VehicleRegistry registry;
     late VehicleModelRegistry modelRegistry;
-    late ScanCoverageEvaluator scanEvaluator;
-    late ModelQualityValidator qualityValidator;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       digitalTwinService = DigitalTwinService();
       registry = VehicleRegistry();
       modelRegistry = VehicleModelRegistry();
-      scanEvaluator = ScanCoverageEvaluator();
-      qualityValidator = ModelQualityValidator();
       await digitalTwinService.initialize();
     });
 

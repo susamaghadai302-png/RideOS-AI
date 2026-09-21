@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/services/vehicle_registry.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/services/vehicle_model_registry.dart';
-import 'package:rideos_mobile/core/vehicle_resolution/services/exact_vehicle_model_registry.dart';
+
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -10,12 +9,10 @@ void main() {
   group('Vehicle 3D Model Architecture & Strict Uniqueness Tests', () {
     late VehicleRegistry registry;
     late VehicleModelRegistry modelRegistry;
-    late ExactVehicleModelRegistry exactRegistry;
 
     setUp(() {
       registry = VehicleRegistry();
       modelRegistry = VehicleModelRegistry();
-      exactRegistry = ExactVehicleModelRegistry();
     });
 
     test('Verified OEM vehicles must have distinct, unique 3D model paths with zero reuse', () {

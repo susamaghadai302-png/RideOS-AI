@@ -186,8 +186,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
                 List<AiUiMessage> messages = [];
                 bool isLoading = false;
                 if (state is AiAssistantLoadingState) { messages = state.messages; isLoading = true; }
-                else if (state is AiAssistantLoadedState) messages = state.messages;
-                else if (state is AiAssistantErrorState) return Center(child: Text('Error: ${state.errorMessage}', style: const TextStyle(color: RoadOSColors.hyperOrange)));
+                else if (state is AiAssistantLoadedState) { messages = state.messages; }
+                else if (state is AiAssistantErrorState) { return Center(child: Text('Error: ${state.errorMessage}', style: const TextStyle(color: RoadOSColors.hyperOrange))); }
                 final reversed = messages.reversed.toList();
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

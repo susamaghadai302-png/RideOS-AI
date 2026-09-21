@@ -164,7 +164,6 @@ class PushNotificationService {
       case NotificationPriority.notice:
         return adv.AlertSeverity.normal;
       case NotificationPriority.info:
-      default:
         return adv.AlertSeverity.info;
     }
   }

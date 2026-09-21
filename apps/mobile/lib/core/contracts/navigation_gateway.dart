@@ -231,13 +231,15 @@ class NavigationRepositoryGatewayAdapter implements NavigationGateway {
     // Use searchPlaces as a best-effort bridge.
     try {
       final results = await _repository.searchPlaces(address);
-      return results.map((place) => GeocodingResult(
-        coordinates: MapCoordinates(latitude: place.latitude, longitude: place.longitude),
-        formattedAddress: '${place.title}, ${place.subtitle}',
-        placeId: place.id,
-        confidence: 0.8,
-        provider: 'backend_search',
-      )).toList();
+      return results
+        .where((place) => place.latitude != null && place.longitude != null)
+        .map((place) => GeocodingResult(
+          coordinates: MapCoordinates(latitude: place.latitude!, longitude: place.longitude!),
+          formattedAddress: '${place.title}, ${place.subtitle}',
+          placeId: place.id,
+          confidence: 0.8,
+          provider: 'backend_search',
+        )).toList();
     } catch (_) {
       return const [];
     }

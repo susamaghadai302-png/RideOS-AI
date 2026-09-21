@@ -13,8 +13,8 @@ class CarPlayStateBridge {
       final etaMinutes = ((totalDistanceKm / 40.0) * 60).round();
       
       await _channel.invokeMethod('onNavigationUpdate', {
-        'instruction': currentStep.instruction,
-        'stepDistanceMeters': currentStep.distanceMeters.toDouble(),
+        'instruction': currentStep?.instruction ?? '',
+        'stepDistanceMeters': currentStep?.distanceMeters.toDouble() ?? 0.0,
         'etaMinutes': etaMinutes,
         'totalDistanceKm': totalDistanceKm,
         'currentLat': state.currentFix?.coordinates.latitude ?? 0.0,

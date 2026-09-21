@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/models/vehicle_identity_confidence.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/models/digital_twin_model.dart';
@@ -29,6 +28,12 @@ void main() {
       qualityValidator = ModelQualityValidator();
       reconstructionService = Vehicle3DReconstructionService();
       await twinStorage.initialize();
+    });
+
+    test('services initialize correctly', () {
+      expect(scanEvaluator, isNotNull);
+      expect(qualityValidator, isNotNull);
+      expect(scanEvaluator.evaluateCoverage([]), isNotNull);
     });
 
     test('1. Vehicle Identity Confidence Engine classifies exact OEM vs unknown vehicle', () async {

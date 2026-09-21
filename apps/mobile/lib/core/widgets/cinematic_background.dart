@@ -184,7 +184,6 @@ class _CinematicBackgroundState extends State<CinematicBackground> with SingleTi
           Color(0xFF132850),
         ];
       case AmbientTimeMode.night:
-      default:
         return const [
           Color(0xFF04060C), // Deep charcoal black
           Color(0xFF080D1A), // Very dark navy

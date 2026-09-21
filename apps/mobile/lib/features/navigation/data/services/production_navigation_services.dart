@@ -37,9 +37,13 @@ class ProductionRouteService implements RouteService {
     required NavigationRouteEntity currentRoute,
     required String reason,
   }) async {
+    if (currentRoute.waypoints.isEmpty) {
+      throw RouteCalculationException('Cannot recalculate route: no waypoints available in current route.');
+    }
+    final destination = currentRoute.waypoints.last;
     return await repository.calculateRoute(
       origin: currentLocation,
-      destination: currentRoute.waypoints.last,
+      destination: destination,
     );
   }
 }

@@ -410,16 +410,14 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
       longitude: place.longitude ?? 0.0,
     );
 
-    double originLat = 28.6139; debugPrint(originLat.toString()); debugPrint(originLat.toString());
-    double originLng = 77.2090;
+    // Route origin is determined by PreviewRouteEvent handler via
+    // locationService.getCurrentLocation(). No hardcoded fallback needed here.
     try {
       Position? pos = await Geolocator.getLastKnownPosition();
       pos ??= await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 5),
       );
-      originLat = pos.latitude;
-      originLng = pos.longitude;
     } catch (_) {}
 
     if (!mounted) return;

@@ -82,9 +82,11 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
     emit(NavigationActiveState(
       route: event.route,
       currentStepIndex: 0,
+      // Use the route's own distance/duration as initial values.
+      // These come from the routing provider (e.g. OSRM) and are real.
       distanceRemainingKm: event.route.distanceKm,
       durationRemainingMins: event.route.durationMinutes,
-      activeMapProvider: MapProviderType.googleMaps, // Enforced Google Maps
+      activeMapProvider: MapProviderType.googleMaps,
       isVoiceMuted: voiceService.currentState == VoiceState.disabled,
     ));
   }
@@ -93,8 +95,8 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
     if (state is NavigationActiveState) {
       final currentState = state as NavigationActiveState;
       
-      double distanceKm = currentState.distanceRemainingKm;
-      int durationMins = currentState.durationRemainingMins;
+      double? distanceKm;
+      int? durationMins;
       
       if (currentState.route.waypoints.isNotEmpty) {
         final currentLoc = event.locationFix.coordinates;
@@ -106,14 +108,24 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
           destLoc.longitude,
         );
         distanceKm = distanceMeters / 1000.0;
-        final speed = event.locationFix.speedMetersPerSecond ?? 0.0;
-        final speedMs = speed > 0 ? speed : 11.11;
-        durationMins = ((distanceMeters / speedMs) / 60.0).toInt();
+
+        // ETA calculation: only compute when real speed data is available.
+        // We never fabricate a speed value.
+        final speed = event.locationFix.speedMetersPerSecond;
+        if (speed != null && speed > 0) {
+          // Rider is moving — compute ETA from real GPS speed.
+          durationMins = ((distanceMeters / speed) / 60.0).toInt();
+        } else {
+          // Rider is stationary or speed unavailable.
+          // Preserve the route-provider's original duration estimate if available,
+          // otherwise mark ETA as indeterminate (null).
+          durationMins = currentState.durationRemainingMins;
+        }
       }
 
       emit(currentState.copyWith(
         currentFix: event.locationFix,
-        distanceRemainingKm: distanceKm,
+        distanceRemainingKm: distanceKm ?? currentState.distanceRemainingKm,
         durationRemainingMins: durationMins,
       ));
     }
@@ -154,7 +166,7 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
         isVoiceMuted: voiceService.currentState == VoiceState.disabled,
       ));
     } catch (e) {
-      emit(const NavigationErrorState(message: 'Reroute failed: \${e.toString()}'));
+      emit(NavigationErrorState(message: 'Reroute failed: ${e.toString()}'));
     }
   }
 

@@ -98,13 +98,19 @@ class OfflineNavigationCacheManager {
   }
 
   Map<String, dynamic> getOfflineStatusSummary() {
-    final totalSize = _regions.values.where((r) => r.isDownloaded).fold(0.0, (acc, r) => acc + r.sizeMb);
+    final downloadedRegions = _regions.values.where((r) => r.isDownloaded);
+    final totalSize = downloadedRegions.fold(0.0, (acc, r) => acc + r.sizeMb);
+    final hasDownloadedRegions = downloadedRegions.isNotEmpty;
     return {
-      'downloadedCount': _regions.values.where((r) => r.isDownloaded).length,
+      'downloadedCount': downloadedRegions.length,
       'totalStorageUsedMb': totalSize,
-      'offlineRoutingReady': true,
-      'offlineVoiceReady': true,
-      'offlineSearchReady': true,
+      // Offline capabilities require persistent downloaded map data.
+      // This in-memory cache does not survive app restarts.
+      // Mark as available only if regions exist in this session.
+      'offlineRoutingReady': hasDownloadedRegions,
+      'offlineVoiceReady': false, // Voice guidance requires online TTS; no offline voice pack is bundled.
+      'offlineSearchReady': false, // No offline search index is available.
+      'persistentStorage': false, // Cache is in-memory only; not persisted to disk.
     };
   }
 }

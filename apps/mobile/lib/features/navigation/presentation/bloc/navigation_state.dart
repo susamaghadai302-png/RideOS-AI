@@ -34,8 +34,15 @@ class NavigationActiveState extends NavigationState {
   final NavigationRouteEntity route;
   final int currentStepIndex;
   final RiderLocationFix? currentFix;
-  final double distanceRemainingKm;
-  final int durationRemainingMins;
+
+  /// Remaining distance in km. Null when distance cannot be determined
+  /// (e.g. no GPS fix yet, or route has no waypoints).
+  final double? distanceRemainingKm;
+
+  /// Remaining duration in minutes. Null when ETA cannot be computed
+  /// (e.g. rider is stationary and no route-based duration is available).
+  final int? durationRemainingMins;
+
   final MapProviderType activeMapProvider;
   final bool isVoiceMuted;
 
@@ -43,14 +50,23 @@ class NavigationActiveState extends NavigationState {
     required this.route,
     required this.currentStepIndex,
     this.currentFix,
-    required this.distanceRemainingKm,
-    required this.durationRemainingMins,
+    this.distanceRemainingKm,
+    this.durationRemainingMins,
     required this.activeMapProvider,
     required this.isVoiceMuted,
   });
 
-  RouteStepEntity get currentStep =>
-      currentStepIndex < route.steps.length ? route.steps[currentStepIndex] : route.steps.last;
+  /// Returns the current route step, or null if the route has no steps.
+  RouteStepEntity? get currentStep =>
+      route.steps.isNotEmpty && currentStepIndex < route.steps.length
+          ? route.steps[currentStepIndex]
+          : (route.steps.isNotEmpty ? route.steps.last : null);
+
+  /// Whether a live ETA is available (based on real speed data).
+  bool get isEtaAvailable => durationRemainingMins != null;
+
+  /// Whether live distance is available.
+  bool get isDistanceAvailable => distanceRemainingKm != null;
 
   NavigationActiveState copyWith({
     NavigationRouteEntity? route,
@@ -60,13 +76,15 @@ class NavigationActiveState extends NavigationState {
     int? durationRemainingMins,
     MapProviderType? activeMapProvider,
     bool? isVoiceMuted,
+    bool clearDistance = false,
+    bool clearDuration = false,
   }) {
     return NavigationActiveState(
       route: route ?? this.route,
       currentStepIndex: currentStepIndex ?? this.currentStepIndex,
       currentFix: currentFix ?? this.currentFix,
-      distanceRemainingKm: distanceRemainingKm ?? this.distanceRemainingKm,
-      durationRemainingMins: durationRemainingMins ?? this.durationRemainingMins,
+      distanceRemainingKm: clearDistance ? null : (distanceRemainingKm ?? this.distanceRemainingKm),
+      durationRemainingMins: clearDuration ? null : (durationRemainingMins ?? this.durationRemainingMins),
       activeMapProvider: activeMapProvider ?? this.activeMapProvider,
       isVoiceMuted: isVoiceMuted ?? this.isVoiceMuted,
     );

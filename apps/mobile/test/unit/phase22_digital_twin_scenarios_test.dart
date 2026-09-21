@@ -1,12 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/models/vehicle_identity_confidence.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/models/digital_twin_model.dart';
 import 'package:rideos_mobile/core/vehicle_resolution/services/digital_twin_service.dart';
 import 'package:rideos_mobile/features/garage/core/services/scan_coverage_evaluator.dart';
-
-@Timeout(Duration(seconds: 120))
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +17,11 @@ void main() {
       digitalTwinService = DigitalTwinService();
       scanEvaluator = ScanCoverageEvaluator();
       await digitalTwinService.initialize();
+    });
+
+    test('services initialize correctly', () {
+      expect(scanEvaluator, isNotNull);
+      expect(scanEvaluator.evaluateCoverage([]), isNotNull);
     });
 
     test('TEST A: Known Yamaha MT-09 SP -> profile identified, 3D model pending validation (zero fake model)', () async {

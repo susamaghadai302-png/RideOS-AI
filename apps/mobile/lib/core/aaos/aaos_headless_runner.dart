@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import '../di/service_locator.dart';
+import '../contracts/navigation_models.dart';
 import '../../features/navigation/presentation/bloc/navigation_bloc.dart';
 import '../../features/navigation/presentation/bloc/navigation_state.dart';
 import '../../features/navigation/presentation/bloc/navigation_event.dart';
@@ -13,13 +14,17 @@ import '../../features/navigation/core/map_abstraction/map_engine_interface.dart
 const MethodChannel _aaosChannel = MethodChannel('com.rideos.mobile/aaos_bridge');
 
 class AaosHeadlessLocationService implements LocationService {
-  final _locationController = StreamController<MapCoordinates>.broadcast();
+  final _locationController = StreamController<RiderLocationFix>.broadcast();
 
   @override
-  Stream<MapCoordinates> get locationStream => _locationController.stream;
+  Stream<RiderLocationFix> get locationStream => _locationController.stream;
 
   @override
-  Future<MapCoordinates> getCurrentLocation() async => const MapCoordinates(latitude: 0, longitude: 0);
+  Future<MapCoordinates> getCurrentLocation() async {
+    // AAOS headless service — location is provided by the native Android Auto session via pushLocation.
+    // Returns a zero coordinate until the first native push arrives.
+    return const MapCoordinates(latitude: 0, longitude: 0);
+  }
 
   @override
   Future<bool> hasLocationPermission() async => true;
@@ -28,7 +33,12 @@ class AaosHeadlessLocationService implements LocationService {
   Future<bool> isGpsEnabled() async => true;
 
   void pushLocation(double lat, double lng, double speed, double heading) {
-    _locationController.add(MapCoordinates(latitude: lat, longitude: lng));
+    _locationController.add(RiderLocationFix(
+      coordinates: MapCoordinates(latitude: lat, longitude: lng),
+      speedMetersPerSecond: speed,
+      headingDegree: heading,
+      timestamp: DateTime.now(),
+    ));
   }
 
   void dispose() {
@@ -54,8 +64,8 @@ void aaosHeadlessEntrypoint() async {
       final fix = state.currentFix;
       final step = state.currentStep;
       _aaosChannel.invokeMethod('onNavigationUpdate', {
-        'instruction': step.instruction,
-        'stepDistanceMeters': step.distanceMeters,
+        'instruction': step?.instruction ?? '',
+        'stepDistanceMeters': step?.distanceMeters ?? 0.0,
         'etaMinutes': state.durationRemainingMins,
         'totalDistanceKm': state.distanceRemainingKm,
         'destinationTitle': 'Destination',

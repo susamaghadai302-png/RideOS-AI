@@ -7,27 +7,31 @@ import 'package:rideos_mobile/features/sos_safety/presentation/bloc/sos_event.da
 import 'package:rideos_mobile/features/sos_safety/presentation/bloc/sos_state.dart';
 import 'package:rideos_mobile/features/sos_safety/domain/entities/sos_contact_entity.dart';
 
-class MockApiClient implements ApiClient {
-  @override
-  late Dio dio = Dio();
+class MockApiClient extends ApiClient {
+  MockApiClient() : super(tokenStorage: _DummyTokenStorage());
 
   @override
-  TokenStorage get tokenStorage => throw UnimplementedError();
+  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? queryParameters, Options? options}) => throw UnimplementedError();
 
   @override
-  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken, ProgressCallback? onReceiveProgress}) => throw UnimplementedError();
+  Future<Response<T>> post<T>(String path, {Object? data, Map<String, dynamic>? queryParameters, Options? options}) => throw UnimplementedError();
 
   @override
-  Future<Response<T>> post<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken, ProgressCallback? onSendProgress, ProgressCallback? onReceiveProgress}) => throw UnimplementedError();
+  Future<Response<T>> put<T>(String path, {Object? data, Map<String, dynamic>? queryParameters, Options? options}) => throw UnimplementedError();
 
   @override
-  Future<Response<T>> put<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken, ProgressCallback? onSendProgress, ProgressCallback? onReceiveProgress}) => throw UnimplementedError();
+  Future<Response<T>> delete<T>(String path, {Object? data, Map<String, dynamic>? queryParameters, Options? options}) => throw UnimplementedError();
+}
 
+class _DummyTokenStorage extends TokenStorage {
   @override
-  Future<Response<T>> patch<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken, ProgressCallback? onSendProgress, ProgressCallback? onReceiveProgress}) => throw UnimplementedError();
-
+  Future<String?> getAccessToken() async => null;
   @override
-  Future<Response<T>> delete<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) => throw UnimplementedError();
+  Future<String?> getRefreshToken() async => null;
+  @override
+  Future<void> saveTokens({required String accessToken, required String refreshToken}) async {}
+  @override
+  Future<void> clearTokens() async {}
 }
 
 void main() {

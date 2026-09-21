@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../core/widgets/cinematic_background.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
@@ -34,14 +35,31 @@ class _RiderSafetyCenterScreenState extends State<RiderSafetyCenterScreen> {
     });
   }
 
-  void _triggerEmergencySos() {
+  void _triggerEmergencySos() async {
     LuxAudioHapticsService.dangerAlert();
     Future<void>.delayed(const Duration(milliseconds: 120))
         .then((_) => LuxAudioHapticsService.alertVibrate());
+
+    // Attempt to get real GPS position for the SOS alert.
+    // SOS must still fire even if GPS is unavailable (lat/lng will be null).
+    double? lat;
+    double? lng;
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 3),
+      );
+      lat = pos.latitude;
+      lng = pos.longitude;
+    } catch (_) {
+      // GPS unavailable — SOS proceeds without coordinates.
+    }
+
+    if (!mounted) return;
     context.read<SosBloc>().add(
-          const TriggerSosEvent(
-            lat: 28.6139,
-            lng: 77.2090,
+          TriggerSosEvent(
+            lat: lat,
+            lng: lng,
             triggerType: 'MANUAL',
           ),
         );

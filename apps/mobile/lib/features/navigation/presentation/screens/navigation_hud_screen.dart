@@ -16,7 +16,8 @@ class NavigationHudScreen extends StatefulWidget {
 
 class _NavigationHudScreenState extends State<NavigationHudScreen> {
   int _activeDockIndex = 1; // 1 = Navigation
-  final gm.LatLng _gmCenterCoords = const gm.LatLng(28.6139, 77.2090);
+  // Initial camera position — will be updated to rider's actual location once navigation starts.
+  gm.LatLng _gmCenterCoords = const gm.LatLng(0.0, 0.0);
 
   IconData _getTurnIcon(String type) {
     switch (type.toUpperCase()) {
@@ -72,35 +73,14 @@ class _NavigationHudScreenState extends State<NavigationHudScreen> {
                 "stylers": [{"color": "#213645"}]
               }
             ]''',
-            myLocationEnabled: false,
+            myLocationEnabled: true,
             myLocationButtonEnabled: false,
             compassEnabled: false,
             zoomControlsEnabled: false,
             onMapCreated: (controller) {},
-            polylines: {
-              gm.Polyline(
-                polylineId: const gm.PolylineId('route_glow'),
-                points: const [
-                  gm.LatLng(28.6139, 77.2090),
-                  gm.LatLng(28.6180, 77.2120),
-                  gm.LatLng(28.6250, 77.2180),
-                  gm.LatLng(28.6340, 77.2200),
-                ],
-                color: const Color(0xFF00D4FF).withValues(alpha: 0.4),
-                width: 14,
-              ),
-              const gm.Polyline(
-                polylineId: gm.PolylineId('route_core'),
-                points: [
-                  gm.LatLng(28.6139, 77.2090),
-                  gm.LatLng(28.6180, 77.2120),
-                  gm.LatLng(28.6250, 77.2180),
-                  gm.LatLng(28.6340, 77.2200),
-                ],
-                color: Color(0xFF00D4FF),
-                width: 6,
-              ),
-            },
+            // Route polylines are populated from NavigationActiveState.route.waypoints
+            // when a real route is active. No placeholder polylines.
+            polylines: const {},
           ),
 
           // 2. Main Telematics Navigation HUD Stack
