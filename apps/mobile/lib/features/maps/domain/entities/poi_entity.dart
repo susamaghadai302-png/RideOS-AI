@@ -26,32 +26,32 @@ class PoiEntity extends Equatable {
   final String category;
   final String title;
   final String address;
-  final double lat;
-  final double lng;
+  final double? lat;
+  final double? lng;
   final double? rating;
-  final int reviewCount;
-  final double distanceKm;
-  final int etaMinutes;
+  final int? reviewCount;
+  final double? distanceKm;
+  final int? etaMinutes;
   final bool isOpen;
   final bool isVerified;
-  final String phoneNumber;
-  final String websiteUrl;
+  final String? phoneNumber;
+  final String? websiteUrl;
 
   const PoiEntity({
     required this.id,
     required this.category,
     required this.title,
     this.address = '',
-    required this.lat,
-    required this.lng,
+    this.lat,
+    this.lng,
     this.rating,
-    this.reviewCount = 0,
-    this.distanceKm = 0.0,
-    this.etaMinutes = 0,
+    this.reviewCount,
+    this.distanceKm,
+    this.etaMinutes,
     this.isOpen = false,
     this.isVerified = false,
-    this.phoneNumber = '',
-    this.websiteUrl = '',
+    this.phoneNumber,
+    this.websiteUrl,
   });
 
   @override

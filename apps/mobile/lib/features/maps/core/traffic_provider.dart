@@ -11,50 +11,12 @@ class SimulatedTrafficProvider implements TrafficProvider {
   @override
   TrafficDataSource get dataSource => TrafficDataSource.simulated;
 
-  @override
   Future<List<TrafficSegment>> getTrafficAlongRoute(List<LatLng> routePoints) async {
-    if (routePoints.length < 2) return [];
-
-    final segments = <TrafficSegment>[];
-    for (int i = 0; i < routePoints.length - 1; i++) {
-      final p1 = routePoints[i];
-      final p2 = routePoints[i + 1];
-
-      // Deterministic pseudo-traffic distribution along route for preview
-      TrafficCongestionLevel level = TrafficCongestionLevel.normal;
-      double speedKmh = 50.0;
-
-      final hash = (p1.latitude * 100 + p1.longitude * 100).toInt().abs() % 10;
-      if (hash > 7) {
-        level = TrafficCongestionLevel.heavy;
-        speedKmh = 18.0;
-      } else if (hash > 5) {
-        level = TrafficCongestionLevel.moderate;
-        speedKmh = 32.0;
-      }
-
-      segments.add(TrafficSegment(
-        start: p1,
-        end: p2,
-        level: level,
-        averageSpeedKmh: speedKmh,
-        source: TrafficDataSource.simulated,
-      ));
-    }
-    return segments;
+    throw UnsupportedError('Traffic data is unavailable');
   }
 
-  @override
   double estimateDelayMinutes(List<TrafficSegment> segments) {
-    double totalDelay = 0.0;
-    for (final seg in segments) {
-      if (seg.level == TrafficCongestionLevel.heavy) {
-        totalDelay += 2.5;
-      } else if (seg.level == TrafficCongestionLevel.moderate) {
-        totalDelay += 1.0;
-      }
-    }
-    return totalDelay;
+    throw UnsupportedError('Traffic data is unavailable');
   }
 }
 

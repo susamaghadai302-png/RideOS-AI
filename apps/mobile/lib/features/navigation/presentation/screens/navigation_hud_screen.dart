@@ -111,7 +111,7 @@ class _NavigationHudScreenState extends State<NavigationHudScreen> {
                 }
 
                 final step = (state is NavigationActiveState) ? state.currentStep : null;
-                final currentSpeed = (state is NavigationActiveState) ? (state.currentFix?.speedKmh ?? 74.0) : 74.0;
+                final currentSpeed = (state is NavigationActiveState) ? state.currentFix?.speedKmh : null;
 
                 return Stack(
                   children: [
@@ -165,7 +165,7 @@ class _NavigationHudScreenState extends State<NavigationHudScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        step != null ? 'IN ${(step.distanceMeters > 1000 ? "${(step.distanceMeters / 1000).toStringAsFixed(1)} KM" : "${step.distanceMeters.round()} METERS")}' : 'IN 450 METERS',
+                                        step != null ? 'IN ${(step.distanceMeters > 1000 ? "${(step.distanceMeters / 1000).toStringAsFixed(1)} KM" : "${step.distanceMeters.round()} METERS")}' : 'UNAVAILABLE',
                                         style: const TextStyle(
                                           color: Color(0xFF00FFE5),
                                           fontSize: 12,
@@ -175,7 +175,7 @@ class _NavigationHudScreenState extends State<NavigationHudScreen> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        step?.instruction ?? 'Turn Right onto Highway 101',
+                                        step?.instruction ?? 'ROUTE UNAVAILABLE',
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 16,
@@ -227,7 +227,7 @@ class _NavigationHudScreenState extends State<NavigationHudScreen> {
                                   textBaseline: TextBaseline.alphabetic,
                                   children: [
                                     Text(
-                                      currentSpeed.round().toString(),
+                                      currentSpeed?.round().toString() ?? '--',
                                       style: const TextStyle(
                                         fontSize: 38,
                                         fontWeight: FontWeight.w900,

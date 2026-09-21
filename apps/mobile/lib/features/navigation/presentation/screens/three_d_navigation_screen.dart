@@ -51,9 +51,9 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
 
   // Location & Vehicle Marker State (Default anchor: Odisha / India)
   LatLng _currentPosition = const LatLng(20.2961, 85.8245);
-  double _vehicleHeading = 42.0;
-  double _currentSpeedKmh = 58.0;
-  double _gpsAccuracyMeters = 2.8;
+  double? _vehicleHeading;
+  double? _currentSpeedKmh;
+  double? _gpsAccuracyMeters;
   bool _isGpsSignalStrong = true;
   StreamSubscription<Position>? _positionSubscription;
   bool _isFollowingVehicle = true;
@@ -73,9 +73,9 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
   Timer? _rideTimer;
 
   // Live Navigation Metrics
-  double _activeRouteDistanceKm = 12.4;
-  int _activeRouteDurationMin = 18;
-  String _activeRouteEta = '18:45';
+  double? _activeRouteDistanceKm;
+  int? _activeRouteDurationMin;
+  String? _activeRouteEta;
   List<RouteStepManeuver> _activeRouteSteps = [];
   int _currentStepIndex = 0;
   int _offRoutePingsCount = 0;
@@ -132,7 +132,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
         setState(() {
           _currentPosition = LatLng(pos.latitude, pos.longitude);
           _vehicleHeading = pos.heading > 0 ? pos.heading : 45.0;
-          _currentSpeedKmh = math.max(24.0, pos.speed * 3.6);
+          _currentSpeedKmh = pos.speed > 0 ? pos.speed * 3.6 : null;
           _gpsAccuracyMeters = pos.accuracy;
           _isGpsSignalStrong = pos.accuracy < 15.0;
         });
@@ -532,7 +532,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
         gm.CameraPosition(
           target: gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
           zoom: _currentZoom,
-          bearing: _vehicleHeading,
+          bearing: _vehicleHeading ?? 0.0,
           tilt: 45.0,
         )
       ));
@@ -553,7 +553,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
     LuxAudioHapticsService.heavyImpact();
     _rideTimer?.cancel();
     final mins = math.max(1, (_secondsElapsed / 60).ceil());
-    final dist = _activeRouteDistanceKm;
+    final dist = _activeRouteDistanceKm?.toStringAsFixed(1) ?? 'UNAVAILABLE';
 
     // Persist completed trip to SharedPreferences
     try {
@@ -564,7 +564,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
         'date': 'Just now',
         'distance': '$dist km',
         'duration': '$mins min',
-        'avgSpeed': '${_currentSpeedKmh.round()} km/h',
+        'avgSpeed': _currentSpeedKmh != null ? '${_currentSpeedKmh!.round()} km/h' : 'UNAVAILABLE',
         'maxLean': 'UNAVAILABLE',
         'score': 'UNAVAILABLE',
         'lat': _activeDestination?.latitude ?? 20.2961,
@@ -599,7 +599,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
               children: [
                 _buildTripStat('DISTANCE', '$dist km'),
                 _buildTripStat('RIDE TIME', '$mins min'),
-                _buildTripStat('AVG SPEED', '${_currentSpeedKmh.round()} km/h'),
+                _buildTripStat('AVG SPEED', _currentSpeedKmh != null ? '${_currentSpeedKmh!.round()} km/h' : 'UNAVAILABLE'),
               ],
             ),
             const SizedBox(height: 12),
@@ -678,7 +678,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
       gm.Marker(
         markerId: const gm.MarkerId('vehicle'),
         position: gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
-        rotation: _vehicleHeading,
+        rotation: _vehicleHeading ?? 0.0,
         icon: gm.BitmapDescriptor.defaultMarkerWithHue(gm.BitmapDescriptor.hueCyan),
         anchor: const Offset(0.5, 0.5),
         zIndexInt: 100,
@@ -1511,7 +1511,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${_activeRouteDistanceKm.toStringAsFixed(1)} KM | $_activeRouteDurationMin MIN (ETA $_activeRouteEta)',
+                        _activeRouteDistanceKm != null ? '${_activeRouteDistanceKm!.toStringAsFixed(1)} KM | $_activeRouteDurationMin MIN (ETA $_activeRouteEta)' : 'ROUTE UNAVAILABLE',
                         style: const TextStyle(color: RoadOSColors.platinumWhite, fontSize: 15, fontWeight: FontWeight.w900),
                       ),
                       const SizedBox(height: 2),
@@ -1588,7 +1588,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '$_currentSpeedKmh KM/H',
+                    _currentSpeedKmh != null ? '${_currentSpeedKmh!.round()} KM/H' : '--',
                     style: const TextStyle(color: RoadOSColors.cyberCyan, fontWeight: FontWeight.w900, fontSize: 18),
                   ),
                   Text(

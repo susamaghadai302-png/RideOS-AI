@@ -71,20 +71,15 @@ class GoogleMapsPlatformService {
               final types = (pred['types'] as List? ?? []).map((e) => e.toString()).toList();
 
               // Fetch place geometry or use approximate calculation
-              double lat = userLocation?.latitude ?? 20.2961;
-              double lng = userLocation?.longitude ?? 85.8245;
-
               results.add(
                 PlaceSearchResultEntity(
                   id: placeId,
                   title: mainText,
                   subtitle: secondaryText,
                   category: _mapGooglePlaceType(types),
-                  latitude: lat,
-                  longitude: lng,
-                  distanceKm: userLocation != null
-                      ? IndiaPlacesSearchEngine.calculateDistanceKm(userLocation, LatLng(lat, lng))
-                      : 4.5,
+                  latitude: null,
+                  longitude: null,
+                  distanceKm: 0.0,
                   tags: types,
                 ),
               );
@@ -127,8 +122,8 @@ class GoogleMapsPlatformService {
           if (status == 'OK') {
             final res = response.data['result'] as Map<String, dynamic>;
             final loc = res['geometry']?['location'];
-            final lat = (loc?['lat'] as num?)?.toDouble() ?? 20.2961;
-            final lng = (loc?['lng'] as num?)?.toDouble() ?? 85.8245;
+            final lat = (loc?['lat'] as num?)?.toDouble();
+            final lng = (loc?['lng'] as num?)?.toDouble();
             final types = (res['types'] as List? ?? []).map((e) => e.toString()).toList();
 
             return PlaceSearchResultEntity(
@@ -139,7 +134,7 @@ class GoogleMapsPlatformService {
               latitude: lat,
               longitude: lng,
               distanceKm: 0.0,
-              rating: (res['rating'] as num?)?.toDouble() ?? 4.8,
+              rating: (res['rating'] as num?)?.toDouble(),
               tags: types,
             );
           }
@@ -181,15 +176,16 @@ class GoogleMapsPlatformService {
             final pois = <PoiEntity>[];
 
             for (final r in results) {
-              final placeId = r['place_id']?.toString() ?? 'poi-${math.Random().nextInt(99999)}';
-              final name = r['name']?.toString() ?? 'Nearby Location';
-              final vicinity = r['vicinity']?.toString() ?? 'Nearby Area';
+              final placeId = r['place_id']?.toString();
+              if (placeId == null) continue;
+              final name = r['name']?.toString() ?? 'Unknown Location';
+              final vicinity = r['vicinity']?.toString() ?? '';
               final loc = r['geometry']?['location'];
-              final lat = (loc?['lat'] as num?)?.toDouble() ?? location.latitude;
-              final lng = (loc?['lng'] as num?)?.toDouble() ?? location.longitude;
-              final rating = (r['rating'] as num?)?.toDouble() ?? 4.8;
-              final userRatingsTotal = (r['user_ratings_total'] as num?)?.toInt() ?? 120;
-              final dist = IndiaPlacesSearchEngine.calculateDistanceKm(location, LatLng(lat, lng));
+              final lat = (loc?['lat'] as num?)?.toDouble();
+              final lng = (loc?['lng'] as num?)?.toDouble();
+              final rating = (r['rating'] as num?)?.toDouble();
+              final userRatingsTotal = (r['user_ratings_total'] as num?)?.toInt();
+              final dist = (lat != null && lng != null) ? IndiaPlacesSearchEngine.calculateDistanceKm(location, LatLng(lat, lng)) : null;
 
               pois.add(
                 PoiEntity(
@@ -199,12 +195,12 @@ class GoogleMapsPlatformService {
                   address: vicinity,
                   lat: lat,
                   lng: lng,
-                  distanceKm: double.parse(dist.toStringAsFixed(1)),
-                  etaMinutes: math.max(2, (dist * 2.1).round()),
+                  distanceKm: dist != null ? double.parse(dist.toStringAsFixed(1)) : null,
+                  etaMinutes: null,
                   rating: rating,
                   reviewCount: userRatingsTotal,
-                  phoneNumber: '+91 674 2500000',
-                  websiteUrl: 'https://maps.google.com/?cid=$placeId',
+                  phoneNumber: null,
+                  websiteUrl: null,
                 ),
               );
             }

@@ -170,7 +170,7 @@ class RoadOsRoutingEngine {
             }
 
             if (steps.isEmpty) {
-              steps.addAll(_generateDefaultSteps(start, destination));
+              // Real provider returned no steps
             }
 
             final eta = DateTime.now().add(Duration(minutes: durationMinutes));
@@ -218,8 +218,7 @@ class RoadOsRoutingEngine {
       debugPrint('[OSRM Multi-Route Routing Notice]: $e');
     }
 
-    // High-resolution Geodesic Spline fallback
-    return _buildSyntheticMultiRouteResult(start, destination, waypoints, selectedOption);
+    throw Exception('Routing providers unavailable');
   }
 
   /// Calculates a single road route
@@ -310,105 +309,5 @@ class RoadOsRoutingEngine {
     return 'Continue straight $target';
   }
 
-  List<RouteStepManeuver> _generateDefaultSteps(LatLng start, LatLng dest) {
-    return [
-      const RouteStepManeuver(
-        instruction: 'Head north on Highway Corridor',
-        roadName: 'NH 16 Express',
-        distanceMeters: 450,
-        iconType: 'straight',
-      ),
-      const RouteStepManeuver(
-        instruction: 'Turn right at the junction toward destination',
-        roadName: 'Main Ring Road',
-        distanceMeters: 1200,
-        iconType: 'right',
-      ),
-      const RouteStepManeuver(
-        instruction: 'Continue straight to arrival point',
-        roadName: 'Destination Approach',
-        distanceMeters: 350,
-        iconType: 'arrive',
-      ),
-    ];
-  }
 
-  MultiRouteCalculationResult _buildSyntheticMultiRouteResult(
-    LatLng start,
-    LatLng end,
-    List<LatLng>? waypoints,
-    RouteOptionType selectedOption,
-  ) {
-    final distKm = double.parse((_haversineMeters(start, end) / 1000.0 * 1.25).toStringAsFixed(1));
-    final durationMin = math.max(4, (distKm * 1.8).round());
-    final eta = DateTime.now().add(Duration(minutes: durationMin));
-    final etaStr = '${eta.hour.toString().padLeft(2, '0')}:${eta.minute.toString().padLeft(2, '0')}';
-
-    final primaryPoly = _generateSmoothSpline(start, end, curvature: 0.02, numPoints: 32);
-    final altPoly1 = _generateSmoothSpline(start, end, curvature: -0.04, numPoints: 32);
-    final altPoly2 = _generateSmoothSpline(start, end, curvature: 0.06, numPoints: 32);
-
-    final r1 = RouteCalculationResult(
-      id: 'synth-0',
-      routeName: 'Fastest Highway (NH 16 Corridor)',
-      viaSummary: 'NH 16 Express',
-      polylinePoints: primaryPoly,
-      distanceKm: distKm,
-      durationMinutes: durationMin,
-      estimatedArrival: etaStr,
-      steps: _generateDefaultSteps(start, end),
-      routeType: RouteOptionType.fastestHighway,
-      routeColor: RoadOSColors.cyberCyan,
-    );
-
-    final r2 = RouteCalculationResult(
-      id: 'synth-1',
-      routeName: 'Twisty Corridor (Bypass Rd)',
-      viaSummary: 'West Bypass',
-      polylinePoints: altPoly1,
-      distanceKm: double.parse((distKm * 1.12).toStringAsFixed(1)),
-      durationMinutes: durationMin + 3,
-      estimatedArrival: etaStr,
-      steps: _generateDefaultSteps(start, end),
-      routeType: RouteOptionType.twistyCorridor,
-      routeColor: RoadOSColors.hyperOrange,
-    );
-
-    final r3 = RouteCalculationResult(
-      id: 'synth-2',
-      routeName: 'Eco Scenic (Riverside Link)',
-      viaSummary: 'Riverside Drive',
-      polylinePoints: altPoly2,
-      distanceKm: double.parse((distKm * 1.08).toStringAsFixed(1)),
-      durationMinutes: durationMin + 1,
-      estimatedArrival: etaStr,
-      steps: _generateDefaultSteps(start, end),
-      routeType: RouteOptionType.ecoScenic,
-      routeColor: RoadOSColors.apexEmerald,
-    );
-
-    final all = [r1, r2, r3];
-    final active = all.firstWhere((r) => r.routeType == selectedOption, orElse: () => r1);
-    final alts = all.where((r) => r.id != active.id).toList();
-
-    return MultiRouteCalculationResult(
-      activeRoute: active,
-      alternativeRoutes: alts,
-      allRoutes: all,
-    );
-  }
-
-  List<LatLng> _generateSmoothSpline(LatLng start, LatLng end, {required double curvature, int numPoints = 28}) {
-    final List<LatLng> points = [];
-    final midLat = (start.latitude + end.latitude) / 2 + curvature;
-    final midLng = (start.longitude + end.longitude) / 2 - curvature;
-
-    for (int i = 0; i <= numPoints; i++) {
-      final t = i / numPoints;
-      final lat = (1 - t) * (1 - t) * start.latitude + 2 * (1 - t) * t * midLat + t * t * end.latitude;
-      final lng = (1 - t) * (1 - t) * start.longitude + 2 * (1 - t) * t * midLng + t * t * end.longitude;
-      points.add(LatLng(lat, lng));
-    }
-    return points;
-  }
 }
