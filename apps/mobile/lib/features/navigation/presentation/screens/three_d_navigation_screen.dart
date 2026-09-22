@@ -50,7 +50,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
   final VoiceGuidanceService _voiceService = VoiceGuidanceService();
 
   // Location & Vehicle Marker State (Default anchor: Odisha / India)
-  LatLng _currentPosition = const LatLng(20.2961, 85.8245);
+  LatLng? _currentPosition;
   double? _vehicleHeading;
   double? _currentSpeedKmh;
   double? _gpsAccuracyMeters;
@@ -131,14 +131,14 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
       if (mounted) {
         setState(() {
           _currentPosition = LatLng(pos.latitude, pos.longitude);
-          _vehicleHeading = pos.heading > 0 ? pos.heading : 45.0;
+          _vehicleHeading = pos.heading > 0 ? pos.heading : null;
           _currentSpeedKmh = pos.speed > 0 ? pos.speed * 3.6 : null;
           _gpsAccuracyMeters = pos.accuracy;
           _isGpsSignalStrong = pos.accuracy < 15.0;
         });
         _mapController.future.then((c) {
           c.animateCamera(gm.CameraUpdate.newLatLngZoom(
-            gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
+            gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
             _currentZoom,
           ));
         });
@@ -165,14 +165,14 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
           if (_isFollowingVehicle) {
             _mapController.future.then((c) {
               c.animateCamera(gm.CameraUpdate.newLatLng(
-                gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
+                gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
               ));
             });
           }
 
           // Off-Route Check during active navigation
           if (_isNavigating && _routePoints.isNotEmpty && _activeDestination != null) {
-            final isOff = RoadOsRoutingEngine.instance.isOffRoute(_currentPosition, _routePoints, thresholdMeters: 45.0);
+            final isOff = RoadOsRoutingEngine.instance.isOffRoute(_currentPosition!, _routePoints, thresholdMeters: 45.0);
             if (isOff) {
               _offRoutePingsCount++;
               if (_offRoutePingsCount >= 2) {
@@ -185,8 +185,8 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
 
             // Arrival Check (<30 meters from destination)
             final distToDest = IndiaPlacesSearchEngine.calculateDistanceKm(
-              _currentPosition,
-              LatLng((_activeDestination!.latitude ?? 0.0), (_activeDestination!.longitude ?? 0.0)),
+              _currentPosition!,
+              LatLng(_activeDestination!.latitude!, _activeDestination!.longitude!),
             );
             if (distToDest < 0.035 && _isNavigating) {
               _endTrip(isArrival: true);
@@ -210,12 +210,20 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
   Future<void> _calculateAndDrawRoute(PlaceSearchResultEntity destination) async {
     _activeDestination = destination;
     final start = _currentPosition;
-    final end = LatLng(destination.latitude ?? 0.0, destination.longitude ?? 0.0);
+    if (start == null) {
+      showLuxSnack(context, 'Current location unavailable', variant: LuxSnackVariant.error);
+      return;
+    }
+    if (destination.latitude == null || destination.longitude == null) {
+      showLuxSnack(context, 'Destination coordinates unavailable', variant: LuxSnackVariant.error);
+      return;
+    }
+    final end = LatLng(destination.latitude!, destination.longitude!);
 
     final multiResult = await GoogleMapsPlatformService.instance.calculateDirections(
       origin: start,
       destination: end,
-      waypoints: _intermediateWaypoints.map((w) => LatLng(w.latitude ?? 0.0, w.longitude ?? 0.0)).toList(),
+      waypoints: _intermediateWaypoints.where((w) => w.latitude != null && w.longitude != null).map((w) => LatLng(w.latitude!, w.longitude!)).toList(),
       selectedOption: _selectedRouteOption,
     );
 
@@ -391,7 +399,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
 
   void _shareCurrentLocation() {
     LuxAudioHapticsService.selectionClick();
-    final text = '📍 Live GPS Location: [${_currentPosition.latitude.toStringAsFixed(4)}, ${_currentPosition.longitude.toStringAsFixed(4)}]';
+    final text = '📍 Live GPS Location: [${_currentPosition?.latitude.toStringAsFixed(4) ?? '--'}, ${_currentPosition?.longitude.toStringAsFixed(4) ?? '--'}]';
     showLuxSnack(context, text, variant: LuxSnackVariant.info);
   }
 
@@ -399,7 +407,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
     LuxAudioHapticsService.selectionClick();
     _mapController.future.then((c) {
       c.animateCamera(gm.CameraUpdate.newCameraPosition(
-        gm.CameraPosition(target: gm.LatLng(_currentPosition.latitude, _currentPosition.longitude), zoom: _currentZoom, bearing: 0)
+        gm.CameraPosition(target: gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude), zoom: _currentZoom, bearing: 0)
       ));
     });
     showLuxSnack(context, '🧭 Compass reset to True North (0 deg)', variant: LuxSnackVariant.info);
@@ -426,7 +434,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
     });
     _mapController.future.then((c) {
       c.animateCamera(gm.CameraUpdate.newLatLngZoom(
-        gm.LatLng(_currentPosition.latitude, _currentPosition.longitude), _currentZoom
+        gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude), _currentZoom
       ));
     });
   }
@@ -450,7 +458,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
       newMarkers.add(
         gm.Marker(
           markerId: gm.MarkerId('search_poi_${p.id}'),
-          position: gm.LatLng(p.latitude ?? 0.0, p.longitude ?? 0.0),
+          position: gm.LatLng(p.latitude!, p.longitude!),
           icon: gm.BitmapDescriptor.defaultMarkerWithHue(gm.BitmapDescriptor.hueOrange),
           onTap: () {
             LuxAudioHapticsService.selectionClick();
@@ -460,9 +468,9 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                 category: p.category,
                 title: p.title,
                 address: p.subtitle,
-                lat: p.latitude ?? 0.0,
-                lng: p.longitude ?? 0.0,
-                rating: p.rating ?? 4.8,
+                lat: p.latitude!,
+                lng: p.longitude!,
+                rating: p.rating,
                 distanceKm: p.distanceKm,
               );
             });
@@ -488,17 +496,21 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
       _selectedPoiDetail = null;
     });
 
+    final currentPos = _currentPosition;
+    if (currentPos == null) return;
+
     final pois = await GoogleMapsPlatformService.instance.searchNearbyPlaces(
-      location: _currentPosition,
+      location: currentPos,
       category: cat,
     );
 
     final Set<gm.Marker> newMarkers = {};
     for (final poi in pois) {
+      if (poi.lat == null || poi.lng == null) continue;
       newMarkers.add(
         gm.Marker(
           markerId: gm.MarkerId('nearby_poi_${poi.id}'),
-          position: gm.LatLng(poi.lat, poi.lng),
+          position: gm.LatLng(poi.lat!, poi.lng!),
           icon: gm.BitmapDescriptor.defaultMarkerWithHue(
             cat == NearbyCategory.petrolPumps ? gm.BitmapDescriptor.hueOrange : gm.BitmapDescriptor.hueCyan
           ),
@@ -530,7 +542,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
     _mapController.future.then((c) {
       c.animateCamera(gm.CameraUpdate.newCameraPosition(
         gm.CameraPosition(
-          target: gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
+          target: gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
           zoom: _currentZoom,
           bearing: _vehicleHeading ?? 0.0,
           tilt: 45.0,
@@ -567,8 +579,8 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
         'avgSpeed': _currentSpeedKmh != null ? '${_currentSpeedKmh!.round()} km/h' : 'UNAVAILABLE',
         'maxLean': 'UNAVAILABLE',
         'score': 'UNAVAILABLE',
-        'lat': _activeDestination?.latitude ?? 20.2961,
-        'lng': _activeDestination?.longitude ?? 85.8245,
+        'lat': _activeDestination?.latitude,
+        'lng': _activeDestination?.longitude,
       });
       existingHistory.insert(0, tripRecord);
       await prefs.setStringList('trip_history_logs', existingHistory);
@@ -675,9 +687,10 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
   Widget build(BuildContext context) {
     final allMarkers = <gm.Marker>{
       // 1. Live Rider Vehicle Marker
-      gm.Marker(
-        markerId: const gm.MarkerId('vehicle'),
-        position: gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
+      if (_currentPosition != null)
+        gm.Marker(
+          markerId: const gm.MarkerId('vehicle'),
+          position: gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
         rotation: _vehicleHeading ?? 0.0,
         icon: gm.BitmapDescriptor.defaultMarkerWithHue(gm.BitmapDescriptor.hueCyan),
         anchor: const Offset(0.5, 0.5),
@@ -685,20 +698,20 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
       ),
 
       // 2. Intermediate Waypoint Stops Markers
-      ..._intermediateWaypoints.asMap().entries.map((entry) {
+      ..._intermediateWaypoints.asMap().entries.where((entry) => entry.value.latitude != null && entry.value.longitude != null).map((entry) {
         final wp = entry.value;
         return gm.Marker(
           markerId: gm.MarkerId('wp_${entry.key}'),
-          position: gm.LatLng((wp.latitude ?? 0.0), (wp.longitude ?? 0.0)),
+          position: gm.LatLng(wp.latitude!, wp.longitude!),
           icon: gm.BitmapDescriptor.defaultMarkerWithHue(gm.BitmapDescriptor.hueOrange),
         );
       }),
 
       // 3. Destination Pin Marker
-      if (_activeDestination != null)
+      if (_activeDestination != null && _activeDestination!.latitude != null && _activeDestination!.longitude != null)
         gm.Marker(
           markerId: const gm.MarkerId('destination'),
-          position: gm.LatLng((_activeDestination!.latitude ?? 0.0), (_activeDestination!.longitude ?? 0.0)),
+          position: gm.LatLng(_activeDestination!.latitude!, _activeDestination!.longitude!),
           icon: gm.BitmapDescriptor.defaultMarkerWithHue(gm.BitmapDescriptor.hueRed),
           zIndexInt: 90,
         ),
@@ -752,11 +765,23 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
       body: Stack(
         children: [
           // 1. Map: Google Maps (Native and Web)
-          gm.GoogleMap(
+          if (_currentPosition == null)
+            const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.location_searching_rounded, color: RoadOSColors.cyberCyan, size: 48),
+                  SizedBox(height: 16),
+                  Text('Acquiring GPS Signal...', style: TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            )
+          else
+            gm.GoogleMap(
               mapType: _selectedTileTheme == MapTileTheme.satellite ? gm.MapType.satellite : gm.MapType.normal,
               style: _activeMapStyle,
               initialCameraPosition: gm.CameraPosition(
-                target: gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
+                target: gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
                 zoom: _currentZoom,
               ),
               onMapCreated: (gm.GoogleMapController controller) {
@@ -824,8 +849,8 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              _isGpsSignalStrong
-                                  ? 'GPS (+/-${_gpsAccuracyMeters.toStringAsFixed(1)}m)'
+                              (_isGpsSignalStrong && _gpsAccuracyMeters != null)
+                                  ? 'GPS (+/-${_gpsAccuracyMeters!.toStringAsFixed(1)}m)'
                                   : 'WEAK GPS SIGNAL',
                               style: TextStyle(
                                 color: _isGpsSignalStrong ? RoadOSColors.apexEmerald : RoadOSColors.warningAmber,
@@ -1334,7 +1359,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '★ ${_selectedPoiDetail!.rating?.toStringAsFixed(1) ?? "4.8"} (${_selectedPoiDetail!.reviewCount})',
+                          '★ ${_selectedPoiDetail!.rating?.toStringAsFixed(1) ?? "--"} (${_selectedPoiDetail!.reviewCount ?? 0})',
                           style: const TextStyle(color: RoadOSColors.apexEmerald, fontSize: 11, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -1353,30 +1378,30 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                           IconButton(
                             icon: const Icon(Icons.phone_rounded, color: RoadOSColors.platinumWhite, size: 18),
                             tooltip: 'Call Phone',
-                            onPressed: () {
+                            onPressed: _selectedPoiDetail!.phoneNumber != null ? () {
                               PlatformWebHelper.openUrl('tel:${_selectedPoiDetail!.phoneNumber}');
                               showLuxSnack(context, 'Calling ${_selectedPoiDetail!.phoneNumber}...', variant: LuxSnackVariant.info);
-                            },
+                            } : null,
                           ),
                           IconButton(
                             icon: const Icon(Icons.language_rounded, color: RoadOSColors.platinumWhite, size: 18),
                             tooltip: 'Visit Website',
-                            onPressed: () {
-                              PlatformWebHelper.openUrl(_selectedPoiDetail!.websiteUrl);
+                            onPressed: _selectedPoiDetail!.websiteUrl != null ? () {
+                              PlatformWebHelper.openUrl(_selectedPoiDetail!.websiteUrl!);
                               showLuxSnack(context, 'Opening ${_selectedPoiDetail!.websiteUrl}...', variant: LuxSnackVariant.info);
-                            },
+                            } : null,
                           ),
                           IconButton(
                             icon: const Icon(Icons.bookmark_border_rounded, color: RoadOSColors.cyberCyan, size: 18),
                             tooltip: 'Save to Favorites',
-                            onPressed: () async {
+                            onPressed: (_selectedPoiDetail!.lat != null && _selectedPoiDetail!.lng != null) ? () async {
                               await SavedPlacesManager.instance.savePlace(
                                 SavedPlaceEntity(
                                   id: _selectedPoiDetail!.id,
                                   title: _selectedPoiDetail!.title,
                                   address: _selectedPoiDetail!.address,
-                                  latitude: _selectedPoiDetail!.lat,
-                                  longitude: _selectedPoiDetail!.lng,
+                                  latitude: _selectedPoiDetail!.lat!,
+                                  longitude: _selectedPoiDetail!.lng!,
                                   type: SavedPlaceType.favorite,
                                   savedAt: DateTime.now(),
                                 ),
@@ -1385,7 +1410,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                               if (mounted) {
                                 showLuxSnack(context, '⭐ Saved ${_selectedPoiDetail!.title} to Favorite Places!', variant: LuxSnackVariant.info);
                               }
-                            },
+                            } : null,
                           ),
                           IconButton(
                             icon: const Icon(Icons.share_rounded, color: RoadOSColors.platinumWhite, size: 18),
@@ -1405,7 +1430,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                       style: ElevatedButton.styleFrom(backgroundColor: RoadOSColors.hyperOrange, foregroundColor: Colors.black),
                       icon: const Icon(Icons.navigation_rounded, size: 16),
                       label: const Text('ROUTE TO PLACE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                      onPressed: () {
+                      onPressed: (_selectedPoiDetail!.lat != null && _selectedPoiDetail!.lng != null) ? () {
                         _calculateAndDrawRoute(
                           PlaceSearchResultEntity(
                             id: _selectedPoiDetail!.id,
@@ -1418,7 +1443,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                             tags: const ['poi'],
                           ),
                         );
-                      },
+                      } : null,
                     ),
                   ),
                 ],

@@ -37,11 +37,7 @@ class _SmartSearchScreenState extends State<SmartSearchScreen> {
     {'title': 'Track Days', 'icon': Icons.speed_rounded, 'color': Colors.redAccent, 'query': 'track'},
   ];
 
-  final List<Map<String, String>> _recentSearchHistory = [
-    {'title': 'Canyon Pass Scenic Viewpoint', 'subtitle': 'Twisty Backroad | 42.5 km', 'time': 'Yesterday'},
-    {'title': 'Shell V-Power High Octane', 'subtitle': 'Fuel Station | 3.2 km', 'time': '3 days ago'},
-    {'title': 'Superbike Service & Spares Hub', 'subtitle': 'Workshop | 12.4 km', 'time': '1 week ago'},
-  ];
+  final List<Map<String, String>> _recentSearchHistory = [];
 
   @override
   void dispose() {
@@ -290,7 +286,7 @@ class _SmartSearchScreenState extends State<SmartSearchScreen> {
                                   ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${place.distanceKm.toStringAsFixed(1)} km',
+                                  '${place.distanceKm != null ? place.distanceKm!.toStringAsFixed(1) : '--'} km away',
                                   style: const TextStyle(color: RoadOSColors.textMuted, fontSize: 11),
                                 ),
                               ],

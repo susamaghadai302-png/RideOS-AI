@@ -1,6 +1,4 @@
 import 'dart:developer' as developer;
-import 'package:latlong2/latlong.dart';
-import '../../core/services/india_places_search_engine.dart';
 import '../../domain/entities/poi_entity.dart';
 
 enum MapProviderType {
@@ -56,23 +54,11 @@ class ProductionMapsProviderEngine {
     required double centerLng,
     NearbyCategory category = NearbyCategory.petrolPumps,
   }) {
-    return IndiaPlacesSearchEngine.instance.getDynamicNearbyPois(
-      center: LatLng(centerLat, centerLng),
-      category: category,
-    );
+    return [];
   }
 
   Future<List<Map<String, dynamic>>> fetchLiveTrafficIncidents({required MapGeoCoordinate boundsCenter}) async {
     developer.log('Fetching live traffic incidents near [${boundsCenter.latitude}, ${boundsCenter.longitude}]...', name: 'RideOS.Traffic');
-    return [
-      {
-        'incident_id': 'inc_991',
-        'type': 'ROAD_CONSTRUCTION',
-        'severity': 'LOW',
-        'description': 'Right lane closed on Highway 101 N',
-        'lat': boundsCenter.latitude + 0.01,
-        'lng': boundsCenter.longitude + 0.01,
-      }
-    ];
+    return [];
   }
 }

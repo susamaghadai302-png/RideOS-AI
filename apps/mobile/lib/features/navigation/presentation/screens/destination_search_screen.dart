@@ -37,7 +37,7 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
   NearbyCategory? _selectedCategory;
   List<String> _recentSearches = [];
   List<SavedPlaceEntity> _savedPlaces = [];
-  LatLng _userLocation = const LatLng(20.2961, 85.8245); // Default anchor: Odisha / India
+  LatLng? _userLocation;
 
   List<PlaceSearchResultEntity> _filteredDestinations = [];
 
@@ -164,10 +164,12 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
       _isSearching = true;
     });
 
-    final pois = await GoogleMapsPlatformService.instance.searchNearbyPlaces(
-      location: _userLocation,
-      category: category,
-    );
+    final pois = _userLocation == null
+        ? <PoiEntity>[]
+        : await GoogleMapsPlatformService.instance.searchNearbyPlaces(
+            location: _userLocation!,
+            category: category,
+          );
 
     if (mounted) {
       setState(() {
@@ -834,7 +836,7 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      '${place.distanceKm.toStringAsFixed(1)} km',
+                                      '${place.distanceKm != null ? place.distanceKm!.toStringAsFixed(1) : '--'} km away',
                                       style: const TextStyle(color: RoadOSColors.hyperOrange, fontWeight: FontWeight.w900, fontSize: 12),
                                     ),
                                     const SizedBox(height: 2),

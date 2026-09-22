@@ -215,11 +215,8 @@ class GoogleMapsPlatformService {
       }
     }
 
-    // Resilient fallback
-    return IndiaPlacesSearchEngine.instance.getDynamicNearbyPois(
-      center: location,
-      category: category,
-    );
+    // Strict rule: Do not invent POI data if Google Places fails
+    return <PoiEntity>[];
   }
 
   /// 4. Google Directions API with Traffic & Multi-Alternative Routes

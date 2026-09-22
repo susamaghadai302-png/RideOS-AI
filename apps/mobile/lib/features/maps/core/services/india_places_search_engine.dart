@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../navigation/domain/entities/place_search_entity.dart';
-import '../../domain/entities/poi_entity.dart';
+
 
 class IndiaPlacesSearchEngine {
   static final IndiaPlacesSearchEngine instance = IndiaPlacesSearchEngine._internal();
@@ -608,7 +608,7 @@ class IndiaPlacesSearchEngine {
             latitude: lat,
             longitude: lng,
             distanceKm: double.parse(dist.toStringAsFixed(1)),
-            rating: (item['rating'] as num?)?.toDouble() ?? 4.8,
+            rating: (item['rating'] as num?)?.toDouble(),
             tags: tags,
           ),
         );
@@ -657,7 +657,7 @@ class IndiaPlacesSearchEngine {
                 latitude: lat,
                 longitude: lon,
                 distanceKm: double.parse(dist.toStringAsFixed(1)),
-                rating: 4.75,
+                rating: null,
                 tags: [query.toLowerCase(), 'india', 'osm'],
               ),
             );
@@ -670,7 +670,7 @@ class IndiaPlacesSearchEngine {
 
     // Sort by distance if user location is provided
     if (userLocation != null) {
-      results.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+      results.sort((a, b) => (a.distanceKm ?? double.infinity).compareTo(b.distanceKm ?? double.infinity));
     }
 
     return results;
@@ -690,198 +690,7 @@ class IndiaPlacesSearchEngine {
     return 'LOCATION';
   }
 
-  /// 13-Category Dynamic Nearby POI Search with regional accuracy
-  List<PoiEntity> getDynamicNearbyPois({
-    required LatLng center,
-    required NearbyCategory category,
-  }) {
-    final isOdishaRegion = (center.latitude >= 17.5 && center.latitude <= 22.8) &&
-        (center.longitude >= 81.3 && center.longitude <= 87.6);
 
-    final templates = _getRegionalPoiTemplates(category, isOdisha: isOdishaRegion);
-    final random = math.Random(category.index * 31 + (center.latitude * 100).round());
-
-    return List.generate(templates.length, (index) {
-      final t = templates[index];
-      // Generate offsets within realistic ~0.8km to 4.5km driving radius
-      final latOffset = (random.nextDouble() - 0.5) * 0.035;
-      final lngOffset = (random.nextDouble() - 0.5) * 0.035;
-      final poiLat = center.latitude + latOffset;
-      final poiLng = center.longitude + lngOffset;
-      final dist = calculateDistanceKm(center, LatLng(poiLat, poiLng));
-      final eta = math.max(2, (dist * 2.1).round());
-
-      return PoiEntity(
-        id: 'poi-${category.categoryKey}-$index',
-        category: category.categoryKey,
-        title: t['title'] ?? 'Nearby Facility',
-        address: t['address'] ?? 'Main Road Corridor',
-        lat: poiLat,
-        lng: poiLng,
-        rating: double.parse((4.6 + (random.nextDouble() * 0.38)).toStringAsFixed(1)),
-        reviewCount: 120 + random.nextInt(850),
-        phoneNumber: t['phone'] ?? '+91 674 2500000',
-        websiteUrl: t['website'] ?? 'https://maps.google.com',
-        isVerified: true,
-        distanceKm: double.parse(dist.toStringAsFixed(1)),
-        etaMinutes: eta,
-        isOpen: true,
-      );
-    });
-  }
-
-  /// Regional Templates with Real Odisha Names & Pan-India Quality
-  List<Map<String, String>> _getRegionalPoiTemplates(NearbyCategory category, {required bool isOdisha}) {
-    switch (category) {
-      case NearbyCategory.petrolPumps:
-        return isOdisha
-            ? [
-                {'title': 'Indian Oil Swarna Jayanti COCO', 'address': 'Janpath, Saheed Nagar, Bhubaneswar | 24x7 High-Octane', 'phone': '+91 674 2548899'},
-                {'title': 'Bharat Petroleum Speed Apex Station', 'address': 'NH-16 Expressway Bypass, Cuttack Road', 'phone': '+91 674 2311200'},
-                {'title': 'HP TurboJet Fuel Center', 'address': 'Khandagiri Square, Khordha Highway', 'phone': '+91 674 2384500'},
-                {'title': 'Shell V-Power 100 Nitro Station', 'address': 'Patia Infocity Main Boulevard', 'phone': '+91 674 2741000'},
-              ]
-            : [
-                {'title': 'Indian Oil COCO Apex Station', 'address': 'National Highway Expressway Exit | 24x7 Fuel & Air', 'phone': '+91 11 24360000'},
-                {'title': 'Bharat Petroleum Speed Hub', 'address': 'Central Ring Road | Nitrogen & Super', 'phone': '+91 22 22713000'},
-                {'title': 'Shell 100-Octane V-Power Station', 'address': 'Sector 12 Avenue | 24x7 Convenience', 'phone': '+91 80 40001000'},
-                {'title': 'HPCL Auto LPG & Petrol Center', 'address': 'Main Arterial Corridor', 'phone': '+91 44 28271000'},
-              ];
-
-      case NearbyCategory.evCharging:
-        return [
-          {'title': 'Tata Power EZ Charge Superhub (120kW)', 'address': 'Shopping Mall Bay | CCS2 / Type-2 Fast Stalls', 'phone': '+91 1800 209 5161'},
-          {'title': 'Jio-bp pulse High-Speed EV Station (60kW)', 'address': 'Highway Rest Plaza | DC Dual Gun', 'phone': '+91 1800 891 9023'},
-          {'title': 'Ather Grid Fast DC Charging Point', 'address': 'City Center Hub | 2-Wheeler Fast Stalls', 'phone': '+91 76766 00900'},
-          {'title': 'Statiq Ultra EV Highway Charger (150kW)', 'address': 'Expressway Service Area | 24x7 Support', 'phone': '+91 80000 80000'},
-        ];
-
-      case NearbyCategory.railwayStations:
-        return isOdisha
-            ? [
-                {'title': 'Bhubaneswar Central Railway Station (BBS)', 'address': 'Master Canteen Square | 6 Platforms & Retiring Rooms', 'phone': '+91 674 2532233'},
-                {'title': 'Cuttack Junction Railway Station (CTC)', 'address': 'Station Bazar, Cuttack | Main Line Junction', 'phone': '+91 671 2511033'},
-                {'title': 'Puri Railway Terminus (PURI)', 'address': 'Station Road, Kundheibenta Sahi, Puri', 'phone': '+91 6752 222033'},
-                {'title': 'Bhubaneswar New Railway Station (BBSN)', 'address': 'Barang Corridor, North Bhubaneswar', 'phone': '+91 674 2501000'},
-              ]
-            : [
-                {'title': 'Central Mainline Railway Terminal', 'address': 'Station Approach Road | Inter-City Express Hub', 'phone': '139'},
-                {'title': 'Junction Suburban Railway Station', 'address': 'East Terminal Gate | Multi-Platform', 'phone': '139'},
-              ];
-
-      case NearbyCategory.busStations:
-        return isOdisha
-            ? [
-                {'title': 'Baramunda ISBT Bus Terminal (BBS)', 'address': 'NH-16, Baramunda, Bhubaneswar | Inter-State Express', 'phone': '+91 674 2354890'},
-                {'title': 'Badambadi Central Bus Terminal (CTC)', 'address': 'Badambadi, Cuttack | All Odisha District Connect', 'phone': '+91 671 2322450'},
-                {'title': 'Puri District Bus Stand', 'address': 'Puri Grand Road Approach, Puri', 'phone': '+91 6752 223100'},
-              ]
-            : [
-                {'title': 'Inter-State Central Bus Terminal (ISBT)', 'address': 'Grand Trunk Highway Corridor | AC Deluxe & Volvo', 'phone': '1800 11 0039'},
-                {'title': 'City Transit Bus Station', 'address': 'Main Market Plaza | Local & Regional Shuttles', 'phone': '1800 11 0040'},
-              ];
-
-      case NearbyCategory.airports:
-        return isOdisha
-            ? [
-                {'title': 'Biju Patnaik International Airport (BBI)', 'address': 'Airport Road, Aerodrome Area, Bhubaneswar', 'phone': '+91 674 2401084'},
-                {'title': 'Veer Surendra Sai Airport (JRG)', 'address': 'Durlaga, Jharsuguda, Odisha', 'phone': '+91 6645 272000'},
-                {'title': 'Rourkela Airport (RRK)', 'address': 'Chhend Colony, Rourkela, Sundargarh', 'phone': '+91 661 2400100'},
-              ]
-            : [
-                {'title': 'International Airport Terminal (T3)', 'address': 'Expressway Airport Corridor | Domestic & International', 'phone': '+91 124 4797300'},
-                {'title': 'Domestic Airport Terminal (T1)', 'address': 'Arrivals & Departures Gate | Express Parking', 'phone': '+91 124 4797301'},
-              ];
-
-      case NearbyCategory.hospitals:
-        return isOdisha
-            ? [
-                {'title': 'AIIMS Multi-Specialty Hospital', 'address': 'Sijua, Patrapada, Bhubaneswar | 24x7 Apex Trauma Care', 'phone': '+91 674 2476789'},
-                {'title': 'SCB Medical College & Hospital', 'address': 'Manglabag, Cuttack | 24x7 Emergency & Trauma', 'phone': '+91 671 2414004'},
-                {'title': 'Apollo Hospitals Bhubaneswar', 'address': 'Plot 251, Sainik School Road, Unit 15', 'phone': '+91 674 6661066'},
-                {'title': 'SUM Ultimate Medicare Hospital', 'address': 'K8, Kalinga Nagar, Ghatikia, Bhubaneswar', 'phone': '+91 674 3500500'},
-              ]
-            : [
-                {'title': 'Apex Multi-Specialty Hospital & Trauma', 'address': 'Main Medical Enclave | 24x7 Emergency & ICU', 'phone': '+91 11 26588500'},
-                {'title': 'City Super-Specialty Medical Center', 'address': 'Ring Road Health Zone | 24x7 Ambulance & Blood Bank', 'phone': '+91 22 24445000'},
-              ];
-
-      case NearbyCategory.pharmacies:
-        return [
-          {'title': 'Apollo Pharmacy 24x7 Master Canteen', 'address': 'Janpath Corridor | 24-Hour Emergency Medicines', 'phone': '+91 674 2530111'},
-          {'title': 'MedPlus 24x7 Emergency Chemist', 'address': 'Main Square Plaza | Cold Storage Insulin & First Aid', 'phone': '+91 674 2580222'},
-          {'title': 'Red Cross Lifeline Pharmacy', 'address': 'Hospital Road | 24x7 Prescriptions & Surgical', 'phone': '+91 674 2400333'},
-        ];
-
-      case NearbyCategory.policeStations:
-        return isOdisha
-            ? [
-                {'title': 'Saheed Nagar Police Station', 'address': 'Saheed Nagar, Bhubaneswar | Emergency Control Room', 'phone': '112'},
-                {'title': 'Kharavel Nagar Police Station', 'address': 'Unit 3, Bhubaneswar | Traffic Enforcement', 'phone': '112'},
-                {'title': 'Cuttack Town Police Headquarters', 'address': 'Buxi Bazar, Cuttack', 'phone': '112'},
-                {'title': 'Puri Sea Beach Police Station', 'address': 'Chakratirtha Road, Sea Beach, Puri', 'phone': '112'},
-              ]
-            : [
-                {'title': 'Central Police Station & Highway Patrol', 'address': 'Main Administrative Zone | Emergency Control 112', 'phone': '112'},
-                {'title': 'Traffic Police Headquarters', 'address': 'Expressway Intersection | 24x7 Road Assistance', 'phone': '112'},
-              ];
-
-      case NearbyCategory.hotels:
-        return isOdisha
-            ? [
-                {'title': 'MAYFAIR Lagoon Luxury Resort', 'address': '8-B Jayadev Vihar, Bhubaneswar', 'phone': '+91 674 6660101'},
-                {'title': 'Trident Hotel Bhubaneswar', 'address': 'CB-1 Nayapalli, Bhubaneswar', 'phone': '+91 674 2301010'},
-                {'title': 'Vivanta Bhubaneswar DN Square', 'address': 'Patrapada, NH-16, Bhubaneswar', 'phone': '+91 674 6649999'},
-                {'title': 'Hans Coco Palms Puri', 'address': 'Swargadwar Beach, Puri', 'phone': '+91 6752 230038'},
-              ]
-            : [
-                {'title': 'Grand Luxury Hotel & Suites', 'address': 'Financial District Boulevard | 5-Star Hospitality', 'phone': '+91 22 66653366'},
-                {'title': 'Express Highway Transit Hotel', 'address': 'Corridor Interchange | 24x7 Check-In & Valet', 'phone': '+91 11 41112222'},
-              ];
-
-      case NearbyCategory.restaurants:
-        return isOdisha
-            ? [
-                {'title': 'Dalma Authentic Odia Heritage Cuisine', 'address': 'Madhusudan Nagar, Unit 4, Bhubaneswar', 'phone': '+91 674 2390099'},
-                {'title': 'Michael\'s Kitchen Fine Dining', 'address': 'Sainik School Road, Bhubaneswar', 'phone': '+91 674 2588888'},
-                {'title': 'Barbeque Nation Patia', 'address': 'Infocity Road, Patia, Bhubaneswar', 'phone': '+91 674 6060000'},
-                {'title': 'Silver City Dine Cuttack', 'address': 'Ring Road, Mahanadi View, Cuttack', 'phone': '+91 671 2420000'},
-              ]
-            : [
-                {'title': 'The Royal Feast Gourmet Bistro', 'address': 'Avenue 5 | Multi-Cuisine & Terrace Lounge', 'phone': '+91 11 23344556'},
-                {'title': 'Highway Rider\'s Cafe & Pitstop', 'address': 'Bypass Rest Mile | Fresh Espresso & Meals', 'phone': '+91 22 28899000'},
-              ];
-
-      case NearbyCategory.parking:
-        return [
-          {'title': 'Smart City Multilevel Automated Parking', 'address': 'Saheed Nagar Market | 450 Covered Stalls & EV Plugs', 'phone': '+91 674 2509900'},
-          {'title': 'Railway Station East Side Multi-Tier Parking', 'address': 'Platform 6 Approach | 24x7 CCTV & Bike Security', 'phone': '+91 674 2509911'},
-          {'title': 'Underground Central Plaza Parking', 'address': 'Janpath Commercial Strip | Sensor Guidance & Valet', 'phone': '+91 674 2509922'},
-        ];
-
-      case NearbyCategory.atms:
-        return [
-          {'title': 'State Bank of India (SBI) 24x7 e-Corner', 'address': 'Janpath Main Branch | Cash Deposit & ATM', 'phone': '1800 1234'},
-          {'title': 'HDFC Bank 24x7 Cash & Cheque Recycler', 'address': 'Master Canteen Commercial Wing', 'phone': '1800 202 6161'},
-          {'title': 'ICICI Bank 24x7 Touch Banking ATM', 'address': 'Nayapalli Highway Square', 'phone': '1800 1080'},
-        ];
-
-      case NearbyCategory.touristPlaces:
-        return isOdisha
-            ? [
-                {'title': 'Shree Jagannath Temple Puri', 'address': 'Bada Danda, Puri | Sacred Char Dham Pilgrimage', 'phone': '+91 6752 222002'},
-                {'title': 'Konark Sun Temple (UNESCO Site)', 'address': 'Marine Drive, Konark, Puri District', 'phone': '+91 6758 236821'},
-                {'title': 'Shree Lingaraj Temple Bhubaneswar', 'address': 'Old Town, Bhubaneswar | 11th Century Architecture', 'phone': '+91 674 2430000'},
-                {'title': 'Chilika Lake & Dolphin Sanctuary', 'address': 'Satapada, Puri District | Asia\'s Largest Brackish Lagoon', 'phone': '+91 6756 220000'},
-                {'title': 'Dhauli Shanti Stupa & Daya River', 'address': 'Dhauli Hills, Bhubaneswar | Historic Buddhist Monument', 'phone': '+91 674 2400000'},
-                {'title': 'Nandankanan Wildlife Sanctuary', 'address': 'Barang Road, Bhubaneswar | Safari & Botanical Forest', 'phone': '+91 674 2466075'},
-              ]
-            : [
-                {'title': 'Historic Royal Fort & Heritage Monument', 'address': 'Heritage Corridor | UNESCO World Heritage Site', 'phone': '+91 11 23070000'},
-                {'title': 'Mountain Ridge Scenic Overlook', 'address': 'Highland Pass Mile 18 | Panoramic Valley Views', 'phone': '+91 22 25000000'},
-              ];
-    }
-  }
 
   /// Reverse geocodes a coordinate point to retrieve real address and place name
   Future<PlaceSearchResultEntity> reverseGeocode(LatLng point) async {

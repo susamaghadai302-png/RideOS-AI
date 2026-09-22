@@ -43,12 +43,16 @@ class SavedPlaceEntity {
         'savedAt': savedAt.toIso8601String(),
       };
 
-  factory SavedPlaceEntity.fromJson(Map<String, dynamic> json) => SavedPlaceEntity(
+  factory SavedPlaceEntity.fromJson(Map<String, dynamic> json) {
+    if (json['latitude'] == null || json['longitude'] == null) {
+      throw const FormatException('Geographic coordinates are required for SavedPlaceEntity');
+    }
+    return SavedPlaceEntity(
         id: json['id'] as String? ?? 'place-${DateTime.now().millisecondsSinceEpoch}',
         title: json['title'] as String? ?? 'Saved Place',
         address: json['address'] as String? ?? 'Address',
-        latitude: (json['latitude'] as num?)?.toDouble() ?? 20.2961,
-        longitude: (json['longitude'] as num?)?.toDouble() ?? 85.8245,
+        latitude: (json['latitude'] as num).toDouble(),
+        longitude: (json['longitude'] as num).toDouble(),
         type: SavedPlaceType.values.firstWhere(
           (t) => t.name == json['type'],
           orElse: () => SavedPlaceType.favorite,
@@ -57,6 +61,7 @@ class SavedPlaceEntity {
             ? DateTime.tryParse(json['savedAt'] as String) ?? DateTime.now()
             : DateTime.now(),
       );
+  }
 }
 
 class SavedPlacesManager {

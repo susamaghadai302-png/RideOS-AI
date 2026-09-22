@@ -25,13 +25,10 @@ void main() {
         const LatLng(12.9352, 77.6245),
       ];
 
-      final segments = await simulatedProvider.getTrafficAlongRoute(route);
-
-      expect(segments.length, equals(2));
-      expect(segments.first.source, equals(TrafficDataSource.simulated));
-
-      final delay = simulatedProvider.estimateDelayMinutes(segments);
-      expect(delay, greaterThanOrEqualTo(0.0));
+      expect(
+        () => simulatedProvider.getTrafficAlongRoute(route),
+        throwsUnsupportedError,
+      );
     });
 
     test('Cached traffic provider updates and reads cached route segments', () async {
