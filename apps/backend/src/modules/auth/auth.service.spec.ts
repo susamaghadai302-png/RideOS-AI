@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Rider } from '../riders/schemas/rider.schema';
 import { OAuthVerifierService } from './services/oauth-verifier.service';
@@ -25,10 +25,16 @@ describe('AuthService', () => {
 
   const mockJwtService = {
     sign: jest.fn().mockReturnValue('mock-jwt-token'),
+    verify: jest.fn(),
   };
 
   const mockConfigService = {
-    get: jest.fn().mockReturnValue(undefined),
+    get: jest.fn((key: string) => ({
+      JWT_SECRET: 'test-access-secret',
+      JWT_REFRESH_SECRET: 'test-refresh-secret',
+      JWT_EXPIRATION: '7d',
+      JWT_REFRESH_EXPIRATION: '30d',
+    } as Record<string, string>)[key]),
   };
 
   beforeEach(async () => {
@@ -113,6 +119,51 @@ describe('AuthService', () => {
     expect(result).toBeDefined();
     expect(result.rider.email).toBe('apple.rider@privaterelay.appleid.com');
     expect(result.tokens.accessToken).toBe('mock-jwt-token');
+  });
+
+  it('should refresh a valid refresh token', async () => {
+    mockRiderModel.findOne.mockResolvedValue({
+      _id: 'mock-object-id',
+      email: 'alex@example.com',
+    });
+    mockJwtService.verify.mockReturnValue({
+      sub: 'mock-object-id',
+      email: 'alex@example.com',
+      type: 'refresh',
+    });
+
+    const result = await service.refresh('valid-refresh-token');
+
+    expect(result.accessToken).toBe('mock-jwt-token');
+    expect(result.refreshToken).toBe('mock-jwt-token');
+    expect(mockJwtService.verify).toHaveBeenCalledWith(
+      'valid-refresh-token',
+      { secret: 'test-refresh-secret' },
+    );
+  });
+
+  it('should reject an access token used as a refresh token', async () => {
+    mockJwtService.verify.mockReturnValue({
+      sub: 'mock-object-id',
+      email: 'alex@example.com',
+      type: 'access',
+    });
+
+    await expect(service.refresh('access-token')).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('should reject Google OAuth without a verified ID token', async () => {
+    await expect(
+      service.loginWithGoogleOAuth({ email: 'unverified@example.com' }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should reject Apple OAuth without a verified identity token', async () => {
+    await expect(
+      service.loginWithAppleOAuth({ email: 'unverified@example.com' }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('should deliver and verify real SMS OTP passkey', async () => {
