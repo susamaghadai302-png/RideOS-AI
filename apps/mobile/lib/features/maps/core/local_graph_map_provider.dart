@@ -36,71 +36,17 @@ class LocalGraphMapProvider implements MapProvider {
     required LatLng destination,
     List<LatLng> waypoints = const [],
   }) async {
-    // Deterministic offline Haversine & Euclidean routing
-    final distanceKm = _calculateHaversineDistance(origin, destination);
-    final durationMinutes = (distanceKm / 45.0) * 60.0; // Assume 45 km/h average city motorcycle speed
-
-    final points = <LatLng>[
-      origin,
-      LatLng((origin.latitude + destination.latitude) / 2 + 0.002, (origin.longitude + destination.longitude) / 2 - 0.001),
-      destination,
-    ];
-
-    final segments = [
-      RouteSegment(
-        instruction: 'Head north on current route',
-        distanceMeters: (distanceKm * 1000) / 2,
-        durationSeconds: (durationMinutes * 60) / 2,
-        startPoint: origin,
-        endPoint: points[1],
-      ),
-      RouteSegment(
-        instruction: 'Continue toward destination waypoint',
-        distanceMeters: (distanceKm * 1000) / 2,
-        durationSeconds: (durationMinutes * 60) / 2,
-        startPoint: points[1],
-        endPoint: destination,
-      ),
-    ];
-
-    return RouteResult(
-      waypoints: points,
-      totalDistanceKm: distanceKm,
-      estimatedDurationMinutes: durationMinutes,
-      segments: segments,
+    throw StateError(
+      'Offline road routing is unavailable because no local road graph is configured.',
     );
   }
 
   @override
   Future<List<PlaceSearchResult>> searchPlaces(String query) async {
-    final lower = query.toLowerCase();
-    final samplePlaces = [
-      const PlaceSearchResult(
-        id: 'place_1',
-        name: 'Aero Service Point & Fuel',
-        address: 'Sector 4, Main Express Highway',
-        coordinates: LatLng(12.9716, 77.5946),
-        category: 'Fuel & Service',
-      ),
-      const PlaceSearchResult(
-        id: 'place_2',
-        name: 'Apex Mountain Pass Viewpoint',
-        address: 'Hill Range Highway 9',
-        coordinates: LatLng(12.9850, 77.6050),
-        category: 'Scenic Waypoint',
-      ),
-      const PlaceSearchResult(
-        id: 'place_3',
-        name: 'MotoZone Garage & Tyre Care',
-        address: 'Bypass Road, Bay 3',
-        coordinates: LatLng(12.9600, 77.5800),
-        category: 'Workshop',
-      ),
-    ];
-
-    return samplePlaces.where((p) => p.name.toLowerCase().contains(lower) || p.category.toLowerCase().contains(lower)).toList();
+    throw StateError(
+      'Offline place search is unavailable because no local POI dataset is configured.',
+    );
   }
-
   double _calculateHaversineDistance(LatLng p1, LatLng p2) {
     const r = 6371.0; // Earth radius in km
     final dLat = _degToRad(p2.latitude - p1.latitude);
