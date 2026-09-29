@@ -28,7 +28,7 @@ jobs:
       - name: Static Analysis
         run: |
           cd apps/mobile
-          flutter analyze --no-fatal-infos --no-fatal-warnings
+          flutter analyze
 
       - name: Run Mobile Test Suite
         run: |
