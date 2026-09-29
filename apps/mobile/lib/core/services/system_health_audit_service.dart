@@ -38,81 +38,105 @@ class SystemHealthAuditService {
   SystemHealthAuditService._internal();
 
   ProductionSystemAuditReport performProductionAudit({
-    bool isNetworkOnline = true,
-    bool isBleAvailable = true,
-    bool isGpsEnabled = true,
-    double availableStorageMb = 4250.0,
+    bool? isNetworkOnline,
+    bool? isBleAvailable,
+    bool? isGpsEnabled,
+    double? availableStorageMb,
   }) {
     final checks = <AuditCheckResult>[];
 
     // 1. Network Connectivity Check
-    if (isNetworkOnline) {
+    if (isNetworkOnline == true) {
       checks.add(const AuditCheckResult(
         checkName: 'Cloud Telemetry Link',
         status: AuditCheckStatus.pass,
-        detail: 'Cloud socket & REST latency nominal (<35ms)',
+        detail: 'Network reported online by the caller; latency is not measured by this audit.',
+      ));
+    } else if (isNetworkOnline == false) {
+      checks.add(const AuditCheckResult(
+        checkName: 'Cloud Telemetry Link',
+        status: AuditCheckStatus.fail,
+        detail: 'Network reported offline by the caller.',
       ));
     } else {
       checks.add(const AuditCheckResult(
         checkName: 'Cloud Telemetry Link',
         status: AuditCheckStatus.warning,
-        detail: 'Offline mode active. Local SQLite persistence queue operational.',
+        detail: 'Network state was not measured.',
       ));
     }
 
     // 2. BLE Radio Check
-    if (isBleAvailable) {
+    if (isBleAvailable == true) {
       checks.add(const AuditCheckResult(
         checkName: 'Bluetooth LE 5.0 Radio',
         status: AuditCheckStatus.pass,
-        detail: 'GATT scanner & peripheral state machine ready.',
+        detail: 'Bluetooth availability reported by the caller.',
+      ));
+    } else if (isBleAvailable == false) {
+      checks.add(const AuditCheckResult(
+        checkName: 'Bluetooth LE 5.0 Radio',
+        status: AuditCheckStatus.fail,
+        detail: 'Bluetooth availability reported unavailable by the caller.',
       ));
     } else {
       checks.add(const AuditCheckResult(
         checkName: 'Bluetooth LE 5.0 Radio',
-        status: AuditCheckStatus.fail,
-        detail: 'Bluetooth radio disabled or permission denied.',
+        status: AuditCheckStatus.warning,
+        detail: 'Bluetooth availability was not measured.',
       ));
     }
 
     // 3. GPS Location Engine Check
-    if (isGpsEnabled) {
+    if (isGpsEnabled == true) {
       checks.add(const AuditCheckResult(
         checkName: 'High-Precision GNSS / GPS',
         status: AuditCheckStatus.pass,
-        detail: 'Deadband filtering active (>3m spatial precision).',
+        detail: 'GPS availability reported enabled by the caller.',
+      ));
+    } else if (isGpsEnabled == false) {
+      checks.add(const AuditCheckResult(
+        checkName: 'High-Precision GNSS / GPS',
+        status: AuditCheckStatus.fail,
+        detail: 'GPS availability reported disabled or denied by the caller.',
       ));
     } else {
       checks.add(const AuditCheckResult(
         checkName: 'High-Precision GNSS / GPS',
-        status: AuditCheckStatus.fail,
-        detail: 'Location services disabled or permission denied.',
+        status: AuditCheckStatus.warning,
+        detail: 'GPS availability was not measured.',
       ));
     }
 
     // 4. Flash Storage Quota Check
-    if (availableStorageMb >= 500.0) {
+    if (availableStorageMb == null) {
+      checks.add(const AuditCheckResult(
+        checkName: 'Flash Storage Quota',
+        status: AuditCheckStatus.warning,
+        detail: 'Storage capacity was not measured.',
+      ));
+    } else if (availableStorageMb >= 500.0) {
       checks.add(AuditCheckResult(
         checkName: 'Flash Storage Quota',
         status: AuditCheckStatus.pass,
-        detail: '${availableStorageMb.round()} MB available for offline maps & telemetry.',
+        detail: '${availableStorageMb.round()} MB reported available by the caller.',
       ));
     } else {
       checks.add(AuditCheckResult(
         checkName: 'Flash Storage Quota',
         status: AuditCheckStatus.warning,
-        detail: 'Low storage space (${availableStorageMb.round()} MB). Cache pruning advised.',
+        detail: 'Low storage reported (${availableStorageMb.round()} MB).',
       ));
     }
 
     // 5. Crash Detection & SOS Dispatch Readiness Check
     checks.add(const AuditCheckResult(
       checkName: 'Crash Detection & IMU Sensor Pipeline',
-      status: AuditCheckStatus.pass,
-      detail: '6-axis accelerometer & gyroscope evaluation loop verified.',
+      status: AuditCheckStatus.warning,
+      detail: 'Runtime IMU/crash pipeline was not measured by this audit.',
     ));
 
-    final isAllPassed = checks.every((c) => c.status == AuditCheckStatus.pass || c.status == AuditCheckStatus.warning);
+    final isAllPassed = checks.every((c) => c.status == AuditCheckStatus.pass);
 
     return ProductionSystemAuditReport(
       isProductionReady: isAllPassed,
