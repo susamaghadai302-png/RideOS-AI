@@ -54,11 +54,18 @@ class ProductionMapsProviderEngine {
     required double centerLng,
     NearbyCategory category = NearbyCategory.petrolPumps,
   }) {
-    return [];
+    throw StateError(
+      'Nearby POI provider is not configured for this engine; no synthetic POIs will be returned.',
+    );
   }
 
   Future<List<Map<String, dynamic>>> fetchLiveTrafficIncidents({required MapGeoCoordinate boundsCenter}) async {
-    developer.log('Fetching live traffic incidents near [${boundsCenter.latitude}, ${boundsCenter.longitude}]...', name: 'RideOS.Traffic');
-    return [];
+    developer.log(
+      'Live traffic provider unavailable near [${boundsCenter.latitude}, ${boundsCenter.longitude}].',
+      name: 'RideOS.Traffic',
+    );
+    throw StateError(
+      'Live traffic incident provider is not configured for this engine.',
+    );
   }
 }
