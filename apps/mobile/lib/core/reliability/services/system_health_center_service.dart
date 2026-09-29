@@ -43,40 +43,44 @@ class SystemHealthCenterService {
     // 1. Authentication
     reports.add(SubsystemHealthReport(
       subsystemName: 'Authentication',
-      status: SubsystemHealthStatus.healthy,
-      statusDescription: 'JWT & Local Biometric verification active',
+      status: SubsystemHealthStatus.notConfigured,
+      statusDescription: 'Authentication validity is owned by the AuthBloc/backend and is not measured by this audit.',
       lastChecked: now,
     ));
 
     // 2. Backend API
     reports.add(SubsystemHealthReport(
       subsystemName: 'Backend API Gateway',
-      status: isOffline ? SubsystemHealthStatus.unavailable : SubsystemHealthStatus.healthy,
-      statusDescription: isOffline ? 'Backend unreachable (Offline Mode)' : 'NestJS API listening on http://localhost:3000',
+      status: isOffline ? SubsystemHealthStatus.unavailable : SubsystemHealthStatus.notConfigured,
+      statusDescription: isOffline
+          ? 'Backend explicitly reported offline.'
+          : 'Backend reachability was not measured by this service.',
       lastChecked: now,
     ));
 
     // 3. Database / Local Cache
     reports.add(SubsystemHealthReport(
       subsystemName: 'Local Storage & Cache',
-      status: SubsystemHealthStatus.healthy,
-      statusDescription: 'Encrypted storage active with buffered offline queue',
+      status: SubsystemHealthStatus.notConfigured,
+      statusDescription: 'Storage integrity and capacity were not measured by this audit.',
       lastChecked: now,
     ));
 
     // 4. Network
     reports.add(SubsystemHealthReport(
       subsystemName: 'Network Interface',
-      status: isOffline ? SubsystemHealthStatus.degraded : SubsystemHealthStatus.healthy,
-      statusDescription: isOffline ? 'Local loopback active, cellular data disabled' : 'Broadband / Wi-Fi active',
+      status: isOffline ? SubsystemHealthStatus.degraded : SubsystemHealthStatus.notConfigured,
+      statusDescription: isOffline
+          ? 'Offline mode explicitly enabled.'
+          : 'Network reachability was not measured by this audit.',
       lastChecked: now,
     ));
 
     // 5. Bluetooth / BLE
     reports.add(SubsystemHealthReport(
       subsystemName: 'Bluetooth Central BLE',
-      status: SubsystemHealthStatus.healthy,
-      statusDescription: 'GATT Scanner & State restoration ready',
+      status: SubsystemHealthStatus.notConfigured,
+      statusDescription: 'BLE radio availability was not measured by this audit.',
       lastChecked: now,
     ));
 
@@ -101,24 +105,24 @@ class SystemHealthCenterService {
     // 8. AI Ride Assistant
     reports.add(SubsystemHealthReport(
       subsystemName: 'AI Ride Assistant',
-      status: SubsystemHealthStatus.healthy,
-      statusDescription: 'Intent engine & safety guardrails operating normally',
+      status: SubsystemHealthStatus.notConfigured,
+      statusDescription: 'AI runtime health was not measured by this audit.',
       lastChecked: now,
     ));
 
     // 9. Navigation HUD
     reports.add(SubsystemHealthReport(
       subsystemName: 'Navigation & Turn HUD',
-      status: SubsystemHealthStatus.healthy,
-      statusDescription: 'Local road graph routing active (Google Maps billing postponed)',
+      status: SubsystemHealthStatus.notConfigured,
+      statusDescription: 'Navigation runtime and map rendering were not measured by this audit.',
       lastChecked: now,
     ));
 
     // 10. Safety Alert Engine
     reports.add(SubsystemHealthReport(
       subsystemName: 'Safety & SOS Monitor',
-      status: SubsystemHealthStatus.healthy,
-      statusDescription: 'Crash, abnormal stop, and thermal alerts primed',
+      status: SubsystemHealthStatus.notConfigured,
+      statusDescription: 'Safety runtime and sensor readiness were not measured by this audit.',
       lastChecked: now,
     ));
 
