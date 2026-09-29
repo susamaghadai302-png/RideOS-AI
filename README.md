@@ -52,8 +52,8 @@ graph TD
 
 ## 🛠️ Technology Stack
 
-- **Mobile Client**: Flutter 3.29.x / Dart 3.7.x, Riverpod, BLoC, Clean Architecture.
-- **Backend API**: NestJS 10.x, TypeScript, Node.js 20.x.
+- **Mobile Client**: Flutter 3.47.5 / Dart 3.13.x, Riverpod, BLoC, Clean Architecture.
+- **Backend API**: NestJS 10.x, TypeScript, Node.js 22.x.
 - **Databases**: MongoDB (Profiles, Vehicles, Diagnostics, Maintenance) & TimescaleDB (Telematics).
 - **Security**: JWT authentication, AES-GCM encrypted native storage, strictly scoped user ownership.
 
@@ -116,10 +116,10 @@ flutter run
 
 ### Run Automated Tests
 ```bash
-# Run backend tests (39 tests)
+# Run backend test suite
 pnpm --filter backend test
 
-# Run mobile tests (63 tests)
+# Run the full Flutter test suite
 cd apps/mobile && flutter test
 ```
 
