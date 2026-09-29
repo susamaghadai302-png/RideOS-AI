@@ -119,6 +119,7 @@ export class DevicesService {
   }
 
   async getLatestTelemetry(deviceId: string) {
+    const device = await this.getDeviceStatus(deviceId);
     return {
       deviceId: device.id,
       timestamp: new Date().toISOString(),
