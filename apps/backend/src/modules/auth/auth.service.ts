@@ -8,6 +8,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { OAuthVerifierService } from './services/oauth-verifier.service';
 import { SmsOtpService } from './services/sms-otp.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly oauthVerifier: OAuthVerifierService,
     private readonly smsOtpService: SmsOtpService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -78,89 +80,73 @@ export class AuthService {
   }
 
   async loginWithGoogleOAuth(payload: { idToken?: string; accessToken?: string; email?: string; fullName?: string }) {
-    let email: string;
-    let fullName: string;
-
-    if (payload.idToken && payload.idToken.trim().length > 0) {
-      // Cryptographically verify Google ID token with Google JWKS
-      const verified = await this.oauthVerifier.verifyGoogleIdToken(payload.idToken);
-      email = verified.email;
-      fullName = payload.fullName?.trim() || verified.fullName || 'Unknown';
-    } else if (payload.email && payload.email.trim().length > 0) {
-      // Development / Test fallback compatibility when idToken is absent
-      this.logger.warn(`[OAuth Security] Google login without idToken for ${payload.email}. (Recommended: pass valid idToken from mobile SDK)`);
-      email = payload.email.trim().toLowerCase();
-      fullName = payload.fullName?.trim() || 'Unknown';
-    } else {
-      throw new BadRequestException('Google ID token or account email is required');
+    if (!payload.idToken?.trim()) {
+      throw new BadRequestException('Google ID token is required');
     }
+
+    const verified = await this.oauthVerifier.verifyGoogleIdToken(payload.idToken);
+    const email = verified.email.trim().toLowerCase();
+    const fullName = payload.fullName?.trim() || verified.fullName || 'Unknown';
 
     let rider = await this.riderModel.findOne({ email });
     if (!rider) {
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(`oauth_google_${Date.now()}_${Math.random()}`, salt);
-      rider = new this.riderModel({
-        email,
-        passwordHash,
-        fullName,
-      });
+      rider = new this.riderModel({ email, passwordHash, fullName });
       await rider.save();
     }
 
     const tokens = this.generateTokens(rider._id.toString(), rider.email);
-    return {
-      tokens,
-      rider: {
-        id: rider._id.toString(),
-        email: rider.email,
-        fullName: rider.fullName,
-        phone: rider.phone,
-      },
-    };
+    return { tokens, rider: { id: rider._id.toString(), email: rider.email, fullName: rider.fullName, phone: rider.phone } };
   }
-
   async loginWithAppleOAuth(payload: { identityToken?: string; authorizationCode?: string; email?: string; fullName?: string }) {
-    let email: string;
-    let fullName: string;
-
-    if (payload.identityToken && payload.identityToken.trim().length > 0) {
-      // Cryptographically verify Apple Identity token with Apple JWKS
-      const verified = await this.oauthVerifier.verifyAppleIdentityToken(payload.identityToken);
-      email = payload.email?.trim().toLowerCase() || verified.email;
-      fullName = payload.fullName?.trim() || 'Unknown';
-    } else if (payload.email && payload.email.trim().length > 0) {
-      // Development / Test fallback compatibility
-      this.logger.warn(`[OAuth Security] Apple login without identityToken for ${payload.email}. (Recommended: pass identityToken from Apple Sign-In SDK)`);
-      email = payload.email.trim().toLowerCase();
-      fullName = payload.fullName?.trim() || 'Unknown';
-    } else {
-      throw new BadRequestException('Apple identity token or email is required for authentication');
+    if (!payload.identityToken?.trim()) {
+      throw new BadRequestException('Apple identity token is required');
     }
+
+    const verified = await this.oauthVerifier.verifyAppleIdentityToken(payload.identityToken);
+    const email = (payload.email?.trim().toLowerCase() || verified.email).trim().toLowerCase();
+    const fullName = payload.fullName?.trim() || verified.fullName || 'Unknown';
 
     let rider = await this.riderModel.findOne({ email });
     if (!rider) {
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(`oauth_apple_${Date.now()}_${Math.random()}`, salt);
-      rider = new this.riderModel({
-        email,
-        passwordHash,
-        fullName,
-      });
+      rider = new this.riderModel({ email, passwordHash, fullName });
       await rider.save();
     }
 
     const tokens = this.generateTokens(rider._id.toString(), rider.email);
-    return {
-      tokens,
-      rider: {
-        id: rider._id.toString(),
-        email: rider.email,
-        fullName: rider.fullName,
-        phone: rider.phone,
-      },
-    };
+    return { tokens, rider: { id: rider._id.toString(), email: rider.email, fullName: rider.fullName, phone: rider.phone } };
   }
+  async refresh(refreshToken: string) {
+    if (!refreshToken?.trim()) {
+      throw new BadRequestException('Refresh token is required');
+    }
 
+    const refreshSecret =
+      this.configService.get<string>('JWT_REFRESH_SECRET') ||
+      this.configService.get<string>('JWT_SECRET') ||
+      'super_secret_rideos_jwt_key_2026';
+
+    try {
+      const payload = this.jwtService.verify<{ sub: string; email: string; type?: string }>(
+        refreshToken.trim(),
+        { secret: refreshSecret },
+      );
+      if (payload.type !== 'refresh' || !payload.sub || !payload.email) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+      const rider = await this.riderModel.findOne({ _id: payload.sub });
+      if (!rider) {
+        throw new UnauthorizedException('Rider account no longer exists');
+      }
+      return this.generateTokens(rider._id.toString(), rider.email);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+  }
   async requestOtp(phone: string) {
     return this.smsOtpService.sendOtp(phone);
   }
@@ -207,14 +193,19 @@ export class AuthService {
   }
 
   private generateTokens(userId: string, email: string) {
-    const payload = { sub: userId, email };
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '30d' });
+    const accessSecret = this.configService.get<string>('JWT_SECRET') || 'super_secret_rideos_jwt_key_2026';
+    const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || accessSecret;
+    const accessExpiration = this.configService.get<string>('JWT_EXPIRATION') || '7d';
+    const refreshExpiration = this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '30d';
 
-    return {
-      accessToken,
-      refreshToken,
-      expiresIn: 7 * 24 * 60 * 60,
-    };
-  }
-}
+    const accessToken = this.jwtService.sign(
+      { sub: userId, email, type: 'access' },
+      { secret: accessSecret, expiresIn: accessExpiration },
+    );
+    const refreshToken = this.jwtService.sign(
+      { sub: userId, email, type: 'refresh' },
+      { secret: refreshSecret, expiresIn: refreshExpiration },
+    );
+
+    return { accessToken, refreshToken, expiresIn: 7 * 24 * 60 * 60 };
+  }}
