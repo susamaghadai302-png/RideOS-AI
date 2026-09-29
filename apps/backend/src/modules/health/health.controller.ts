@@ -88,10 +88,13 @@ export class HealthController {
   @ApiOperation({ summary: 'System Telemetry Metrics' })
   getMetrics() {
     return {
-      activeConnections: 1,
-      apiLatencyMsP95: 12.4,
-      requestsPerMinute: 340,
-      cpuUsagePct: 2.1,
+      status: 'UNINSTRUMENTED',
+      message: 'Request, latency, and CPU metrics are not instrumented in this service.',
+      timestamp: new Date().toISOString(),
+      activeConnections: null,
+      apiLatencyMsP95: null,
+      requestsPerMinute: null,
+      cpuUsagePct: null,
     };
   }
 }
