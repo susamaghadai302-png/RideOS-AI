@@ -3,6 +3,7 @@ import 'package:rideos_mobile/features/maps/core/map_provider.dart';
 import 'package:rideos_mobile/features/maps/core/google_maps_provider.dart';
 import 'package:rideos_mobile/features/maps/core/local_graph_map_provider.dart';
 import 'package:rideos_mobile/features/maps/core/map_provider_factory.dart';
+import 'package:rideos_mobile/core/config/google_maps_config.dart';
 
 void main() {
   group('GoogleMapsProvider & MapProviderFactory Production Tests', () {
