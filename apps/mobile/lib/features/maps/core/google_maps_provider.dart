@@ -2,12 +2,10 @@ import 'package:flutter/material.dart' ;
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:latlong2/latlong.dart' as ll;
 import 'map_provider.dart';
-import 'local_graph_map_provider.dart';
 import 'services/google_maps_platform_service.dart';
 import '../../../../core/config/google_maps_config.dart';
 
 class GoogleMapsProvider implements MapProvider {
-  final LocalGraphMapProvider _fallbackProvider = LocalGraphMapProvider();
   gmaps.GoogleMapController? mapController;
 
   static const String _darkThemeJson = '''

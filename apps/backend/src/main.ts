@@ -24,15 +24,7 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin) return callback(null, true);
-      const allowedOrigins = [
-        'http://localhost:8080',
-        'http://127.0.0.1:8080',
-        'http://localhost:3000',
-        'https://rideos.ai',
-        'https://app.rideos.ai',
-        'https://rideos-ai.web.app',
-        'https://rideos-ai.firebaseapp.com',
-      ];
+
       const isDevelopment = process.env.NODE_ENV !== 'production';
       const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? '')
         .split(',')

@@ -34,14 +34,14 @@ void main() {
       'GoogleMapsProvider does not fabricate routes or places when the live provider is unavailable',
       () async {
         if (GoogleMapsConfig.hasValidApiKey) return;
-        await expect(
+        await expectLater(
           googleProvider.calculateRoute(
             origin: const LatLng(12.9716, 77.5946),
             destination: const LatLng(12.9352, 77.6245),
           ),
           throwsStateError,
         );
-        await expect(
+        await expectLater(
           googleProvider.searchPlaces('Fuel'),
           throwsStateError,
         );
