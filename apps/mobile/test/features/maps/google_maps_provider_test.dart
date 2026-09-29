@@ -29,19 +29,22 @@ void main() {
       expect(factory.activeProvider is LocalGraphMapProvider, isTrue);
     });
 
-    test('GoogleMapsProvider calculates deterministic route and searches places via fallback engine', () async {
-      const origin = LatLng(12.9716, 77.5946);
-      const destination = LatLng(12.9352, 77.6245);
-
-      final route = await googleProvider.calculateRoute(origin: origin, destination: destination);
-
-      expect(route.waypoints.isNotEmpty, isTrue);
-      expect(route.totalDistanceKm, greaterThan(0));
-      expect(route.segments.isNotEmpty, isTrue);
-
-      final places = await googleProvider.searchPlaces('Fuel');
-      expect(places.isNotEmpty, isTrue);
-      expect(places.first.category, equals('Fuel & Service'));
-    });
+    test(
+      'GoogleMapsProvider does not fabricate routes or places when the live provider is unavailable',
+      () async {
+        if (GoogleMapsConfig.hasValidApiKey) return;
+        await expect(
+          googleProvider.calculateRoute(
+            origin: const LatLng(12.9716, 77.5946),
+            destination: const LatLng(12.9352, 77.6245),
+          ),
+          throwsStateError,
+        );
+        await expect(
+          googleProvider.searchPlaces('Fuel'),
+          throwsStateError,
+        );
+      },
+    );
   });
 }
