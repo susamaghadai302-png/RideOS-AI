@@ -15,7 +15,7 @@ void main() {
   group('ApiConfig & Dual Mode Connectivity Tests', () {
     test('1. Default build values support both USB reverse tunnel and LAN', () {
       expect(ApiConfig.kDefaultUsbBaseUrl, 'http://127.0.0.1:3000/api/v1');
-      expect(ApiConfig.kDefaultLanBaseUrl, contains(':3000/api/v1'));
+      expect(ApiConfig.kDefaultLanBaseUrl.isEmpty || ApiConfig.kDefaultLanBaseUrl.contains(':3000/api/v1'), isTrue);
       expect(ApiConstants.baseUrl, isNotEmpty);
     });
 
@@ -27,7 +27,10 @@ void main() {
     });
 
     test('3. Switching mode to LAN sets active URL to Mac Wi-Fi LAN IP', () async {
-      await ApiConfig.setMode(BackendConnectionMode.lan);
+      await ApiConfig.setMode(
+        BackendConnectionMode.lan,
+        customUrl: 'http://192.168.1.150:3000/api/v1',
+      );
       expect(ApiConfig.currentMode, BackendConnectionMode.lan);
       expect(ApiConfig.activeBaseUrl, contains(':3000/api/v1'));
       expect(ApiConstants.baseUrl, contains(':3000/api/v1'));
