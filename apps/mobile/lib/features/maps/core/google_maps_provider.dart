@@ -98,12 +98,13 @@ class GoogleMapsProvider implements MapProvider {
             : null,
       );
     } catch (_) {
-      // Safe fallback if Google Maps runtime fails to initialize
-      return _fallbackProvider.buildMapView(
-        options: options,
-        markers: markers,
-        polylinePoints: polylinePoints,
-        onTap: onTap,
+      return Container(
+        color: Colors.black,
+        alignment: Alignment.center,
+        child: const Text(
+          'Google Maps is unavailable.',
+          style: TextStyle(color: Colors.white70),
+        ),
       );
     }
   }
@@ -152,12 +153,7 @@ class GoogleMapsProvider implements MapProvider {
       } catch (_) {}
     }
 
-    // Fallback to local graph solver
-    return _fallbackProvider.calculateRoute(
-      origin: origin,
-      destination: destination,
-      waypoints: waypoints,
-    );
+    throw StateError('Google Maps routing is unavailable. Configure the Maps API key and verify the Directions provider.');
   }
 
   @override
@@ -179,6 +175,6 @@ class GoogleMapsProvider implements MapProvider {
       } catch (_) {}
     }
 
-    return _fallbackProvider.searchPlaces(query);
+    throw StateError('Google Maps place search is unavailable. Configure the Maps API key and verify the Places provider.');
   }
 }
