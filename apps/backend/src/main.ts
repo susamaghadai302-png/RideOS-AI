@@ -33,14 +33,26 @@ async function bootstrap() {
         'https://rideos-ai.web.app',
         'https://rideos-ai.firebaseapp.com',
       ];
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.startsWith('http://localhost:') ||
-        origin.startsWith('http://127.0.0.1:')
-      ) {
+      const isDevelopment = process.env.NODE_ENV !== 'production';
+      const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+      const defaultOrigins = [
+        'https://rideos.ai',
+        'https://app.rideos.ai',
+        'https://rideos-ai.web.app',
+        'https://rideos-ai.firebaseapp.com',
+      ];
+      const allowedOrigins = configuredOrigins.length > 0 ? configuredOrigins : defaultOrigins;
+      const localOriginAllowed =
+        isDevelopment &&
+        (origin.startsWith('http://localhost:') ||
+          origin.startsWith('http://127.0.0.1:'));
+      if (allowedOrigins.includes(origin) || localOriginAllowed) {
         return callback(null, true);
       }
-      return callback(null, true);
+      return callback(new Error('CORS origin not allowed'), false);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type,Accept,Authorization,X-Client-Platform,X-Client-Version',
