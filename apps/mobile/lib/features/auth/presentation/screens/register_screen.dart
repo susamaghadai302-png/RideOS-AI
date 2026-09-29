@@ -38,10 +38,12 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _confirmPasswordController = TextEditingController();
 
   // Optional vehicle section
-  final _bikeMakeController = TextEditingController(text: 'Yamaha');
-  final _bikeModelController = TextEditingController(text: 'YZF-R1M');
-  final _bikeYearController = TextEditingController(text: '2024');
-  final _engineCCController = TextEditingController(text: '998');
+  // Optional vehicle fields start empty so registration never invents a
+  // motorcycle identity or specification for the rider.
+  final _bikeMakeController = TextEditingController();
+  final _bikeModelController = TextEditingController();
+  final _bikeYearController = TextEditingController();
+  final _engineCCController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
 
