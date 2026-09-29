@@ -69,10 +69,10 @@ RideOS-AI/
 │   │   ├── lib/
 │   │   │   ├── core/            # Bluetooth, Vehicle Protocols, Health, Settings, Notifications
 │   │   │   └── features/        # Home, Garage, Navigation, Diagnostics, Maintenance, Trips
-│   │   └── test/                # 63 Unit, Golden & Integration Tests
+│   │   └── test/                # Full mobile unit, widget & integration suite
 │   └── backend/                 # NestJS API Backend Server
 │       ├── src/                 # Auth, Riders, Vehicle Health, Trips, Maps, Telematics
-│       └── test/                # 39 Unit & Integration Tests
+│       └── test/                # Backend unit & integration suite
 ├── docs/                        # Subsystem Architecture & Compliance Documentation
 └── docker-compose.prod.yml      # Production Multi-Service Container Orchestration
 ```
