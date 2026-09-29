@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
@@ -71,7 +71,14 @@ export class SmsOtpService {
         this.logger.error(`[Twilio SMS] Request exception: ${err.message}`);
       }
     } else {
-      this.logger.log(`[SmsOtpService] [DEV/LOCAL AUTH] Dispatched SMS OTP passkey: ${code} to ${normalizedPhone} (Ref: ${otpRef})`);
+      const environment = this.configService.get<string>('NODE_ENV') || process.env.NODE_ENV || 'development';
+      if (environment === 'production') {
+        this.otpStore.delete(normalizedPhone);
+        throw new ServiceUnavailableException('SMS delivery is not configured for production.');
+      }
+      this.logger.log(
+        `[SmsOtpService] [DEV/LOCAL AUTH] OTP generated for ${normalizedPhone} (Ref: ${otpRef})`,
+      );
     }
 
     return {
