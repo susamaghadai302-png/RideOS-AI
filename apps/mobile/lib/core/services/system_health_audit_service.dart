@@ -42,6 +42,7 @@ class SystemHealthAuditService {
     bool? isBleAvailable,
     bool? isGpsEnabled,
     double? availableStorageMb,
+    bool? isImuVerified,
   }) {
     final checks = <AuditCheckResult>[];
 
@@ -130,11 +131,25 @@ class SystemHealthAuditService {
     }
 
     // 5. Crash Detection & SOS Dispatch Readiness Check
-    checks.add(const AuditCheckResult(
-      checkName: 'Crash Detection & IMU Sensor Pipeline',
-      status: AuditCheckStatus.warning,
-      detail: 'Runtime IMU/crash pipeline was not measured by this audit.',
-    ));
+    if (isImuVerified == true) {
+      checks.add(const AuditCheckResult(
+        checkName: 'Crash Detection & IMU Sensor Pipeline',
+        status: AuditCheckStatus.pass,
+        detail: 'IMU verification reported enabled by the caller.',
+      ));
+    } else if (isImuVerified == false) {
+      checks.add(const AuditCheckResult(
+        checkName: 'Crash Detection & IMU Sensor Pipeline',
+        status: AuditCheckStatus.fail,
+        detail: 'IMU verification reported disabled by the caller.',
+      ));
+    } else {
+      checks.add(const AuditCheckResult(
+        checkName: 'Crash Detection & IMU Sensor Pipeline',
+        status: AuditCheckStatus.warning,
+        detail: 'Runtime IMU/crash pipeline was not measured by this audit.',
+      ));
+    }
 
     final isAllPassed = checks.every((c) => c.status == AuditCheckStatus.pass);
 

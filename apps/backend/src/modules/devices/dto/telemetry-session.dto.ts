@@ -9,13 +9,6 @@ export class StartTelemetrySessionDto {
   @IsOptional()
   vehicleProfileId?: string;
 
-  @IsString()
-  @IsOptional()
-  sessionNotes?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  isSimulated?: boolean = false;
 }
 
 export class StopTelemetrySessionDto {

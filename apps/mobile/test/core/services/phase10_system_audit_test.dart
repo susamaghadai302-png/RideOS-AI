@@ -15,6 +15,7 @@ void main() {
         isBleAvailable: true,
         isGpsEnabled: true,
         availableStorageMb: 2048.0,
+        isImuVerified: true,
       );
 
       expect(report.isProductionReady, isTrue);
@@ -33,15 +34,16 @@ void main() {
       expect(report.checkResults.any((c) => c.checkName.contains('GPS') && c.status == AuditCheckStatus.fail), isTrue);
     });
 
-    test('Permits production readiness with offline persistence warning', () {
+    test('Fails production readiness when network is offline', () {
       final report = auditService.performProductionAudit(
         isNetworkOnline: false,
         isBleAvailable: true,
         isGpsEnabled: true,
+        isImuVerified: true,
       );
 
-      expect(report.isProductionReady, isTrue); // Warning does not block offline app launch
-      expect(report.checkResults.any((c) => c.status == AuditCheckStatus.warning), isTrue);
+      expect(report.isProductionReady, isFalse);
+      expect(report.checkResults.any((c) => c.status == AuditCheckStatus.fail), isTrue);
     });
   });
 }

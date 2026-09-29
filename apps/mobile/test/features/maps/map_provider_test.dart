@@ -15,23 +15,21 @@ void main() {
       expect(mapProvider.providerName, contains('RideOS Local'));
     });
 
-    test('Calculates deterministic offline route between two coordinates', () async {
+    test('Calculates deterministic offline route throws without real graph', () async {
       const origin = LatLng(12.9716, 77.5946);
       const destination = LatLng(12.9352, 77.6245);
 
-      final route = await mapProvider.calculateRoute(origin: origin, destination: destination);
-
-      expect(route.waypoints.length, greaterThanOrEqualTo(2));
-      expect(route.totalDistanceKm, greaterThan(0));
-      expect(route.estimatedDurationMinutes, greaterThan(0));
-      expect(route.segments.isNotEmpty, isTrue);
+      await expectLater(
+        mapProvider.calculateRoute(origin: origin, destination: destination),
+        throwsStateError,
+      );
     });
 
-    test('Searches local points of interest without external network API', () async {
-      final results = await mapProvider.searchPlaces('fuel');
-
-      expect(results.isNotEmpty, isTrue);
-      expect(results.first.category, contains('Fuel'));
+    test('Searches local points of interest throws without external network API', () async {
+      await expectLater(
+        mapProvider.searchPlaces('fuel'),
+        throwsStateError,
+      );
     });
   });
 }

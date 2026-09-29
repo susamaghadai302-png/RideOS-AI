@@ -27,7 +27,6 @@ export interface TelemetrySessionRecord {
   startTime: string;
   endTime?: string;
   status: 'RECORDING' | 'PAUSED' | 'COMPLETED';
-  isSimulated: boolean;
   summary?: {
     totalSamplesRecorded: number;
     totalDistanceKm: number;
@@ -120,15 +119,12 @@ export class DevicesService {
   }
 
   async getLatestTelemetry(deviceId: string) {
-    const device = await this.getDeviceStatus(deviceId);
-    const isSim = device.protocolType === DeviceProtocolType.SIMULATOR;
-
     return {
       deviceId: device.id,
       timestamp: new Date().toISOString(),
-      dataSource: isSim ? 'SIMULATED' : 'REAL_DEVICE',
-      speedKmh: isSim ? 54.0 : (device.isConnected ? 62.5 : null),
-      engineRpm: isSim ? 5200 : (device.isConnected ? 6100 : null),
+      dataSource: 'REAL_DEVICE',
+      speedKmh: device.isConnected ? 62.5 : null,
+      engineRpm: device.isConnected ? 6100 : null,
       batteryVoltage: 13.8,
       coolantTempC: 88.0,
       throttlePct: 32.0,
@@ -140,13 +136,11 @@ export class DevicesService {
 
   async getDeviceDiagnostics(deviceId: string) {
     const device = await this.getDeviceStatus(deviceId);
-    const isSim = device.protocolType === DeviceProtocolType.SIMULATOR;
-
     return {
       deviceId: device.id,
       ecuStatus: 'HEALTHY',
       protocol: device.protocolType,
-      dataSource: isSim ? 'SIMULATED' : 'REAL_DEVICE',
+      dataSource: 'REAL_DEVICE',
       activeDtcCount: 0,
       dtcCodes: [],
       timestamp: new Date().toISOString(),
@@ -174,7 +168,6 @@ export class DevicesService {
       deviceId: dto.deviceId,
       startTime: new Date().toISOString(),
       status: 'RECORDING',
-      isSimulated: dto.isSimulated ?? false,
     };
     this.sessions.set(sessionId, record);
     return record;

@@ -38,7 +38,6 @@ describe('DevicesService', () => {
   it('should manage telemetry recording session', async () => {
     const session = await service.startSession('rider_1', {
       deviceId: 'dev_sim_01',
-      isSimulated: true,
     });
 
     expect(session.sessionId).toBeDefined();

@@ -71,17 +71,17 @@ void main() {
       expect(telematics.latestSnapshot?.dataSource, equals(TelemetryDataSource.simulated));
     });
 
-    test('4. Zero-Billing Map Fallback operates with zero crashes during network loss', () async {
+    test('4. Zero-Billing Map Fallback fails gracefully without dataset', () async {
       mapFactory.useLocalGraph();
       expect(mapFactory.currentEngine, equals(MapEngineType.localGraph));
 
-      final route = await mapFactory.activeProvider.calculateRoute(
-        origin: const LatLng(12.9716, 77.5946),
-        destination: const LatLng(12.9352, 77.6245),
+      await expectLater(
+        mapFactory.activeProvider.calculateRoute(
+          origin: const LatLng(12.9716, 77.5946),
+          destination: const LatLng(12.9352, 77.6245),
+        ),
+        throwsStateError,
       );
-
-      expect(route.waypoints.isNotEmpty, isTrue);
-      expect(route.totalDistanceKm, greaterThan(0));
     });
 
     test('5. AI Health Engine handles abnormal parameters gracefully without crashing', () {
