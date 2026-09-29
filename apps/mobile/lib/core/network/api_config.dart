@@ -16,7 +16,7 @@ class ApiConfig {
 
   // Default build-time values
   static const String kDefaultUsbBaseUrl = 'http://127.0.0.1:3000/api/v1';
-  static const String kDefaultLanBaseUrl = 'http://10.131.15.222:3000/api/v1';
+  static const String kDefaultLanBaseUrl = String.fromEnvironment('LAN_API_BASE_URL', defaultValue: '');
   static const String kDefaultWebBaseUrl = 'http://localhost:3000/api/v1';
 
   static BackendConnectionMode _currentMode = BackendConnectionMode.auto;
@@ -81,7 +81,9 @@ class ApiConfig {
         _activeBaseUrl = kDefaultUsbBaseUrl;
         break;
       case BackendConnectionMode.lan:
-        _activeBaseUrl = kDefaultLanBaseUrl;
+        _activeBaseUrl = kDefaultLanBaseUrl.isNotEmpty
+            ? kDefaultLanBaseUrl
+            : (_customBaseUrl.isNotEmpty ? _customBaseUrl : kDefaultUsbBaseUrl);
         break;
       case BackendConnectionMode.custom:
         _activeBaseUrl = _customBaseUrl.isNotEmpty ? _customBaseUrl : kDefaultLanBaseUrl;
@@ -174,7 +176,7 @@ class ApiConfig {
     // Priority C: Custom user endpoint
     final candidates = <String>[];
     candidates.add(kDefaultUsbBaseUrl);
-    if (!candidates.contains(kDefaultLanBaseUrl)) {
+    if (kDefaultLanBaseUrl.isNotEmpty && !candidates.contains(kDefaultLanBaseUrl)) {
       candidates.add(kDefaultLanBaseUrl);
     }
     if (_customBaseUrl.isNotEmpty && !candidates.contains(_customBaseUrl)) {
