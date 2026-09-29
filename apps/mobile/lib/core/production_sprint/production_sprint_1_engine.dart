@@ -46,31 +46,15 @@ class ProductionSprint1Engine {
   Stream<ProductionTelemetryStreamData> get telemetryStream => _telemetryStreamController.stream;
 
   ProductionRiderSessionModel getCurrentRiderSession() {
-    developer.log('Fetching active production rider session...', name: 'RideOS.Sprint1');
-    return ProductionRiderSessionModel(
-      uid: 'user_nexus_99812',
-      email: '',
-      fullName: 'Rider',
-      selectedVehicleId: 'veh_bmw_s1000rr_2026',
-      isBiometricAuthenticated: true,
-      sessionEstablishedAt: DateTime.now(),
-    );
+    throw StateError('Live rider session is not available from this engine.');
   }
 
   void startTelemetryStreaming() {
-    developer.log('Starting live production telemetry streaming...', name: 'RideOS.Sprint1');
-    _telemetryStreamController.add(
-      const ProductionTelemetryStreamData(
-        currentSpeedKmh: 68.5,
-        currentRpm: 7200.0,
-        leanAngleDegrees: 34.2,
-        batteryVoltage: 13.8,
-        frontTyrePressurePsi: 36.0,
-        rearTyrePressurePsi: 42.0,
-      ),
+    developer.log(
+      'Live telemetry source not connected; no synthetic telemetry will be emitted.',
+      name: 'RideOS.Sprint1',
     );
   }
-
   void dispose() {
     _telemetryStreamController.close();
   }
