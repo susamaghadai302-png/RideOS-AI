@@ -35,7 +35,8 @@ describe('HealthController', () => {
 
   it('should return system metrics', () => {
     const metrics = controller.getMetrics();
-    expect(metrics.activeConnections).toBeDefined();
-    expect(metrics.requestsPerMinute).toBeGreaterThan(0);
+    expect(metrics.status).toBe('UNINSTRUMENTED');
+    expect(metrics.requestsPerMinute).toBeNull();
+    expect(metrics.apiLatencyMsP95).toBeNull();
   });
 });
