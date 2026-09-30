@@ -46,9 +46,10 @@ class GoogleMapsConfig {
   static bool get hasValidApiKey => apiKey.isNotEmpty && apiKey != 'YOUR_GOOGLE_MAPS_API_KEY_HERE';
 
   // Official Google Maps Platform HTTP Endpoints
-  static const String placesAutocompleteUrl = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
-  static const String placeDetailsUrl = 'https://maps.googleapis.com/maps/api/place/details/json';
-  static const String placesNearbySearchUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
-  static const String directionsUrl = 'https://maps.googleapis.com/maps/api/directions/json';
+  static const String placesAutocompleteUrl = 'https://places.googleapis.com/v1/places:autocomplete';
+  static const String placesTextSearchUrl = 'https://places.googleapis.com/v1/places:searchText';
+  static const String placeDetailsUrlBase = 'https://places.googleapis.com/v1/places/';
+  static const String placesNearbySearchUrl = 'https://places.googleapis.com/v1/places:searchNearby';
+  static const String directionsUrl = 'https://routes.googleapis.com/directions/v2:computeRoutes';
   static const String geocodeUrl = 'https://maps.googleapis.com/maps/api/geocode/json';
 }

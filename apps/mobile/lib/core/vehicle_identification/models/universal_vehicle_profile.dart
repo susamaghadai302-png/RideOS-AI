@@ -138,7 +138,7 @@ class UniversalVehicleProfile {
   final String manufacturer;
   final String model;
   final String generation;
-  final int year;
+  final int? year;
   final String variant;
   final PropulsionType propulsionType;
   final String engineOrMotorCode;
@@ -167,7 +167,7 @@ class UniversalVehicleProfile {
     required this.manufacturer,
     required this.model,
     required this.generation,
-    required this.year,
+    this.year,
     required this.variant,
     required this.propulsionType,
     required this.engineOrMotorCode,
@@ -230,7 +230,7 @@ class UniversalVehicleProfile {
         manufacturer: json['manufacturer'] ?? 'Unknown',
         model: json['model'] ?? 'Unknown Model',
         generation: json['generation'] ?? 'Gen 1',
-        year: json['year'] ?? DateTime.now().year,
+        year: json['year'],
         variant: json['variant'] ?? 'Standard',
         propulsionType: PropulsionType.values.firstWhere(
           (e) => e.name == json['propulsionType'],
@@ -272,7 +272,7 @@ class UniversalVehicleProfile {
           (e) => e.name == json['identificationSource'],
           orElse: () => IdentificationSource.manualCatalogSelection,
         ),
-        isVerified: json['isVerified'] ?? true,
+        isVerified: json['isVerified'] ?? false,
         identifiedAt: json['identifiedAt'] != null ? DateTime.parse(json['identifiedAt']) : DateTime.now(),
       );
 }

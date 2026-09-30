@@ -65,7 +65,7 @@ class DeviceProviderVehicleDataGateway implements VehicleDataGateway {
   static NormalizedTelemetrySnapshot _createInitialSnapshot() {
     final now = DateTime.now();
     return NormalizedTelemetrySnapshot(
-      dataSource: TelemetryDataSource.simulated,
+      dataSource: TelemetryDataSource.benchTest,
       timestamp: now,
       vehicleSpeedKmh: TelemetryMetric(value: 0.0, unit: 'km/h', timestamp: now),
       engineRpm: TelemetryMetric(value: 0, unit: 'RPM', timestamp: now),

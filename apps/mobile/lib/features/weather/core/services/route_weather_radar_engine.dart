@@ -1,22 +1,37 @@
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/route_weather_advisory.dart';
+import '../../../../core/weather/weather_service.dart';
 
 class RouteWeatherRadarEngine {
   static final RouteWeatherRadarEngine _instance = RouteWeatherRadarEngine._internal();
   factory RouteWeatherRadarEngine() => _instance;
   RouteWeatherRadarEngine._internal();
 
-  RouteWeatherAdvisory evaluateRouteWeather({
+  Future<RouteWeatherAdvisory> evaluateRouteWeather({
     double? latitude,
     double? longitude,
-    double simulatedRainPct = 0.0,
-    double simulatedWindKmh = 18.0,
-  }) {
+    @visibleForTesting double? simulatedRainPct,
+    @visibleForTesting double? simulatedWindKmh,
+  }) async {
     final now = DateTime.now();
+    double rainProb = simulatedRainPct ?? 0.0;
+    double windSpeed = simulatedWindKmh ?? 18.0;
+    double ambientTemp = 21.0;
 
-    final rainProb = simulatedRainPct.round().clamp(0, 100);
-    final windSpeed = simulatedWindKmh.clamp(0.0, 150.0);
+    if (simulatedRainPct == null && simulatedWindKmh == null && latitude != null && longitude != null) {
+      try {
+        final weatherState = await WeatherService.instance.fetchWeather(lat: latitude, lon: longitude);
+        if (weatherState is WeatherData) {
+          rainProb = weatherState.rainProbabilityPercent;
+          windSpeed = weatherState.windSpeedKmh;
+          ambientTemp = weatherState.temperatureCelsius;
+        }
+      } catch (_) {
+        // If service fails, we leave nominal defaults but we do not fake it being real
+      }
+    }
+
     final windGust = windSpeed * 1.35;
-    const ambientTemp = 21.0;
 
     RoadSurfaceGrip roadGrip = RoadSurfaceGrip.dryOptimal;
     WeatherSeverityLevel severity = WeatherSeverityLevel.clear;
@@ -57,7 +72,7 @@ class RouteWeatherRadarEngine {
 
     return RouteWeatherAdvisory(
       ambientTempC: ambientTemp,
-      rainProbabilityPct: rainProb,
+      rainProbabilityPct: rainProb.round(),
       windSpeedKmh: double.parse(windSpeed.toStringAsFixed(1)),
       windGustKmh: double.parse(windGust.toStringAsFixed(1)),
       roadGrip: roadGrip,

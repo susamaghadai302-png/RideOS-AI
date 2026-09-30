@@ -1,10 +1,8 @@
 import 'map_provider.dart';
 import 'google_maps_provider.dart';
-import 'local_graph_map_provider.dart';
 
 enum MapEngineType {
   googleMaps,
-  localGraph,
 }
 
 class MapProviderFactory {
@@ -12,7 +10,6 @@ class MapProviderFactory {
   factory MapProviderFactory() => _instance;
 
   final GoogleMapsProvider _googleMapsProvider = GoogleMapsProvider();
-  final LocalGraphMapProvider _localGraphProvider = LocalGraphMapProvider();
 
   MapEngineType _currentEngine = MapEngineType.googleMaps;
 
@@ -21,12 +18,7 @@ class MapProviderFactory {
   MapEngineType get currentEngine => _currentEngine;
 
   MapProvider get activeProvider {
-    switch (_currentEngine) {
-      case MapEngineType.googleMaps:
-        return _googleMapsProvider;
-      case MapEngineType.localGraph:
-        return _localGraphProvider;
-    }
+    return _googleMapsProvider;
   }
 
   void setEngine(MapEngineType type) {
@@ -34,5 +26,4 @@ class MapProviderFactory {
   }
 
   void useGoogleMaps() => setEngine(MapEngineType.googleMaps);
-  void useLocalGraph() => setEngine(MapEngineType.localGraph);
 }

@@ -14,7 +14,6 @@ class NormalizedTelemetryMetric {
   final String diagnosticPidCode;
   final TelemetryFreshness freshness;
   final double qualityScore; // 0.0 to 1.0
-  final bool isSimulated;
   final String? diagnosticNote;
 
   const NormalizedTelemetryMetric({
@@ -27,7 +26,6 @@ class NormalizedTelemetryMetric {
     this.diagnosticPidCode = 'N/A',
     required this.freshness,
     this.qualityScore = 1.0,
-    this.isSimulated = false,
     this.diagnosticNote,
   });
 
@@ -105,7 +103,6 @@ class NormalizedTelemetryMetric {
       diagnosticPidCode: diagnosticPidCode,
       freshness: nextFreshness,
       qualityScore: nextFreshness == TelemetryFreshness.fresh ? qualityScore : 0.5,
-      isSimulated: isSimulated,
       diagnosticNote: diagnosticNote,
     );
   }
@@ -120,7 +117,6 @@ class NormalizedTelemetryMetric {
         'diagnosticPidCode': diagnosticPidCode,
         'freshness': freshness.name,
         'qualityScore': qualityScore,
-        'isSimulated': isSimulated,
         'diagnosticNote': diagnosticNote,
       };
 

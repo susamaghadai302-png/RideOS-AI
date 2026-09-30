@@ -27,19 +27,27 @@ describe('MapsService', () => {
     });
 
     it('should return matching results for "canyon" query', async () => {
-      await expect(service.searchPlaces('canyon')).rejects.toThrow('Search provider unavailable');
-    });
-
-    it('should return matching results for "fuel" query', async () => {
-      await expect(service.searchPlaces('fuel')).rejects.toThrow('Search provider unavailable');
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [{ place_id: '1', name: 'Canyon', display_name: 'Canyon, CA', type: 'village', lat: '37.0', lon: '-122.0' }]
+      });
+      const res = await service.searchPlaces('canyon');
+      expect(res.length).toBe(1);
+      expect(res[0].title).toBe('Canyon');
     });
 
     it('should return empty array for unmatched query', async () => {
-      await expect(service.searchPlaces('xxxxxxxxxxx_no_match_xxxx')).rejects.toThrow('Search provider unavailable');
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => []
+      });
+      const res = await service.searchPlaces('xxxxxxxxxxx_no_match_xxxx');
+      expect(res).toEqual([]);
     });
 
-    it('should perform case-insensitive search', async () => {
-      await expect(service.searchPlaces('stelvio')).rejects.toThrow('Search provider unavailable');
+    it('should throw when Nominatim fails', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network Error'));
+      await expect(service.searchPlaces('fuel')).rejects.toThrow('Search provider unavailable');
     });
   });
 

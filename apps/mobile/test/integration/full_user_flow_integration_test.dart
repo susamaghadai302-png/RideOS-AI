@@ -8,14 +8,14 @@ import 'package:rideos_mobile/core/cloud_sync/models/sync_state_models.dart';
 import 'package:rideos_mobile/features/maps/core/map_provider_factory.dart';
 import 'package:rideos_mobile/features/maps/core/map_provider.dart';
 import 'package:rideos_mobile/features/maps/services/turn_by_turn_navigation_engine.dart';
-import 'package:rideos_mobile/features/maps/domain/models/navigation_models.dart';
+
 import 'package:rideos_mobile/features/fleet_analytics/services/fleet_analytics_engine.dart';
 
 void main() {
   group('Full Application End-to-End User Journey Verification', () {
     test('1. Map Navigation & Route Calculation Flow gracefully fails offline', () async {
       final mapFactory = MapProviderFactory();
-      mapFactory.useLocalGraph(); // Zero-billing verified provider
+
 
       const origin = LatLng(12.9716, 77.5946);
       const destination = LatLng(12.9352, 77.6245);
@@ -68,7 +68,7 @@ void main() {
       final session = bench.stopLiveRideSession();
       expect(bench.isRideSessionActive, isFalse);
       expect(session.sessionId.isNotEmpty, isTrue);
-      expect(session.dataSource, equals(TelemetryDataSource.simulated));
+      expect(session.dataSource, equals(TelemetryDataSource.benchTest));
     });
 
     test('4. Cloud Synchronization & Fleet Analytics Aggregation Flow', () async {

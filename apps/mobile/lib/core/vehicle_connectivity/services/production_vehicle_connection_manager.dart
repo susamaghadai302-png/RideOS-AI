@@ -29,14 +29,12 @@ class ProductionVehicleConnectionManager {
     required String deviceName,
     required List<String> advertisedServices,
     required String macAddress,
-    bool isSimulated = false,
   }) async {
     _updateSession(ConnectionDiagnosticsSession(
       state: ConnectionLifecycleState.scanning,
       deviceName: deviceName,
       macAddress: macAddress,
       isWebSandbox: kIsWeb,
-      isSimulated: isSimulated,
     ));
 
     // Resolve capabilities
@@ -119,7 +117,6 @@ extension ConnectionDiagnosticsSessionCopyWith on ConnectionDiagnosticsSession {
     DateTime? lastPacketTimestamp,
     String? failureReason,
     bool? isWebSandbox,
-    bool? isSimulated,
   }) {
     return ConnectionDiagnosticsSession(
       state: state ?? this.state,
@@ -134,7 +131,6 @@ extension ConnectionDiagnosticsSessionCopyWith on ConnectionDiagnosticsSession {
       lastPacketTimestamp: lastPacketTimestamp ?? this.lastPacketTimestamp,
       failureReason: failureReason ?? this.failureReason,
       isWebSandbox: isWebSandbox ?? this.isWebSandbox,
-      isSimulated: isSimulated ?? this.isSimulated,
     );
   }
 }

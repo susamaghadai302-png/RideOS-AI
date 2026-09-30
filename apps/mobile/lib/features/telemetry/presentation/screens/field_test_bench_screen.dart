@@ -37,7 +37,7 @@ class _FieldTestBenchScreenState extends State<FieldTestBenchScreen> {
             initialData: _benchService.latestHealthSnapshot,
             builder: (context, snapshot) {
               final health = snapshot.data;
-              final source = health?.source ?? TelemetryDataSource.simulated;
+              final source = health?.source ?? TelemetryDataSource.benchTest;
               final isLiveHardware = source == TelemetryDataSource.realDevice;
 
               return Column(

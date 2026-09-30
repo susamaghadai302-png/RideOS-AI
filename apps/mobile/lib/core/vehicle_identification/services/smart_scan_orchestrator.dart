@@ -132,7 +132,10 @@ class SmartScanOrchestrator {
       await Future.delayed(const Duration(milliseconds: 30));
 
       // Step 3: Query VIN Mode $09 PID $02
-      final vin = knownVin ?? 'SIMULATOR_VIN_00000000';
+      if (knownVin == null) {
+        throw Exception('HARDWARE_NOT_CONNECTED: VIN could not be determined from hardware.');
+      }
+      final vin = knownVin;
       _emit(SmartScanProgressState(
         currentStep: SmartScanStep.queryingVinMode09,
         progressFraction: 0.55,
@@ -217,7 +220,7 @@ class SmartScanOrchestrator {
       manufacturer: 'Unknown Manufacturer',
       model: 'Generic OBDII Vehicle',
       generation: 'Standard',
-      year: DateTime.now().year,
+      year: null,
       variant: 'Standard',
       propulsionType: PropulsionType.internalCombustion,
       engineOrMotorCode: 'Generic',
@@ -291,7 +294,7 @@ class SmartScanOrchestrator {
       model3dAssetPath: model3dPath,
       identificationConfidence: UniversalIdentificationConfidence.manualSelection,
       identificationSource: IdentificationSource.manualCatalogSelection,
-      isVerified: true,
+      isVerified: false, // Manual selection is never ECU-verified
       identifiedAt: DateTime.now(),
     );
   }

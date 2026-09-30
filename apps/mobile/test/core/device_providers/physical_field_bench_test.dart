@@ -34,12 +34,12 @@ void main() {
         reconnectCount: 4,
         sensorFreshnessSeconds: 4.5,
         dataQualityScore: 25,
-        source: TelemetryDataSource.simulated,
+        source: TelemetryDataSource.benchTest,
         rssi: -89,
       );
 
       expect(degradedSnapshot.isHealthy, isFalse);
-      expect(degradedSnapshot.sourceBadgeText, equals('SIMULATED DATA'));
+      expect(degradedSnapshot.sourceBadgeText, equals('BENCH TEST'));
     });
 
     test('Records reconnect drop counter on transient Bluetooth signal drops', () {

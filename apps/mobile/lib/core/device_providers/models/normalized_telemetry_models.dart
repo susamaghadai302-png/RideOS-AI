@@ -2,8 +2,7 @@ import 'package:flutter/foundation.dart';
 
 enum TelemetryDataSource {
   realDevice,
-  benchTest,
-  simulated;
+  benchTest;
 
   String get label {
     switch (this) {
@@ -11,8 +10,6 @@ enum TelemetryDataSource {
         return 'REAL DEVICE';
       case TelemetryDataSource.benchTest:
         return 'BENCH TEST';
-      case TelemetryDataSource.simulated:
-        return 'SIMULATED DATA';
     }
   }
 }
@@ -20,8 +17,7 @@ enum TelemetryDataSource {
 enum MetricConfidence {
   validLive,
   stale,
-  unsupported,
-  simulated;
+  unsupported;
 }
 
 @immutable
@@ -36,8 +32,8 @@ class TelemetryMetric<T> {
     this.value,
     required this.unit,
     required this.timestamp,
-    this.source = TelemetryDataSource.simulated,
-    this.confidence = MetricConfidence.simulated,
+    this.source = TelemetryDataSource.realDevice,
+    this.confidence = MetricConfidence.unsupported,
   });
 
   bool get isAvailable => value != null && confidence != MetricConfidence.unsupported;

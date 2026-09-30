@@ -11,7 +11,7 @@ class SimulatorProvider implements DeviceProvider {
   String get displayName => 'RideOS Telemetry Simulator';
 
   @override
-  TelemetryDataSource get dataSourceClassification => TelemetryDataSource.simulated;
+  TelemetryDataSource get dataSourceClassification => TelemetryDataSource.benchTest;
 
   @override
   bool get canClearDtcCodes => true;
@@ -90,26 +90,26 @@ class SimulatorProvider implements DeviceProvider {
       final gear = ((speed / 20.0).floor() + 1).clamp(1, 6);
 
       final snapshot = NormalizedTelemetrySnapshot(
-        dataSource: TelemetryDataSource.simulated,
+        dataSource: TelemetryDataSource.benchTest,
         timestamp: now,
         rssi: -45,
         packetLossPercentage: 0.0,
-        vehicleSpeedKmh: TelemetryMetric(value: speed, unit: 'km/h', timestamp: now, confidence: MetricConfidence.simulated),
-        engineRpm: TelemetryMetric(value: rpm, unit: 'RPM', timestamp: now, confidence: MetricConfidence.simulated),
-        gearPosition: TelemetryMetric(value: gear, unit: 'Gear', timestamp: now, confidence: MetricConfidence.simulated),
-        throttlePositionPct: TelemetryMetric(value: throttle, unit: '%', timestamp: now, confidence: MetricConfidence.simulated),
-        engineLoadPct: TelemetryMetric(value: 48.0, unit: '%', timestamp: now, confidence: MetricConfidence.simulated),
-        coolantTempC: TelemetryMetric(value: 86.5, unit: ' degC', timestamp: now, confidence: MetricConfidence.simulated),
-        engineTempC: TelemetryMetric(value: 92.0, unit: ' degC', timestamp: now, confidence: MetricConfidence.simulated),
-        intakeTempC: TelemetryMetric(value: 28.0, unit: ' degC', timestamp: now, confidence: MetricConfidence.simulated),
-        batteryVoltage: TelemetryMetric(value: 13.8, unit: 'V', timestamp: now, confidence: MetricConfidence.simulated),
-        batteryCurrentAmps: TelemetryMetric(value: 2.1, unit: 'A', timestamp: now, confidence: MetricConfidence.simulated),
-        fuelLevelPct: TelemetryMetric(value: 78.0, unit: '%', timestamp: now, confidence: MetricConfidence.simulated),
-        leanAngleDeg: TelemetryMetric(value: lean, unit: ' deg', timestamp: now, confidence: MetricConfidence.simulated),
-        vibrationLevelG: TelemetryMetric(value: 0.28, unit: 'G', timestamp: now, confidence: MetricConfidence.simulated),
-        accelerationX: TelemetryMetric(value: 0.05, unit: 'G', timestamp: now, confidence: MetricConfidence.simulated),
-        accelerationY: TelemetryMetric(value: 0.12, unit: 'G', timestamp: now, confidence: MetricConfidence.simulated),
-        accelerationZ: TelemetryMetric(value: 0.98, unit: 'G', timestamp: now, confidence: MetricConfidence.simulated),
+        vehicleSpeedKmh: TelemetryMetric(value: speed, unit: 'km/h', timestamp: now, confidence: MetricConfidence.unsupported),
+        engineRpm: TelemetryMetric(value: rpm, unit: 'RPM', timestamp: now, confidence: MetricConfidence.unsupported),
+        gearPosition: TelemetryMetric(value: gear, unit: 'Gear', timestamp: now, confidence: MetricConfidence.unsupported),
+        throttlePositionPct: TelemetryMetric(value: throttle, unit: '%', timestamp: now, confidence: MetricConfidence.unsupported),
+        engineLoadPct: TelemetryMetric(value: 48.0, unit: '%', timestamp: now, confidence: MetricConfidence.unsupported),
+        coolantTempC: TelemetryMetric(value: 86.5, unit: ' degC', timestamp: now, confidence: MetricConfidence.unsupported),
+        engineTempC: TelemetryMetric(value: 92.0, unit: ' degC', timestamp: now, confidence: MetricConfidence.unsupported),
+        intakeTempC: TelemetryMetric(value: 28.0, unit: ' degC', timestamp: now, confidence: MetricConfidence.unsupported),
+        batteryVoltage: TelemetryMetric(value: 13.8, unit: 'V', timestamp: now, confidence: MetricConfidence.unsupported),
+        batteryCurrentAmps: TelemetryMetric(value: 2.1, unit: 'A', timestamp: now, confidence: MetricConfidence.unsupported),
+        fuelLevelPct: TelemetryMetric(value: 78.0, unit: '%', timestamp: now, confidence: MetricConfidence.unsupported),
+        leanAngleDeg: TelemetryMetric(value: lean, unit: ' deg', timestamp: now, confidence: MetricConfidence.unsupported),
+        vibrationLevelG: TelemetryMetric(value: 0.28, unit: 'G', timestamp: now, confidence: MetricConfidence.unsupported),
+        accelerationX: TelemetryMetric(value: 0.05, unit: 'G', timestamp: now, confidence: MetricConfidence.unsupported),
+        accelerationY: TelemetryMetric(value: 0.12, unit: 'G', timestamp: now, confidence: MetricConfidence.unsupported),
+        accelerationZ: TelemetryMetric(value: 0.98, unit: 'G', timestamp: now, confidence: MetricConfidence.unsupported),
         isIgnitionOn: true,
         ridingMode: 'DYNAMIC',
       );

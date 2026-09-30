@@ -32,7 +32,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 20.2667,
       'lng': 85.8436,
-      'rating': 4.8,
+      
       'tags': ['bhubaneswar', 'bbs', 'railway', 'station', 'master canteen', 'odisha', 'ଭୁବନେଶ୍ୱର', 'रेलवे'],
     },
     {
@@ -42,7 +42,7 @@ class IndiaPlacesSearchEngine {
       'category': 'AIRPORT',
       'lat': 20.2527,
       'lng': 85.8178,
-      'rating': 4.9,
+      
       'tags': ['bhubaneswar', 'airport', 'bbi', 'flight', 'aerodrome', 'odisha', 'ବିମାନବନ୍ଦର', 'एयरपोर्ट'],
     },
     {
@@ -52,7 +52,7 @@ class IndiaPlacesSearchEngine {
       'category': 'HOSPITAL',
       'lat': 20.2312,
       'lng': 85.7766,
-      'rating': 4.95,
+      
       'tags': ['bhubaneswar', 'aiims', 'hospital', 'emergency', 'trauma', 'sijua', 'ଡାକ୍ତରଖାନା', 'अस्पताल'],
     },
     {
@@ -62,7 +62,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 20.2382,
       'lng': 85.8336,
-      'rating': 4.9,
+      
       'tags': ['lingaraj', 'temple', 'bhubaneswar', 'old town', 'shiva', 'heritage', 'ମନ୍ଦିର', 'मंदिर'],
     },
     {
@@ -72,7 +72,7 @@ class IndiaPlacesSearchEngine {
       'category': 'BUS_STAND',
       'lat': 20.2801,
       'lng': 85.7925,
-      'rating': 4.6,
+      
       'tags': ['baramunda', 'bus', 'stand', 'isbt', 'bhubaneswar', 'nh16', 'ବସଷ୍ଟାଣ୍ଡ'],
     },
     {
@@ -82,7 +82,7 @@ class IndiaPlacesSearchEngine {
       'category': 'FUEL_STATION',
       'lat': 20.2890,
       'lng': 85.8450,
-      'rating': 4.85,
+      
       'tags': ['petrol', 'fuel', 'pump', 'indianoil', 'janpath', 'bhubaneswar', 'ପେଟ୍ରୋଲ ପମ୍ପ'],
     },
     {
@@ -92,7 +92,7 @@ class IndiaPlacesSearchEngine {
       'category': 'EV_CHARGING',
       'lat': 20.2355,
       'lng': 85.7650,
-      'rating': 4.9,
+      
       'tags': ['ev', 'charging', 'tatapower', 'fast charger', 'patrapada', 'dn regalia'],
     },
     {
@@ -102,7 +102,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 20.3958,
       'lng': 85.8248,
-      'rating': 4.85,
+      
       'tags': ['nandankanan', 'zoo', 'safari', 'bhubaneswar', 'barang', 'white tiger', 'ନନ୍ଦନକାନନ'],
     },
     {
@@ -112,7 +112,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 20.1923,
       'lng': 85.8394,
-      'rating': 4.8,
+      
       'tags': ['dhauli', 'peace pagoda', 'stupa', 'ashoka', 'daya river', 'bhubaneswar', 'ଧଉଳି'],
     },
     {
@@ -122,7 +122,7 @@ class IndiaPlacesSearchEngine {
       'category': 'HOTEL',
       'lat': 20.3015,
       'lng': 85.8235,
-      'rating': 4.9,
+      
       'tags': ['mayfair', 'hotel', 'resort', 'luxury', 'jayadev vihar', 'bhubaneswar', 'dining'],
     },
     {
@@ -132,7 +132,7 @@ class IndiaPlacesSearchEngine {
       'category': 'CITY_DISTRICT',
       'lat': 20.1852,
       'lng': 85.6200,
-      'rating': 4.7,
+      
       'tags': ['khordha', 'district', 'town', 'odisha', 'ଖୋର୍ଦ୍ଧା'],
     },
 
@@ -144,7 +144,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 19.8049,
       'lng': 85.8179,
-      'rating': 5.0,
+      
       'tags': ['puri', 'jagannath', 'temple', 'bada danda', 'dham', 'odisha', 'ପୁରୀ', 'ଜଗନ୍ନାଥ ମନ୍ଦିର', 'जगन्नाथ'],
     },
     {
@@ -154,7 +154,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 19.8135,
       'lng': 85.8315,
-      'rating': 4.75,
+      
       'tags': ['puri', 'railway', 'station', 'terminus', 'odisha'],
     },
     {
@@ -164,7 +164,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 19.7983,
       'lng': 85.8340,
-      'rating': 4.9,
+      
       'tags': ['puri', 'beach', 'sea beach', 'blue flag', 'ocean', 'golden beach'],
     },
     {
@@ -174,7 +174,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 19.8876,
       'lng': 86.0945,
-      'rating': 4.95,
+      
       'tags': ['konark', 'sun temple', 'black pagoda', 'unesco', 'marine drive', 'କୋଣାର୍କ'],
     },
 
@@ -186,7 +186,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 20.4625,
       'lng': 85.8920,
-      'rating': 4.7,
+      
       'tags': ['cuttack', 'railway', 'station', 'junction', 'ctc', 'silver city', 'କଟକ'],
     },
     {
@@ -196,7 +196,7 @@ class IndiaPlacesSearchEngine {
       'category': 'HOSPITAL',
       'lat': 20.4735,
       'lng': 85.8850,
-      'rating': 4.85,
+      
       'tags': ['scb', 'medical', 'hospital', 'cuttack', 'manglabag', 'trauma', 'emergency'],
     },
     {
@@ -206,7 +206,7 @@ class IndiaPlacesSearchEngine {
       'category': 'BUS_STAND',
       'lat': 20.4505,
       'lng': 85.8750,
-      'rating': 4.5,
+      
       'tags': ['badambadi', 'cuttack', 'bus stand', 'terminal', 'odisha'],
     },
     {
@@ -216,7 +216,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 20.4850,
       'lng': 85.8650,
-      'rating': 4.75,
+      
       'tags': ['barabati', 'fort', 'stadium', 'cuttack', 'heritage', 'mahanadi'],
     },
 
@@ -228,7 +228,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 22.2275,
       'lng': 84.8620,
-      'rating': 4.8,
+      
       'tags': ['rourkela', 'rou', 'steel city', 'sundargarh', 'railway', 'station', 'ରାଉରକେଲା'],
     },
     {
@@ -238,7 +238,7 @@ class IndiaPlacesSearchEngine {
       'category': 'AIRPORT',
       'lat': 22.2570,
       'lng': 84.8140,
-      'rating': 4.7,
+      
       'tags': ['rourkela', 'airport', 'rrk', 'sundargarh', 'flight'],
     },
     {
@@ -248,7 +248,7 @@ class IndiaPlacesSearchEngine {
       'category': 'HOSPITAL',
       'lat': 22.2550,
       'lng': 84.8550,
-      'rating': 4.8,
+      
       'tags': ['igh', 'hospital', 'rourkela', 'sail', 'sector 19'],
     },
 
@@ -260,7 +260,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 21.4935,
       'lng': 83.9680,
-      'rating': 4.75,
+      
       'tags': ['sambalpur', 'sbp', 'railway', 'khetrajpur', 'odisha', 'ସମ୍ବଲପୁର'],
     },
     {
@@ -270,7 +270,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 21.5700,
       'lng': 83.8700,
-      'rating': 4.95,
+      
       'tags': ['hirakud', 'dam', 'longest dam', 'sambalpur', 'mahanadi', 'ହୀରାକୁଦ'],
     },
     {
@@ -280,7 +280,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 21.4650,
       'lng': 83.9620,
-      'rating': 4.9,
+      
       'tags': ['samaleswari', 'temple', 'sambalpur', 'maa samaleswari', 'ସମଲେଶ୍ୱରୀ'],
     },
 
@@ -292,7 +292,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 19.3150,
       'lng': 84.7940,
-      'rating': 4.7,
+      
       'tags': ['berhampur', 'brahmapur', 'bam', 'ganjam', 'railway', 'ବ୍ରହ୍ମପୁର'],
     },
     {
@@ -302,7 +302,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 19.2600,
       'lng': 84.9050,
-      'rating': 4.85,
+      
       'tags': ['gopalpur', 'sea beach', 'lighthouse', 'ganjam', 'berhampur'],
     },
     {
@@ -312,7 +312,7 @@ class IndiaPlacesSearchEngine {
       'category': 'HOSPITAL',
       'lat': 19.3080,
       'lng': 84.8090,
-      'rating': 4.8,
+      
       'tags': ['mkcg', 'hospital', 'medical college', 'berhampur', 'ganjam'],
     },
 
@@ -324,7 +324,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 21.4940,
       'lng': 86.9320,
-      'rating': 4.7,
+      
       'tags': ['balasore', 'baleshwar', 'bls', 'railway', 'ବାଲେଶ୍ୱର'],
     },
     {
@@ -334,7 +334,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 21.4700,
       'lng': 87.0200,
-      'rating': 4.9,
+      
       'tags': ['chandipur', 'beach', 'vanishing sea', 'balasore', 'itd', 'ଚାନ୍ଦିପୁର'],
     },
 
@@ -346,7 +346,7 @@ class IndiaPlacesSearchEngine {
       'category': 'CITY_DISTRICT',
       'lat': 21.9340,
       'lng': 86.7320,
-      'rating': 4.8,
+      
       'tags': ['baripada', 'mayurbhanj', 'palace', 'odisha', 'ବା hisar', 'ବାରିପଦା'],
     },
     {
@@ -356,7 +356,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 21.8600,
       'lng': 86.3500,
-      'rating': 4.95,
+      
       'tags': ['similipal', 'tiger reserve', 'waterfall', 'barehipani', 'mayurbhanj', 'ସିମିଳିପାଳ'],
     },
 
@@ -368,7 +368,7 @@ class IndiaPlacesSearchEngine {
       'category': 'AIRPORT',
       'lat': 21.9140,
       'lng': 84.0500,
-      'rating': 4.85,
+      
       'tags': ['jharsuguda', 'airport', 'jrg', 'veer surendra sai', 'ଝାରସୁଗୁଡ଼ା'],
     },
     {
@@ -378,7 +378,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 21.8560,
       'lng': 84.0080,
-      'rating': 4.75,
+      
       'tags': ['jharsuguda', 'jsg', 'junction', 'railway'],
     },
 
@@ -390,7 +390,7 @@ class IndiaPlacesSearchEngine {
       'category': 'CITY_DISTRICT',
       'lat': 20.8390,
       'lng': 85.1010,
-      'rating': 4.7,
+      
       'tags': ['angul', 'nalco', 'talcher', 'coal city', 'ଅନୁଗୋଳ'],
     },
 
@@ -402,7 +402,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 20.9500,
       'lng': 86.1340,
-      'rating': 4.7,
+      
       'tags': ['jajpur', 'jjkr', 'vyasanagar', 'kalinganagar', 'tata steel', 'ଯାଜପୁର'],
     },
     {
@@ -412,7 +412,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 20.8520,
       'lng': 86.3330,
-      'rating': 4.9,
+      
       'tags': ['biraja', 'temple', 'shakti peetha', 'jajpur', 'ବିରଜା ମନ୍ଦିର'],
     },
 
@@ -424,7 +424,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 20.2640,
       'lng': 86.6710,
-      'rating': 4.85,
+      
       'tags': ['paradip', 'port', 'jagatsinghpur', 'lighthouse', 'sea beach', 'ପାରାଦୀପ'],
     },
 
@@ -436,7 +436,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 20.7200,
       'lng': 86.8700,
-      'rating': 4.95,
+      
       'tags': ['bhitarkanika', 'national park', 'crocodiles', 'mangroves', 'kendrapara', 'ଭିତରକନିକା'],
     },
 
@@ -448,7 +448,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 20.6780,
       'lng': 85.7680,
-      'rating': 4.9,
+      
       'tags': ['kapilash', 'dhenkanal', 'mountain', 'temple', 'chandrasekhar', 'କପିଳାସ'],
     },
 
@@ -460,7 +460,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 19.9100,
       'lng': 84.1300,
-      'rating': 4.95,
+      
       'tags': ['daringbadi', 'kashmir of odisha', 'hill station', 'pine forest', 'kandhamal', 'ଦାରିଙ୍ଗବାଡ଼ି'],
     },
 
@@ -472,7 +472,7 @@ class IndiaPlacesSearchEngine {
       'category': 'TOURIST_PLACE',
       'lat': 18.6700,
       'lng': 82.9800,
-      'rating': 4.95,
+      
       'tags': ['koraput', 'deomali', 'highest peak', 'valley', 'eastern ghats', 'କୋରାପୁଟ', 'ଦେଓମାଳୀ'],
     },
 
@@ -486,7 +486,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 28.6429,
       'lng': 77.2195,
-      'rating': 4.8,
+      
       'tags': ['delhi', 'ndls', 'railway', 'station', 'new delhi', 'नई दिल्ली'],
     },
     {
@@ -496,7 +496,7 @@ class IndiaPlacesSearchEngine {
       'category': 'AIRPORT',
       'lat': 28.5562,
       'lng': 77.1000,
-      'rating': 4.9,
+      
       'tags': ['delhi', 'igi', 'airport', 't3', 'del', 'flight'],
     },
     {
@@ -506,7 +506,7 @@ class IndiaPlacesSearchEngine {
       'category': 'HOSPITAL',
       'lat': 28.5672,
       'lng': 77.2100,
-      'rating': 4.95,
+      
       'tags': ['delhi', 'aiims', 'hospital', 'emergency', 'trauma'],
     },
     {
@@ -516,7 +516,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 18.9400,
       'lng': 72.8353,
-      'rating': 4.9,
+      
       'tags': ['mumbai', 'csmt', 'vt', 'terminus', 'railway', 'maharashtra', 'मुंबई'],
     },
     {
@@ -526,7 +526,7 @@ class IndiaPlacesSearchEngine {
       'category': 'AIRPORT',
       'lat': 19.0896,
       'lng': 72.8656,
-      'rating': 4.9,
+      
       'tags': ['mumbai', 'bom', 'airport', 't2', 'sahar', 'flight'],
     },
     {
@@ -536,7 +536,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 22.5839,
       'lng': 88.3426,
-      'rating': 4.85,
+      
       'tags': ['howrah', 'hwh', 'kolkata', 'junction', 'station', 'हावड़ा'],
     },
     {
@@ -546,7 +546,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 12.9781,
       'lng': 77.5696,
-      'rating': 4.8,
+      
       'tags': ['bengaluru', 'bangalore', 'majestic', 'sbc', 'ksr', 'karnataka', 'बेंगलुरु'],
     },
     {
@@ -556,7 +556,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 13.0827,
       'lng': 80.2707,
-      'rating': 4.8,
+      
       'tags': ['chennai', 'central', 'mas', 'tamil nadu', 'चेन्नई'],
     },
     {
@@ -566,7 +566,7 @@ class IndiaPlacesSearchEngine {
       'category': 'RAILWAY_STATION',
       'lat': 17.4339,
       'lng': 78.5044,
-      'rating': 4.8,
+      
       'tags': ['hyderabad', 'secunderabad', 'sc', 'telangana', 'हैदराबाद'],
     },
   ];

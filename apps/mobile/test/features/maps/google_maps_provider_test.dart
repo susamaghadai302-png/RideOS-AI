@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/features/maps/core/map_provider.dart';
 import 'package:rideos_mobile/features/maps/core/google_maps_provider.dart';
-import 'package:rideos_mobile/features/maps/core/local_graph_map_provider.dart';
 import 'package:rideos_mobile/features/maps/core/map_provider_factory.dart';
 import 'package:rideos_mobile/core/config/google_maps_config.dart';
 
@@ -20,14 +19,9 @@ void main() {
       expect(googleProvider.requiresPaidBilling, isTrue);
     });
 
-    test('MapProviderFactory seamlessly switches between Google Maps and LocalGraph fallback', () {
-      factory.useGoogleMaps();
+    test('MapProviderFactory always returns Google Maps as active provider', () {
       expect(factory.currentEngine, equals(MapEngineType.googleMaps));
       expect(factory.activeProvider is GoogleMapsProvider, isTrue);
-
-      factory.useLocalGraph();
-      expect(factory.currentEngine, equals(MapEngineType.localGraph));
-      expect(factory.activeProvider is LocalGraphMapProvider, isTrue);
     });
 
     test(
@@ -35,14 +29,14 @@ void main() {
       () async {
         if (GoogleMapsConfig.hasValidApiKey) return;
         await expectLater(
-          googleProvider.calculateRoute(
+          () => googleProvider.calculateRoute(
             origin: const LatLng(12.9716, 77.5946),
             destination: const LatLng(12.9352, 77.6245),
           ),
           throwsStateError,
         );
         await expectLater(
-          googleProvider.searchPlaces('Fuel'),
+          () => googleProvider.searchPlaces('Fuel'),
           throwsStateError,
         );
       },

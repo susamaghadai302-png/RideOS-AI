@@ -31,7 +31,6 @@ class RawVehicleTelemetryPacket {
   final bool? isAbsActive;
   final bool? isTractionControlActive;
   final List<String> activeDtcCodes;
-  final bool isSimulated;
 
   const RawVehicleTelemetryPacket({
     required this.timestamp,
@@ -49,7 +48,6 @@ class RawVehicleTelemetryPacket {
     this.isAbsActive,
     this.isTractionControlActive,
     this.activeDtcCodes = const [],
-    this.isSimulated = false,
   });
 }
 

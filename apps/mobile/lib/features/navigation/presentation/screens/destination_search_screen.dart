@@ -77,14 +77,7 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
-        _recentSearches = prefs.getStringList('recent_searches') ?? [
-          'Bhubaneswar Central Station',
-          'Puri Jagannath Temple',
-          'AIIMS Hospital',
-          'Cuttack SCB Hospital',
-          'Indian Oil Petrol Pump',
-          'Konark Sun Temple',
-        ];
+        _recentSearches = prefs.getStringList('recent_searches') ?? [];
       });
     } catch (_) {}
   }

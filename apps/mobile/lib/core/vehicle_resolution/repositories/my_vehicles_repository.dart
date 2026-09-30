@@ -15,7 +15,7 @@ class MyVehiclesRepository {
   final _storage = const FlutterSecureStorage();
   final Map<String, String> _inMemoryCache = {};
 
-  final List<VehicleProfile> _mockTestDb = [];
+
 
   ApiClient? get _apiClient {
     try {
@@ -28,7 +28,7 @@ class MyVehiclesRepository {
   Future<List<VehicleProfile>> getOwnedVehicles() async {
     try {
       final client = _apiClient;
-      if (client == null) return List.from(_mockTestDb);
+      if (client == null) throw Exception('API client unavailable. Real connection required.');
 
       final response = await client.get('/vehicles');
       if (response.statusCode == 200) {
@@ -46,8 +46,7 @@ class MyVehiclesRepository {
     try {
       final client = _apiClient;
       if (client == null) {
-        _mockTestDb.add(profile);
-        return;
+        throw Exception('API client unavailable. Real connection required.');
       }
       await client.post('/vehicles', data: profile.toJson());
     } catch (e) {
@@ -60,9 +59,7 @@ class MyVehiclesRepository {
     try {
       final client = _apiClient;
       if (client == null) {
-        final idx = _mockTestDb.indexWhere((v) => v.id == id);
-        if (idx != -1) _mockTestDb[idx] = profile;
-        return;
+        throw Exception('API client unavailable. Real connection required.');
       }
       await client.put('/vehicles/$id', data: profile.toJson());
     } catch (e) {
@@ -75,8 +72,7 @@ class MyVehiclesRepository {
     try {
       final client = _apiClient;
       if (client == null) {
-        _mockTestDb.removeWhere((v) => v.id == id);
-        return;
+        throw Exception('API client unavailable. Real connection required.');
       }
       await client.delete('/vehicles/$id');
     } catch (e) {

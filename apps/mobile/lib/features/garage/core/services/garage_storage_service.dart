@@ -15,8 +15,7 @@ class GarageStorageService {
   
   final Dio _dio = Dio(BaseOptions(baseUrl: ApiConstants.baseUrl));
   
-  // Temporary rider ID for testing until full Auth is integrated
-  final String _currentRiderId = 'demo-rider-123';
+
 
   static const String _kCustomVehiclesKey = 'garage_custom_vehicles_v2';
   static const String _kFavoritesKey = 'garage_favorites_v2';
@@ -25,9 +24,9 @@ class GarageStorageService {
   static const String _kPerformanceModeKey = 'garage_performance_mode';
 
   /// Loads full garage catalog from the NestJS Backend
-  Future<List<GarageVehicleModel>> loadGarageCatalog() async {
+  Future<List<GarageVehicleModel>> loadGarageCatalog({required String riderId}) async {
     try {
-      final response = await _dio.get('/garage/$_currentRiderId');
+      final response = await _dio.get('/garage/$riderId');
       final List<dynamic> backendVehicles = response.data;
       
       final prefs = await SharedPreferences.getInstance();
@@ -101,10 +100,10 @@ class GarageStorageService {
   }
 
   /// Sets vehicle as primary across the entire application
-  Future<void> setPrimaryVehicle(String vehicleId) async {
+  Future<void> setPrimaryVehicle(String vehicleId, {required String riderId}) async {
     try {
       await _dio.post('/garage/primary', data: {
-        'riderId': _currentRiderId,
+        'riderId': riderId,
         'vehicleId': vehicleId,
       });
     } catch (e) {
@@ -131,10 +130,10 @@ class GarageStorageService {
   }
 
   /// Saves customization state for a vehicle
-  Future<void> saveCustomization(String vehicleId, VehicleCustomizationState state) async {
+  Future<void> saveCustomization(String vehicleId, VehicleCustomizationState state, {required String riderId}) async {
     try {
       await _dio.put('/garage/configuration', data: {
-        'riderId': _currentRiderId,
+        'riderId': riderId,
         'vehicleId': vehicleId,
         'configuration': {
           'paintColor': '#${state.bodyColor.toARGB32().toRadixString(16).substring(2)}',

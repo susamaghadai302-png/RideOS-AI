@@ -85,7 +85,7 @@ void main() {
 
       expect(current.vehicleSpeedKmh.value, 0.0);
       expect(current.engineRpm.value, 0);
-      expect(current.dataSource, TelemetryDataSource.simulated);
+      expect(current.dataSource, TelemetryDataSource.benchTest);
       expect(current.batteryVoltage.value, 12.8);
 
       expect(gateway.currentLinkState, isNotNull);

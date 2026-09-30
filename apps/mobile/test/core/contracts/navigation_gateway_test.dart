@@ -300,9 +300,10 @@ void main() {
       expect(offlineProvider.supportsOffline, isTrue);
       expect(offlineProvider.supportsTraffic, isFalse);
 
-      final result = await offlineProvider.calculateRoute(_makeRequest());
-      expect(result.isSuccess, isTrue);
-      expect(result.trafficCondition, TrafficCondition.unavailable);
+      await expectLater(
+        offlineProvider.calculateRoute(_makeRequest()),
+        throwsStateError,
+      );
     });
 
     // ── S: Traffic Available ──────────────────────────────────────────────

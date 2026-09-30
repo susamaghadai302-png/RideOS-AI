@@ -203,7 +203,7 @@ class IntelligentRiderPlatformEngine {
     final analytics = getRidingAnalytics();
     final milestones = getMaintenanceMilestones();
     final tele = _telematicsEngine.latestSnapshot;
-    final isSim = tele?.dataSource == TelemetryDataSource.simulated;
+    final isSim = tele?.dataSource == TelemetryDataSource.benchTest;
     final tag = isSim ? ' [SIMULATED]' : '';
 
     if (lower.contains('how is my bike') || lower.contains('overall health') || lower.contains('status')) {

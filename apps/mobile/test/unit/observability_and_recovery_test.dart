@@ -147,7 +147,7 @@ void main() {
         isLoaded: false,
         lastError: null,
       );
-      expect(noWebGl.state, ThreeDHealthState.fallback2D);
+      expect(noWebGl.state, ThreeDHealthState.unavailable);
 
       final modelMissing = monitor.evaluate(
         isWebGLAvailable: true,
@@ -155,7 +155,7 @@ void main() {
         isLoaded: false,
         lastError: null,
       );
-      expect(modelMissing.state, ThreeDHealthState.fallback2D);
+      expect(modelMissing.state, ThreeDHealthState.unavailable);
 
       final ready = monitor.evaluate(
         isWebGLAvailable: true,

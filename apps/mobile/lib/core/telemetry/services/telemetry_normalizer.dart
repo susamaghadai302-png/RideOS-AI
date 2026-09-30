@@ -14,7 +14,6 @@ class TelemetryNormalizer {
   NormalizedTelemetryMetric normalizePidMeasurement(
     DecodedPidMeasurement measurement, {
     EcuModule sourceEcu = EcuModule.engineControlModule_ECM,
-    bool isSimulated = false,
   }) {
     final metricId = _mapPidToMetricId(measurement.pid);
     if (metricId == null) {
@@ -50,7 +49,6 @@ class TelemetryNormalizer {
       diagnosticPidCode: measurement.pid.code,
       freshness: TelemetryFreshness.fresh,
       qualityScore: 1.0,
-      isSimulated: isSimulated,
       diagnosticNote: 'Decoded from standard Mode \$01 PID 0x${measurement.pid.code}',
     );
   }
@@ -83,7 +81,6 @@ class TelemetryNormalizer {
       diagnosticPidCode: 'DERIVED_DV_DT',
       freshness: TelemetryFreshness.fresh,
       qualityScore: 0.95,
-      isSimulated: currentSpeed.isSimulated,
       diagnosticNote: 'Derived from speed delta (Δv/Δt) over ${dt.toStringAsFixed(2)}s',
     );
   }

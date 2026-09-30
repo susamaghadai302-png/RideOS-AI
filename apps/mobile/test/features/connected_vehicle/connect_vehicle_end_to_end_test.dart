@@ -10,6 +10,34 @@ import 'package:rideos_mobile/core/vehicle_resolution/repositories/my_vehicles_r
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rideos_mobile/core/vehicle_resolution/providers/my_vehicles_provider.dart';
+
+class MockMyVehiclesRepository implements MyVehiclesRepository {
+  final List<VehicleProfile> _vehicles = [];
+
+  @override
+  Future<List<VehicleProfile>> getOwnedVehicles() async => _vehicles;
+
+  @override
+  Future<void> addOwnedVehicle(VehicleProfile profile) async => _vehicles.add(profile);
+
+  @override
+  Future<void> updateOwnedVehicle(String id, VehicleProfile profile) async {
+    final i = _vehicles.indexWhere((v) => v.id == id);
+    if (i >= 0) _vehicles[i] = profile;
+  }
+
+  @override
+  Future<void> deleteOwnedVehicle(String id) async {
+    _vehicles.removeWhere((v) => v.id == id);
+  }
+
+  @override
+  Future<String?> getAssociatedVehicleIdForMac(String macAddress) async => null;
+
+  @override
+  Future<void> associateMacWithVehicle(String macAddress, String vehicleId) async {}
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -89,7 +117,11 @@ void main() {
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
-          container: container = ProviderContainer(),
+          container: container = ProviderContainer(
+            overrides: [
+              myVehiclesProvider.overrideWith((ref) => MyVehiclesNotifier(repository: MockMyVehiclesRepository())),
+            ],
+          ),
           child: const MaterialApp(
             home: Scaffold(
               body: AddVehicleModal(),
@@ -128,7 +160,11 @@ void main() {
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
-          container: container = ProviderContainer(),
+          container: container = ProviderContainer(
+            overrides: [
+              myVehiclesProvider.overrideWith((ref) => MyVehiclesNotifier(repository: MockMyVehiclesRepository())),
+            ],
+          ),
           child: const MaterialApp(
             home: Scaffold(
               body: ManualVehicleSelectorModal(),
@@ -173,7 +209,7 @@ void main() {
     });
 
     test('6. Vehicle Persistence: Vehicle added to MyVehiclesRepository persists and reloads', () async {
-      final repo = MyVehiclesRepository();
+      final repo = MockMyVehiclesRepository();
       const testVehicle = VehicleProfile(
         id: 'v_test_honda_activa_persist',
         manufacturer: 'Honda',

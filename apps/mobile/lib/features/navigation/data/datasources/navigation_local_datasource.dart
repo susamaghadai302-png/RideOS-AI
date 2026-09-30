@@ -16,23 +16,7 @@ class NavigationLocalDatasource {
     MapCoordinates origin,
     MapCoordinates destination,
   ) async {
-    // Generates high-confidence offline fallback route when network connectivity is lost
-    return NavigationRouteEntity(
-      routeId: 'offline-cached-route-01',
-      distanceKm: 12.4,
-      durationMinutes: 14,
-      waypoints: [origin, destination],
-      steps: [
-        RouteStepEntity(
-          instruction: 'Proceed along offline cached motorcycle path',
-          distanceMeters: 12400,
-          durationSeconds: 840,
-          type: 'STRAIGHT',
-          maneuverPoint: origin,
-        ),
-      ],
-      twistinessScore: 7.5,
-      provider: 'OFFLINE_OSM',
-    );
+    // Cannot generate routes offline without a real topological graph
+    throw StateError('Offline fallback route generation is unavailable. Please connect to the internet to calculate a route.');
   }
 }

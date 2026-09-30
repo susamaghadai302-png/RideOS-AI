@@ -21,7 +21,6 @@ class _VehicleConnectionDiagnosticsScreenState extends State<VehicleConnectionDi
       deviceName: 'Y-Connect_CCU_98A2',
       advertisedServices: ['0000fee0-0000-1000-8000-00805f9b34fb'],
       macAddress: 'AA:BB:CC:DD:EE:FF',
-      isSimulated: true,
     );
     if (mounted) {
       setState(() => _isRunningDiagnostic = false);

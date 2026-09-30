@@ -5,7 +5,6 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/config/google_maps_config.dart';
 import '../../domain/entities/poi_entity.dart';
 import '../../../navigation/domain/entities/place_search_entity.dart';
-import 'india_places_search_engine.dart';
 import 'road_os_routing_engine.dart';
 
 /// Comprehensive client connecting directly to official Google Maps Platform APIs.
@@ -35,59 +34,56 @@ class GoogleMapsPlatformService {
     String components = 'country:in',
   }) async {
     if (query.trim().isEmpty) {
-      return IndiaPlacesSearchEngine.instance.searchPlaces('', userLocation: userLocation);
+      return [];
     }
 
     if (GoogleMapsConfig.hasValidApiKey) {
       try {
-        final params = <String, dynamic>{
+        final data = <String, dynamic>{
           'input': query,
-          'key': GoogleMapsConfig.apiKey,
-          'language': language,
-          'components': components,
+          'languageCode': language,
         };
 
-        if (userLocation != null) {
-          params['location'] = '${userLocation.latitude},${userLocation.longitude}';
-          params['radius'] = radiusMeters.toString();
-        }
-
-        final response = await _dio.get(
+        final response = await _dio.post(
           GoogleMapsConfig.placesAutocompleteUrl,
-          queryParameters: params,
+          options: Options(
+            headers: {
+              'X-Goog-Api-Key': GoogleMapsConfig.apiKey,
+              'X-Goog-FieldMask': 'suggestions.placePrediction.placeId,suggestions.placePrediction.text,suggestions.placePrediction.types',
+            },
+          ),
+          data: data,
         );
 
         if (response.statusCode == 200 && response.data != null) {
-          final status = response.data['status']?.toString();
-          if (status == 'OK' || status == 'ZERO_RESULTS') {
-            final predictions = response.data['predictions'] as List? ?? [];
-            final results = <PlaceSearchResultEntity>[];
+          final suggestions = response.data['suggestions'] as List? ?? [];
+          final results = <PlaceSearchResultEntity>[];
 
-            for (final pred in predictions) {
-              final placeId = pred['place_id']?.toString() ?? '';
-              final structured = pred['structured_formatting'] as Map<String, dynamic>?;
-              final mainText = structured?['main_text']?.toString() ?? pred['description']?.toString() ?? query;
-              final secondaryText = structured?['secondary_text']?.toString() ?? 'India';
-              final types = (pred['types'] as List? ?? []).map((e) => e.toString()).toList();
+          for (final sug in suggestions) {
+            final pred = sug['placePrediction'];
+            if (pred == null) continue;
+            
+            final placeId = pred['placeId']?.toString() ?? '';
+            final textObj = pred['text'];
+            final mainText = textObj?['text']?.toString() ?? query;
+            final types = (pred['types'] as List? ?? []).map((e) => e.toString()).toList();
 
-              // Fetch place geometry or use approximate calculation
-              results.add(
-                PlaceSearchResultEntity(
-                  id: placeId,
-                  title: mainText,
-                  subtitle: secondaryText,
-                  category: _mapGooglePlaceType(types),
-                  latitude: null,
-                  longitude: null,
-                  distanceKm: 0.0,
-                  tags: types,
-                ),
-              );
-            }
+            results.add(
+              PlaceSearchResultEntity(
+                id: placeId,
+                title: mainText,
+                subtitle: 'India', // Autocomplete new doesn't easily split main/secondary in this mask
+                category: _mapGooglePlaceType(types),
+                latitude: null,
+                longitude: null,
+                distanceKm: 0.0,
+                tags: types,
+              ),
+            );
+          }
 
-            if (results.isNotEmpty) {
-              return results;
-            }
+          if (results.isNotEmpty) {
+            return results;
           }
         }
       } catch (e) {
@@ -95,8 +91,7 @@ class GoogleMapsPlatformService {
       }
     }
 
-    // Resilient fallback to high-resolution Nominatim / Odisha database
-    return IndiaPlacesSearchEngine.instance.searchPlaces(query, userLocation: userLocation);
+    throw StateError('Places Autocomplete failed or API key missing.');
   }
 
   /// 2. Google Place Details API
@@ -108,36 +103,37 @@ class GoogleMapsPlatformService {
     if (GoogleMapsConfig.hasValidApiKey && placeId.isNotEmpty && !placeId.startsWith('curated-') && !placeId.startsWith('osm-')) {
       try {
         final response = await _dio.get(
-          GoogleMapsConfig.placeDetailsUrl,
+          '\${GoogleMapsConfig.placeDetailsUrlBase}$placeId',
+          options: Options(
+            headers: {
+              'X-Goog-Api-Key': GoogleMapsConfig.apiKey,
+              'X-Goog-FieldMask': 'id,displayName,formattedAddress,location,internationalPhoneNumber,websiteUri,rating,userRatingCount,regularOpeningHours,types',
+            },
+          ),
           queryParameters: {
-            'place_id': placeId,
-            'fields': 'place_id,name,formatted_address,geometry,formatted_phone_number,website,rating,user_ratings_total,opening_hours,types',
-            'language': language,
-            'key': GoogleMapsConfig.apiKey,
+            'languageCode': language,
           },
         );
 
         if (response.statusCode == 200 && response.data != null) {
-          final status = response.data['status']?.toString();
-          if (status == 'OK') {
-            final res = response.data['result'] as Map<String, dynamic>;
-            final loc = res['geometry']?['location'];
-            final lat = (loc?['lat'] as num?)?.toDouble();
-            final lng = (loc?['lng'] as num?)?.toDouble();
-            final types = (res['types'] as List? ?? []).map((e) => e.toString()).toList();
+          final res = response.data as Map<String, dynamic>;
+          final loc = res['location'];
+          final lat = (loc?['latitude'] as num?)?.toDouble();
+          final lng = (loc?['longitude'] as num?)?.toDouble();
+          final types = (res['types'] as List? ?? []).map((e) => e.toString()).toList();
+          final displayName = res['displayName']?['text']?.toString() ?? 'Selected Place';
 
-            return PlaceSearchResultEntity(
-              id: placeId,
-              title: res['name']?.toString() ?? 'Selected Place',
-              subtitle: res['formatted_address']?.toString() ?? 'India',
-              category: _mapGooglePlaceType(types),
-              latitude: lat,
-              longitude: lng,
-              distanceKm: 0.0,
-              rating: (res['rating'] as num?)?.toDouble(),
-              tags: types,
-            );
-          }
+          return PlaceSearchResultEntity(
+            id: placeId,
+            title: displayName,
+            subtitle: res['formattedAddress']?.toString() ?? 'India',
+            category: _mapGooglePlaceType(types),
+            latitude: lat,
+            longitude: lng,
+            distanceKm: 0.0,
+            rating: (res['rating'] as num?)?.toDouble(),
+            tags: types,
+          );
         }
       } catch (e) {
         debugPrint('[Google Place Details Notice]: $e');
@@ -158,56 +154,71 @@ class GoogleMapsPlatformService {
 
     if (GoogleMapsConfig.hasValidApiKey) {
       try {
-        final response = await _dio.get(
+        final response = await _dio.post(
           GoogleMapsConfig.placesNearbySearchUrl,
-          queryParameters: {
-            'location': '${location.latitude},${location.longitude}',
-            'radius': radiusMeters.toString(),
-            'type': googleType,
-            'language': language,
-            'key': GoogleMapsConfig.apiKey,
+          options: Options(
+            headers: {
+              'X-Goog-Api-Key': GoogleMapsConfig.apiKey,
+              'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount',
+            },
+          ),
+          data: {
+            'includedTypes': [googleType],
+            'maxResultCount': 20,
+            'locationRestriction': {
+              'circle': {
+                'center': {
+                  'latitude': location.latitude,
+                  'longitude': location.longitude,
+                },
+                'radius': radiusMeters.toDouble(),
+              }
+            }
           },
         );
 
         if (response.statusCode == 200 && response.data != null) {
-          final status = response.data['status']?.toString();
-          if (status == 'OK') {
-            final results = response.data['results'] as List? ?? [];
-            final pois = <PoiEntity>[];
+          final places = response.data['places'] as List? ?? [];
+          final pois = <PoiEntity>[];
 
-            for (final r in results) {
-              final placeId = r['place_id']?.toString();
-              if (placeId == null) continue;
-              final name = r['name']?.toString() ?? 'Unknown Location';
-              final vicinity = r['vicinity']?.toString() ?? '';
-              final loc = r['geometry']?['location'];
-              final lat = (loc?['lat'] as num?)?.toDouble();
-              final lng = (loc?['lng'] as num?)?.toDouble();
-              final rating = (r['rating'] as num?)?.toDouble();
-              final userRatingsTotal = (r['user_ratings_total'] as num?)?.toInt();
-              final dist = (lat != null && lng != null) ? IndiaPlacesSearchEngine.calculateDistanceKm(location, LatLng(lat, lng)) : null;
-
-              pois.add(
-                PoiEntity(
-                  id: placeId,
-                  category: category.name.toUpperCase(),
-                  title: name,
-                  address: vicinity,
-                  lat: lat,
-                  lng: lng,
-                  distanceKm: dist != null ? double.parse(dist.toStringAsFixed(1)) : null,
-                  etaMinutes: null,
-                  rating: rating,
-                  reviewCount: userRatingsTotal,
-                  phoneNumber: null,
-                  websiteUrl: null,
-                ),
-              );
+          for (final r in places) {
+            final placeId = r['id']?.toString();
+            if (placeId == null) continue;
+            final name = r['displayName']?['text']?.toString() ?? 'Unknown Location';
+            final vicinity = r['formattedAddress']?.toString() ?? '';
+            final loc = r['location'];
+            final lat = (loc?['latitude'] as num?)?.toDouble();
+            final lng = (loc?['longitude'] as num?)?.toDouble();
+            final rating = (r['rating'] as num?)?.toDouble();
+            final userRatingsTotal = (r['userRatingCount'] as num?)?.toInt();
+            
+            double? dist;
+            if (lat != null && lng != null) {
+                // approximate distance
+                final d = const Distance().as(LengthUnit.Meter, location, LatLng(lat, lng));
+                dist = d / 1000.0;
             }
 
-            if (pois.isNotEmpty) {
-              return pois;
-            }
+            pois.add(
+              PoiEntity(
+                id: placeId,
+                category: category.name.toUpperCase(),
+                title: name,
+                address: vicinity,
+                lat: lat,
+                lng: lng,
+                distanceKm: dist,
+                etaMinutes: null,
+                rating: rating,
+                reviewCount: userRatingsTotal,
+                phoneNumber: null,
+                websiteUrl: null,
+              ),
+            );
+          }
+
+          if (pois.isNotEmpty) {
+            return pois;
           }
         }
       } catch (e) {
@@ -216,7 +227,7 @@ class GoogleMapsPlatformService {
     }
 
     // Strict rule: Do not invent POI data if Google Places fails
-    return <PoiEntity>[];
+    throw StateError('Nearby Search failed or API key missing.');
   }
 
   /// 4. Google Directions API with Traffic & Multi-Alternative Routes
@@ -229,120 +240,128 @@ class GoogleMapsPlatformService {
   }) async {
     if (GoogleMapsConfig.hasValidApiKey) {
       try {
-        final queryParams = <String, dynamic>{
-          'origin': '${origin.latitude},${origin.longitude}',
-          'destination': '${destination.latitude},${destination.longitude}',
-          'mode': 'driving',
-          'alternatives': 'true',
-          'departure_time': 'now',
-          'traffic_model': 'best_guess',
-          'language': language,
-          'key': GoogleMapsConfig.apiKey,
+        final data = <String, dynamic>{
+          'origin': {
+            'location': {
+              'latLng': {
+                'latitude': origin.latitude,
+                'longitude': origin.longitude,
+              }
+            }
+          },
+          'destination': {
+            'location': {
+              'latLng': {
+                'latitude': destination.latitude,
+                'longitude': destination.longitude,
+              }
+            }
+          },
+          'travelMode': 'TWO_WHEELER',
+          'computeAlternativeRoutes': true,
+          'languageCode': language,
         };
 
         if (waypoints != null && waypoints.isNotEmpty) {
-          final wpStr = waypoints.map((w) => '${w.latitude},${w.longitude}').join('|');
-          queryParams['waypoints'] = wpStr;
+          data['intermediates'] = waypoints.map((w) => {
+            'location': {
+              'latLng': {
+                'latitude': w.latitude,
+                'longitude': w.longitude,
+              }
+            }
+          }).toList();
         }
 
-        final response = await _dio.get(
+        final response = await _dio.post(
           GoogleMapsConfig.directionsUrl,
-          queryParameters: queryParams,
+          options: Options(
+            headers: {
+              'X-Goog-Api-Key': GoogleMapsConfig.apiKey,
+              'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.description,routes.legs.steps',
+            },
+          ),
+          data: data,
         );
 
         if (response.statusCode == 200 && response.data != null) {
-          final status = response.data['status']?.toString();
-          if (status == 'OK') {
-            final routes = response.data['routes'] as List? ?? [];
-            final calculatedRoutes = <RouteCalculationResult>[];
+          final routes = response.data['routes'] as List? ?? [];
+          final calculatedRoutes = <RouteCalculationResult>[];
 
-            for (int i = 0; i < routes.length; i++) {
-              final r = routes[i];
-              final summary = r['summary']?.toString() ?? 'Route ${i + 1}';
-              final overviewPolyline = r['overview_polyline']?['points']?.toString() ?? '';
-              final legs = r['legs'] as List? ?? [];
+          for (int i = 0; i < routes.length; i++) {
+            final r = routes[i];
+            final summary = r['description']?.toString() ?? 'Route ${i + 1}';
+            final overviewPolyline = r['polyline']?['encodedPolyline']?.toString() ?? '';
+            final distanceMeters = (r['distanceMeters'] as num?)?.toDouble() ?? 0;
+            // duration is a string like "1000s"
+            final durationStr = r['duration']?.toString().replaceAll('s', '') ?? '0';
+            final durationSeconds = double.tryParse(durationStr)?.toInt() ?? 0;
 
-              double totalDistanceMeters = 0;
-              int totalDurationSeconds = 0;
-              final stepsList = <RouteStepManeuver>[];
+            final stepsList = <RouteStepManeuver>[];
+            final legs = r['legs'] as List? ?? [];
+            for (final leg in legs) {
+              final steps = leg['steps'] as List? ?? [];
+              for (final step in steps) {
+                final htmlInstr = step['navigationInstruction']?['instructions']?.toString() ?? 'Continue';
+                final cleanInstr = _stripHtmlTags(htmlInstr);
+                final maneuver = step['navigationInstruction']?['maneuver']?.toString() ?? 'straight';
+                final stepDist = (step['distanceMeters'] as num?)?.toDouble() ?? 0;
+                final stepPoly = step['polyline']?['encodedPolyline']?.toString() ?? '';
 
-              for (final leg in legs) {
-                totalDistanceMeters += (leg['distance']?['value'] as num?)?.toDouble() ?? 0;
-                // Use duration_in_traffic if present, else duration
-                final num? durationNum = (leg['duration_in_traffic']?['value'] ?? leg['duration']?['value']) as num?;
-                final int durationVal = durationNum?.toInt() ?? 0;
-                totalDurationSeconds += durationVal;
-
-                final steps = leg['steps'] as List? ?? [];
-                for (final step in steps) {
-                  final htmlInstr = step['html_instructions']?.toString() ?? 'Continue on road';
-                  final cleanInstr = _stripHtmlTags(htmlInstr);
-                  final maneuver = step['maneuver']?.toString() ?? 'straight';
-                  final stepDist = (step['distance']?['value'] as num?)?.toDouble() ?? 0;
-                  final stepDuration = (step['duration']?['value'] as num?)?.toInt() ?? 0;
-                  final stepPoly = step['polyline']?['points']?.toString() ?? '';
-
-                  stepsList.add(
-                    RouteStepManeuver(
-                      instruction: cleanInstr,
-                      roadName: summary.isNotEmpty ? summary : 'Main Highway',
-                      distanceMeters: stepDist,
-                      durationSeconds: stepDuration,
-                      iconType: _mapManeuverIcon(maneuver),
-                      stepCoordinates: decodePolyline(stepPoly),
-                    ),
-                  );
-                }
+                stepsList.add(
+                  RouteStepManeuver(
+                    instruction: cleanInstr,
+                    roadName: summary.isNotEmpty ? summary : 'Main Highway',
+                    distanceMeters: stepDist,
+                    durationSeconds: 0,
+                    iconType: _mapManeuverIcon(maneuver),
+                    stepCoordinates: decodePolyline(stepPoly),
+                  ),
+                );
               }
-
-              final polylinePoints = decodePolyline(overviewPolyline);
-              final distKm = totalDistanceMeters / 1000.0;
-              final durMin = math.max(1, (totalDurationSeconds / 60).round());
-              final etaTime = _formatEta(DateTime.now().add(Duration(minutes: durMin)));
-
-              final routeType = i == 0
-                  ? RouteOptionType.fastestHighway
-                  : i == 1
-                      ? RouteOptionType.twistyCorridor
-                      : RouteOptionType.ecoScenic;
-
-              calculatedRoutes.add(
-                RouteCalculationResult(
-                  id: 'google-route-$i',
-                  routeName: 'via $summary',
-                  distanceKm: double.parse(distKm.toStringAsFixed(1)),
-                  durationMinutes: durMin,
-                  estimatedArrival: etaTime,
-                  polylinePoints: polylinePoints,
-                  steps: stepsList,
-                  routeType: routeType,
-                ),
-              );
             }
 
-            if (calculatedRoutes.isNotEmpty) {
-              final active = calculatedRoutes[0];
-              final alternatives = calculatedRoutes.sublist(1);
-              return MultiRouteCalculationResult(
-                activeRoute: active,
-                alternativeRoutes: alternatives,
-                allRoutes: calculatedRoutes,
-              );
-            }
+            final polylinePoints = decodePolyline(overviewPolyline);
+            final distKm = distanceMeters / 1000.0;
+            final durMin = math.max(1, (durationSeconds / 60).round());
+            final etaTime = _formatEta(DateTime.now().add(Duration(minutes: durMin)));
+
+            final routeType = i == 0
+                ? RouteOptionType.fastestHighway
+                : i == 1
+                    ? RouteOptionType.twistyCorridor
+                    : RouteOptionType.ecoScenic;
+
+            calculatedRoutes.add(
+              RouteCalculationResult(
+                id: 'google-route-$i',
+                routeName: summary.isNotEmpty ? 'via $summary' : 'Route ${i+1}',
+                distanceKm: double.parse(distKm.toStringAsFixed(1)),
+                durationMinutes: durMin,
+                estimatedArrival: etaTime,
+                polylinePoints: polylinePoints,
+                steps: stepsList,
+                routeType: routeType,
+              ),
+            );
+          }
+
+          if (calculatedRoutes.isNotEmpty) {
+            final active = calculatedRoutes[0];
+            final alternatives = calculatedRoutes.sublist(1);
+            return MultiRouteCalculationResult(
+              activeRoute: active,
+              alternativeRoutes: alternatives,
+              allRoutes: calculatedRoutes,
+            );
           }
         }
       } catch (e) {
-        debugPrint('[Google Directions API Notice]: $e');
+        debugPrint('[Google Routes API Notice]: $e');
       }
     }
 
-    // Resilient fallback to OSRM / Geodesic multi-route engine
-    return RoadOsRoutingEngine.instance.calculateMultiRoutes(
-      start: origin,
-      destination: destination,
-      waypoints: waypoints,
-      selectedOption: selectedOption,
-    );
+    throw StateError('Google Maps routing is unavailable. Configure the Maps API key and verify the Directions provider.');
   }
 
   /// 5. Google Geocoding / Reverse Geocoding API
@@ -389,8 +408,7 @@ class GoogleMapsPlatformService {
       }
     }
 
-    // Resilient fallback
-    return IndiaPlacesSearchEngine.instance.reverseGeocode(location);
+    throw StateError('Geocoding unavailable.');
   }
 
   /// RFC Google Encoded Polyline Algorithm Format Decoder

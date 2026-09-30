@@ -8,12 +8,14 @@ class GarageCustomizerPanel extends StatefulWidget {
   final GarageVehicleModel vehicle;
   final Function(VehicleCustomizationState updatedState) onCustomizationChanged;
   final VoidCallback onClose;
+  final String riderId;
 
   const GarageCustomizerPanel({
     super.key,
     required this.vehicle,
     required this.onCustomizationChanged,
     required this.onClose,
+    required this.riderId,
   });
 
   @override
@@ -91,7 +93,7 @@ class _GarageCustomizerPanelState extends State<GarageCustomizerPanel>
     setState(() => _isSaving = true);
     LuxAudioHapticsService.heavyImpact();
 
-    await GarageStorageService().saveCustomization(widget.vehicle.id, _currentState);
+    await GarageStorageService().saveCustomization(widget.vehicle.id, _currentState, riderId: widget.riderId);
 
     if (mounted) {
       setState(() => _isSaving = false);

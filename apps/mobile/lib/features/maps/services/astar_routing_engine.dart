@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+
 import '../core/map_provider.dart';
 import '../core/map_provider_factory.dart';
 import '../domain/models/navigation_models.dart';
@@ -68,17 +68,4 @@ class AStarRoutingEngine {
     ];
   }
 
-  double _haversineDistanceKm(LatLng p1, LatLng p2) {
-    const r = 6371.0;
-    final dLat = _degToRad(p2.latitude - p1.latitude);
-    final dLon = _degToRad(p2.longitude - p1.longitude);
-
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_degToRad(p1.latitude)) * math.cos(_degToRad(p2.latitude)) *
-        math.sin(dLon / 2) * math.sin(dLon / 2);
-    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    return r * c;
-  }
-
-  double _degToRad(double deg) => deg * (math.pi / 180.0);
 }

@@ -29,8 +29,7 @@ class FieldLinkHealthSnapshot {
         return 'LIVE HARDWARE';
       case TelemetryDataSource.benchTest:
         return 'BENCH TEST';
-      case TelemetryDataSource.simulated:
-        return 'SIMULATED DATA';
+
     }
   }
 

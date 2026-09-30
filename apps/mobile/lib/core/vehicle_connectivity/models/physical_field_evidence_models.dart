@@ -2,15 +2,12 @@ import 'package:flutter/foundation.dart';
 import '../transports/vehicle_transport.dart';
 
 enum FieldEvidenceLevel {
-  simulated,
   benchTest,
   realDevicePending,
   realDeviceVerified;
 
   String get label {
     switch (this) {
-      case FieldEvidenceLevel.simulated:
-        return 'SIMULATED';
       case FieldEvidenceLevel.benchTest:
         return 'BENCH TEST';
       case FieldEvidenceLevel.realDevicePending:

@@ -37,7 +37,6 @@ class ConnectionDiagnosticsSession {
   final DateTime? lastPacketTimestamp;
   final String? failureReason;
   final bool isWebSandbox;
-  final bool isSimulated;
 
   const ConnectionDiagnosticsSession({
     required this.state,
@@ -52,7 +51,6 @@ class ConnectionDiagnosticsSession {
     this.lastPacketTimestamp,
     this.failureReason,
     this.isWebSandbox = false,
-    this.isSimulated = false,
   });
 
   bool get isConnected => state == ConnectionLifecycleState.connected || state == ConnectionLifecycleState.telemetryActive;

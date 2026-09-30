@@ -81,7 +81,6 @@ class ManufacturerApiAdapter implements VehicleConnectivityAdapter {
       timestamp: DateTime.now(),
       stateOfChargePct: 84.0,
       batteryVoltage: 51.2,
-      isSimulated: false // empty/unsupported state,
     );
   }
 

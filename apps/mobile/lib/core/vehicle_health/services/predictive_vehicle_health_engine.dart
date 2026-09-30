@@ -73,7 +73,7 @@ class PredictiveVehicleHealthEngine {
 
     // 1. Engine & Powertrain Subsystem
     int engineScore = 100;
-    String engineStatus = 'Optimal operating parameters';
+    String engineStatus = 'Connected - Scanning...';
     if (obd.coolantTempC != null) {
       if (obd.coolantTempC! > 105.0) {
         engineScore = 45;
@@ -94,7 +94,13 @@ class PredictiveVehicleHealthEngine {
       } else if (obd.coolantTempC! > 95.0) {
         engineScore = 85;
         engineStatus = 'Warm operating temperature (${obd.coolantTempC!.round()} degC)';
+      } else {
+        engineScore = 100;
+        engineStatus = 'Optimal operating parameters';
       }
+    } else {
+      engineScore = 0;
+      engineStatus = 'Sensor data unavailable';
     }
 
     subsystems.add(
@@ -109,7 +115,7 @@ class PredictiveVehicleHealthEngine {
 
     // 2. Electrical & 12V Battery Subsystem
     int batteryScore = 100;
-    String batteryStatus = 'Stator & voltage bus nominal';
+    String batteryStatus = 'Connected - Scanning...';
     if (obd.batteryVoltage != null) {
       if (obd.batteryVoltage! < 11.8) {
         batteryScore = 50;
@@ -130,7 +136,13 @@ class PredictiveVehicleHealthEngine {
       } else if (obd.batteryVoltage! < 12.4) {
         batteryScore = 80;
         batteryStatus = 'Discharge detected (${obd.batteryVoltage!.toStringAsFixed(1)}V)';
+      } else {
+        batteryScore = 100;
+        batteryStatus = 'Stator & voltage bus nominal';
       }
+    } else {
+      batteryScore = 0;
+      batteryStatus = 'Sensor data unavailable';
     }
 
     subsystems.add(
@@ -144,24 +156,32 @@ class PredictiveVehicleHealthEngine {
     );
 
     // 3. TPMS & Tire Pressure Subsystem
-    int tpmsScore = 98;
-    String tpmsStatus = 'Front 36 PSI / Rear 42 PSI (Optimal)';
-    if (obd.frontTirePsi != null && obd.frontTirePsi! < 28.0) {
-      tpmsScore = 60;
-      tpmsStatus = 'Low front tire pressure (${obd.frontTirePsi!.round()} PSI)';
-      recommendations.add(
-        AiRecommendationEntity(
-          id: 'rec_tpms_${now.millisecondsSinceEpoch}',
-          title: 'Inflate Front Tire',
-          explanation: 'Front tire pressure is underinflated, affecting handling and turn-in grip.',
-          category: RecommendationCategory.safetyRisk,
-          urgency: RecommendationUrgency.upcoming,
-          recommendedAction: 'Inflate front tire to factory cold spec (36 PSI).',
-          confidenceScore: 0.96,
-          supportingTelemetry: 'Front TPMS: ${obd.frontTirePsi!.round()} PSI',
-          timestamp: now,
-        ),
-      );
+    int tpmsScore = 100;
+    String tpmsStatus = 'Connected - Scanning...';
+    if (obd.frontTirePsi != null) {
+      if (obd.frontTirePsi! < 28.0) {
+        tpmsScore = 60;
+        tpmsStatus = 'Low front tire pressure (${obd.frontTirePsi!.round()} PSI)';
+        recommendations.add(
+          AiRecommendationEntity(
+            id: 'rec_tpms_${now.millisecondsSinceEpoch}',
+            title: 'Inflate Front Tire',
+            explanation: 'Front tire pressure is underinflated, affecting handling and turn-in grip.',
+            category: RecommendationCategory.safetyRisk,
+            urgency: RecommendationUrgency.upcoming,
+            recommendedAction: 'Inflate front tire to factory cold spec (36 PSI).',
+            confidenceScore: 0.96,
+            supportingTelemetry: 'Front TPMS: ${obd.frontTirePsi!.round()} PSI',
+            timestamp: now,
+          ),
+        );
+      } else {
+        tpmsScore = 100;
+        tpmsStatus = 'Front ${obd.frontTirePsi!.round()} PSI / Rear ${obd.rearTirePsi?.round() ?? 'N/A'} PSI';
+      }
+    } else {
+      tpmsScore = 0;
+      tpmsStatus = 'Sensor data unavailable';
     }
 
     subsystems.add(

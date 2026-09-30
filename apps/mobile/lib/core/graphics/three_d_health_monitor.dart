@@ -1,7 +1,7 @@
 enum ThreeDHealthState {
   rendering,
   loading,
-  fallback2D,
+  unavailable,
   error,
 }
 
@@ -35,19 +35,19 @@ class ThreeDHealthMonitor {
   }) {
     if (!isWebGLAvailable) {
       return const ThreeDHealthReport(
-        state: ThreeDHealthState.fallback2D,
+        state: ThreeDHealthState.unavailable,
         isWebGLAvailable: false,
         isModelLoaded: false,
-        statusDescription: 'Hardware graphics acceleration unavailable. Using 2D studio.',
+        statusDescription: 'Hardware graphics acceleration unavailable.',
       );
     }
 
     if (!isModelAvailable) {
       return const ThreeDHealthReport(
-        state: ThreeDHealthState.fallback2D,
+        state: ThreeDHealthState.unavailable,
         isWebGLAvailable: true,
         isModelLoaded: false,
-        statusDescription: 'Exact 3D asset unavailable. Showing verified vehicle card.',
+        statusDescription: 'Exact 3D asset unavailable for this vehicle model.',
       );
     }
 

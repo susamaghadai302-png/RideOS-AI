@@ -7,22 +7,26 @@ final myVehiclesProvider = StateNotifierProvider<MyVehiclesNotifier, List<Vehicl
 });
 
 class MyVehiclesNotifier extends StateNotifier<List<VehicleProfile>> {
-  MyVehiclesNotifier() : super([]) {
+  final MyVehiclesRepository repository;
+
+  MyVehiclesNotifier({MyVehiclesRepository? repository})
+      : repository = repository ?? MyVehiclesRepository(),
+        super([]) {
     _load();
   }
 
   Future<void> _load() async {
-    final vehicles = await MyVehiclesRepository().getOwnedVehicles();
+    final vehicles = await repository.getOwnedVehicles();
     if (!mounted) return;
     state = vehicles;
   }
 
   Future<void> addVehicle(VehicleProfile profile) async {
-    await MyVehiclesRepository().addOwnedVehicle(profile);
+    await repository.addOwnedVehicle(profile);
     await _load();
   }
 
   Future<void> associateDevice(String macAddress, String vehicleId) async {
-    await MyVehiclesRepository().associateMacWithVehicle(macAddress, vehicleId);
+    await repository.associateMacWithVehicle(macAddress, vehicleId);
   }
 }

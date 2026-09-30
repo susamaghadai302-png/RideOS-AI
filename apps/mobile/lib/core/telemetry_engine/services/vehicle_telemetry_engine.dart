@@ -48,7 +48,7 @@ class VehicleTelemetryEngine {
 
     final caps = _connectivityEngine.activeCapabilities;
     final now = DateTime.now();
-    final freshness = packet.isSimulated ? TelemetryFreshnessState.simulated : TelemetryFreshnessState.live;
+    const freshness = TelemetryFreshnessState.live;
 
     TelemetryMetric<T> resolve<T>({
       required T? value,

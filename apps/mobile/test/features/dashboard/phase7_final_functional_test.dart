@@ -259,7 +259,7 @@ NormalizedTelemetrySnapshot _createSnap({
   DateTime? ts,
 }) {
   return NormalizedTelemetrySnapshot(
-    dataSource: TelemetryDataSource.simulated,
+    dataSource: TelemetryDataSource.benchTest,
     timestamp: ts ?? DateTime.now(),
     vehicleSpeedKmh: TelemetryMetric(unit: 'km/h', timestamp: DateTime.now(), value: speed, confidence: MetricConfidence.validLive),
     engineRpm: TelemetryMetric(unit: 'rpm', timestamp: DateTime.now(), value: rpm, confidence: MetricConfidence.validLive),

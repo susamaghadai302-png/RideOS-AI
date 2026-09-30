@@ -17,7 +17,6 @@ void main() {
         deviceName: 'Yamaha_R15M_CCU',
         advertisedServices: ['0000fee0-0000-1000-8000-00805f9b34fb'],
         macAddress: 'AA:BB:CC:DD:EE:FF',
-        isSimulated: true,
       );
 
       final session = manager.currentSession;

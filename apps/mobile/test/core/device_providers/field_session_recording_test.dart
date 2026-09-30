@@ -26,11 +26,11 @@ void main() {
       expect(benchService.isRideSessionActive, isFalse);
       expect(session.sessionId.startsWith('field_sess_'), isTrue);
       expect(session.durationMinutes, greaterThanOrEqualTo(0.0));
-      expect(session.dataSource, equals(TelemetryDataSource.simulated));
+      expect(session.dataSource, equals(TelemetryDataSource.benchTest));
 
       final jsonMap = session.toJson();
       expect(jsonMap['sessionId'], isNotNull);
-      expect(jsonMap['dataSource'], equals('simulated'));
+      expect(jsonMap['dataSource'], equals('benchTest'));
     });
   });
 }

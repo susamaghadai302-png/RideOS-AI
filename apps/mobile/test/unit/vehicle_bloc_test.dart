@@ -13,7 +13,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late VehicleBloc vehicleBloc;
-  late MyVehiclesRepository repository;
+  late MockMyVehiclesRepository repository;
 
   const testProfile = VehicleProfile(
     id: 'v_panigale_v4s_test',
@@ -47,7 +47,7 @@ void main() {
   );
 
   setUp(() async {
-    repository = MyVehiclesRepository();
+    repository = MockMyVehiclesRepository();
     await repository.addOwnedVehicle(testProfile);
     vehicleBloc = VehicleBloc(
       repository: repository,
@@ -200,4 +200,39 @@ void main() {
       expect(seq3, greaterThan(seq2));
     });
   });
+}
+
+class MockMyVehiclesRepository implements MyVehiclesRepository {
+  final List<VehicleProfile> _vehicles = [];
+
+  @override
+  Future<List<VehicleProfile>> getOwnedVehicles() async {
+    return _vehicles;
+  }
+
+  @override
+  Future<void> addOwnedVehicle(VehicleProfile profile) async {
+    _vehicles.add(profile);
+  }
+
+  @override
+  Future<void> updateOwnedVehicle(String id, VehicleProfile profile) async {
+    final index = _vehicles.indexWhere((v) => v.id == id);
+    if (index >= 0) {
+      _vehicles[index] = profile;
+    }
+  }
+
+  @override
+  Future<void> deleteOwnedVehicle(String id) async {
+    _vehicles.removeWhere((v) => v.id == id);
+  }
+
+  @override
+  Future<String?> getAssociatedVehicleIdForMac(String macAddress) async {
+    return null;
+  }
+
+  @override
+  Future<void> associateMacWithVehicle(String macAddress, String vehicleId) async {}
 }

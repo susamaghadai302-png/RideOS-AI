@@ -10,8 +10,8 @@ void main() {
       engine = RouteWeatherRadarEngine();
     });
 
-    test('Evaluates clear weather condition and dry road grip nominally', () {
-      final advisory = engine.evaluateRouteWeather(
+    test('Evaluates clear weather condition and dry road grip nominally', () async {
+      final advisory = await engine.evaluateRouteWeather(
         simulatedRainPct: 0.0,
         simulatedWindKmh: 15.0,
       );
@@ -21,8 +21,8 @@ void main() {
       expect(advisory.hasCrosswindWarning, isFalse);
     });
 
-    test('Triggers high crosswind warning when wind speed exceeds threshold', () {
-      final advisory = engine.evaluateRouteWeather(
+    test('Triggers high crosswind warning when wind speed exceeds threshold', () async {
+      final advisory = await engine.evaluateRouteWeather(
         simulatedRainPct: 0.0,
         simulatedWindKmh: 35.0, // Gusts will exceed 45 km/h
       );
@@ -31,8 +31,8 @@ void main() {
       expect(advisory.conditionSummary, contains('crosswind'));
     });
 
-    test('Detects heavy rain hydroplane risk and emits severe advisory', () {
-      final advisory = engine.evaluateRouteWeather(
+    test('Detects heavy rain hydroplane risk and emits severe advisory', () async {
+      final advisory = await engine.evaluateRouteWeather(
         simulatedRainPct: 85.0,
         simulatedWindKmh: 20.0,
       );

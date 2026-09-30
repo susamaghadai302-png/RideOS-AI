@@ -95,12 +95,10 @@ class TelemetryPipeline {
   void ingestPidMeasurement(
     DecodedPidMeasurement measurement, {
     EcuModule sourceEcu = EcuModule.engineControlModule_ECM,
-    bool isSimulated = false,
   }) {
     final normalized = _normalizer.normalizePidMeasurement(
       measurement,
       sourceEcu: sourceEcu,
-      isSimulated: isSimulated,
     );
 
     _processNormalizedMetric(normalized);
@@ -112,13 +110,11 @@ class TelemetryPipeline {
   }
 
   void _handleDiagnosticPidBatch(Map<int, DecodedPidMeasurement> batch) {
-    const isSim = false;
 
     for (final measurement in batch.values) {
       ingestPidMeasurement(
         measurement,
         sourceEcu: EcuModule.engineControlModule_ECM,
-        isSimulated: isSim,
       );
     }
   }

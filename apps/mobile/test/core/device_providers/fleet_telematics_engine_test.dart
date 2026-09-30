@@ -18,7 +18,7 @@ void main() {
     test('Explicit switchProvider activates SimulatorProvider', () {
       engine.switchProvider('simulator');
       expect(engine.activeProvider, isNotNull);
-      expect(engine.activeProvider!.dataSourceClassification, equals(TelemetryDataSource.simulated));
+      expect(engine.activeProvider!.dataSourceClassification, equals(TelemetryDataSource.benchTest));
     });
 
     test('Switches hardware provider to OBD-II CAN link', () {
@@ -39,7 +39,7 @@ void main() {
       final summary = engine.stopRecordingSession();
       expect(engine.isRecordingSession, isFalse);
       expect(summary['totalSamples'], greaterThanOrEqualTo(0));
-      expect(summary['dataSource'], equals('simulated'));
+      expect(summary['dataSource'], equals('benchTest'));
     });
   });
 }

@@ -72,7 +72,6 @@ class ObdGatewayAdapter implements VehicleConnectivityAdapter {
       batteryVoltage: null,
       engineTempC: null,
       fuelLevelPct: null,
-      isSimulated: false // empty/unsupported state,
     );
   }
 

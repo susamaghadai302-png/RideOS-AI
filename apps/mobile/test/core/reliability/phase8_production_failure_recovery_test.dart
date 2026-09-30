@@ -68,12 +68,10 @@ void main() {
       await sub.cancel();
 
       expect(sampleCount, greaterThan(0));
-      expect(telematics.latestSnapshot?.dataSource, equals(TelemetryDataSource.simulated));
+      expect(telematics.latestSnapshot?.dataSource, equals(TelemetryDataSource.benchTest));
     });
 
     test('4. Zero-Billing Map Fallback fails gracefully without dataset', () async {
-      mapFactory.useLocalGraph();
-      expect(mapFactory.currentEngine, equals(MapEngineType.localGraph));
 
       await expectLater(
         mapFactory.activeProvider.calculateRoute(

@@ -73,7 +73,6 @@ class SmartDisplayAdapter implements VehicleConnectivityAdapter {
     return RawVehicleTelemetryPacket(
       timestamp: DateTime.now(),
       batteryVoltage: null,
-      isSimulated: false // empty/unsupported state,
     );
   }
 

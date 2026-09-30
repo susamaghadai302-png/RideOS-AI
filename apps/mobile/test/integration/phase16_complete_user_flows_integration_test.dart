@@ -70,7 +70,7 @@ void main() {
 
     test('FLOW 4: Full Navigation, Turn-by-Turn Guidance gracefully fails offline', () async {
       final mapFactory = MapProviderFactory();
-      mapFactory.useLocalGraph(); // Explicit zero-billing local graph
+
 
       const origin = LatLng(12.9716, 77.5946);
       const destination = LatLng(12.9352, 77.6245);

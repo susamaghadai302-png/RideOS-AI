@@ -160,12 +160,12 @@ class GoogleMapsProvider implements MapProvider {
       try {
         final places = await GoogleMapsPlatformService.instance.searchPlacesAutocomplete(query);
         if (places.isNotEmpty) {
-          return places.map((p) {
+          return places.where((p) => p.latitude != null && p.longitude != null).map((p) {
             return PlaceSearchResult(
               id: p.id,
               name: p.title,
               address: p.subtitle,
-              coordinates: LatLng(p.latitude ?? 0.0, p.longitude ?? 0.0),
+              coordinates: LatLng(p.latitude!, p.longitude!),
               category: p.category,
             );
           }).toList();

@@ -4,6 +4,7 @@ import '../../../../core/design_system/lux_components.dart' hide RoadOSButton, R
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/widgets/roados_visual_environment.dart';
+import 'package:camera/camera.dart';
 
 class AiVisionDashcamScreen extends StatefulWidget {
   const AiVisionDashcamScreen({super.key});
@@ -18,10 +19,12 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
   late AnimationController _pulseController;   // REC dot pulse
   bool _recordingActive = true;
   bool _sentryMode = false;
+  CameraController? _cameraController;
+  bool _isCameraInitialized = false;
 
   // Live telemetry values (simulated)
   final double _speed = 62.0;
-  final int _threatCount = 3;
+  final int _threatCount = 0;
 
   @override
   void initState() {
@@ -38,6 +41,28 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..forward();
+    _initCamera();
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isNotEmpty) {
+        _cameraController = CameraController(
+          cameras.first,
+          ResolutionPreset.medium,
+          enableAudio: false,
+        );
+        await _cameraController!.initialize();
+        if (mounted) {
+          setState(() {
+            _isCameraInitialized = true;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Camera init error: $e');
+    }
   }
 
   @override
@@ -45,6 +70,7 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
     _driveController.dispose();
     _scanController.dispose();
     _pulseController.dispose();
+    _cameraController?.dispose();
     super.dispose();
   }
 
@@ -213,10 +239,27 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
             return Stack(
               children: [
                 // Road scene
-                CustomPaint(
-                  size: const Size(double.infinity, 275),
-                  painter: DashcamRoadPainter(progress: _driveController.value),
-                ),
+                if (_isCameraInitialized && _cameraController != null)
+                  Positioned.fill(
+                    child: CameraPreview(_cameraController!),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    color: Colors.black,
+                    child: const Center(
+                      child: Text(
+                        'HARDWARE MODULE NOT CONNECTED\n(Camera feed unavailable)',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: RoadOSColors.textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
 
                 // AI scan sweep ring
                 AnimatedBuilder(
@@ -229,30 +272,6 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
 
                 // Corner bracket overlays (camera HUD frame)
                 const _CameraCornerBrackets(),
-
-                // Bounding box: Vehicle ahead
-                _AnimatedBoundingBox(
-                  left: 130, top: 88, width: 110, height: 72,
-                  label: 'VEHICLE  24m',
-                  color: RoadOSColors.cyberCyan,
-                  animController: _driveController,
-                ),
-
-                // Bounding box: Speed sign
-                _AnimatedBoundingBox(
-                  left: null, right: 30, top: 52, width: 50, height: 58,
-                  label: '65 MPH',
-                  color: RoadOSColors.hyperOrange,
-                  animController: _driveController,
-                ),
-
-                // Bounding box: Pedestrian
-                _AnimatedBoundingBox(
-                  left: 30, top: 100, width: 38, height: 70,
-                  label: 'PED  18m',
-                  color: RoadOSColors.warningAmber,
-                  animController: _driveController,
-                ),
 
                 // Top status strip
                 Positioned(
@@ -495,27 +514,9 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
   // ── Detection items ────────────────────────────────────────────────────────
   List<Widget> _detectionItems() {
     final items = [
-      (Icons.speed_rounded, RoadOSColors.hyperOrange,
-          'SPEED LIMIT RECOGNITION', 'DETECTED: 65 MPH LIMIT',
-          'Confidence: 99.4% | Telematics Match'),
-      (Icons.warning_amber_rounded, RoadOSColors.warningAmber,
-          'ROAD HAZARD AHEAD', 'CAUTION: POTHOLE 45m',
-          'Rider Warning Engaged'),
-      (Icons.pets_rounded, RoadOSColors.hyperOrange,
-          'WILDLIFE CROSSING', 'WARNING: DEER 120m',
-          'Sub-system Alert Active'),
-      (Icons.directions_walk_rounded, RoadOSColors.cyberCyan,
-          'PEDESTRIAN CROSSING', 'DETECTED AT CROSSWALK',
-          'Speed Advisory: Reduce to 25 MPH'),
-      (Icons.construction_rounded, RoadOSColors.warningAmber,
-          'CONSTRUCTION ZONE', 'ROADWORK AHEAD 300m',
-          'Rerouting Recommended'),
-      (Icons.alt_route_rounded, RoadOSColors.cyberCyan,
-          'LANE & APEX GUIDANCE', 'OPTIMAL LINE DETECTED',
-          'Lean Angle Target: 42 deg'),
-      (Icons.health_and_safety_rounded, RoadOSColors.apexEmerald,
-          'RIDER GEAR CHECK', 'HELMET SECURED | AIRBAG READY',
-          'Safety Telematics OK'),
+      (Icons.memory_rounded, RoadOSColors.textMuted,
+          'AWAITING HARDWARE', 'NO NEURAL CO-PROCESSOR',
+          'Live Vision requires RoadOS Neural Edge Module'),
     ];
     return items.map((i) => Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -541,106 +542,6 @@ class _AiVisionDashcamScreenState extends State<AiVisionDashcamScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  _AnimatedBoundingBox — AI target box with animated corner brackets
-// ─────────────────────────────────────────────────────────────────────────────
-class _AnimatedBoundingBox extends StatelessWidget {
-  final double? left;
-  final double? right;
-  final double top;
-  final double width;
-  final double height;
-  final String label;
-  final Color color;
-  final AnimationController animController;
-
-  const _AnimatedBoundingBox({
-    this.left,
-    this.right,
-    required this.top,
-    required this.width,
-    required this.height,
-    required this.label,
-    required this.color,
-    required this.animController,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: left,
-      right: right,
-      top: top,
-      width: width,
-      height: height,
-      child: AnimatedBuilder(
-        animation: animController,
-        builder: (_, __) {
-          final glow = 0.4 + 0.6 * math.sin(animController.value * math.pi * 2);
-          return CustomPaint(
-            painter: _BoundingBoxPainter(color: color, glowFactor: glow),
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: Padding(
-                padding: const EdgeInsets.all(3),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 7.5,
-                    color: color,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _BoundingBoxPainter extends CustomPainter {
-  final Color color;
-  final double glowFactor;
-  const _BoundingBoxPainter({required this.color, required this.glowFactor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    const arm = 14.0;
-
-    // Glow fill
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, w, h),
-      Paint()..color = color.withValues(alpha: 0.06 + glowFactor * 0.04),
-    );
-
-    final paint = Paint()
-      ..color = color.withValues(alpha: 0.65 + glowFactor * 0.35)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    // Corner brackets only
-    for (final corner in [
-      [const Offset(0, arm), Offset.zero, const Offset(arm, 0)],           // TL
-      [Offset(w - arm, 0), Offset(w, 0), Offset(w, arm)],      // TR
-      [Offset(0, h - arm), Offset(0, h), Offset(arm, h)],      // BL
-      [Offset(w - arm, h), Offset(w, h), Offset(w, h - arm)],  // BR
-    ]) {
-      final path = Path()
-        ..moveTo(corner[0].dx, corner[0].dy)
-        ..lineTo(corner[1].dx, corner[1].dy)
-        ..lineTo(corner[2].dx, corner[2].dy);
-      canvas.drawPath(path, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _BoundingBoxPainter old) => true;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 //  _CameraCornerBrackets — fixed HUD frame corners
 // ─────────────────────────────────────────────────────────────────────────────

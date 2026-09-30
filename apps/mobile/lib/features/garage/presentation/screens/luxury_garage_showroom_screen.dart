@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/design_system/roados_components.dart';
@@ -17,6 +18,9 @@ import '../../../vehicle_manager/presentation/screens/vehicle_catalog_screen.dar
 import 'vehicle_scanner_screen.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/graphics/global_3d_state_bridge.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../core/services/garage_storage_service.dart';
 
 enum ShowroomLightingMode {
   studio('Studio Daylight', 1.15, Color(0xFF00F2FE)),
@@ -91,6 +95,33 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        if (authState is! AuthenticatedState) {
+          return Scaffold(
+            backgroundColor: const Color(0xFF070B18),
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lock_rounded, color: RoadOSColors.hyperOrange, size: 48),
+                  const SizedBox(height: 16),
+                  Text('AUTHENTICATION REQUIRED', style: RoadOSTypography.screenTitle),
+                  const SizedBox(height: 8),
+                  const Text('You must be logged in to access the Smart 3D Garage.', style: TextStyle(color: Colors.white70)),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final riderId = authState.rider.id;
+
+        // Background sync to ensure backend parity
+        Future.microtask(() {
+          GarageStorageService().loadGarageCatalog(riderId: riderId);
+        });
+
     final allProfiles = VehicleRegistry().verifiedProfiles;
     final currentVehicle = allProfiles.isNotEmpty && _selectedVehicleIndex < allProfiles.length
         ? allProfiles[_selectedVehicleIndex]
@@ -437,7 +468,7 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
                 builder: (context, snapshot) {
                   final tele = snapshot.data ?? _telematicsEngine.latestSnapshot;
                   final summary = _analyticsEngine.getSummary();
-                  final isSimulated = tele?.dataSource == TelemetryDataSource.simulated;
+                  final isLive = tele?.dataSource == TelemetryDataSource.realDevice;
 
                   return LiquidGlassCard(
                     padding: const EdgeInsets.all(14),
@@ -461,7 +492,7 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                isSimulated ? 'SIM' : 'LIVE',
+                                isLive ? 'LIVE' : 'BENCH',
                                 style: const TextStyle(color: RoadOSColors.apexEmerald, fontSize: 8, fontWeight: FontWeight.bold),
                               ),
                             ),
@@ -677,6 +708,8 @@ class _LuxuryGarageShowroomScreenState extends ConsumerState<LuxuryGarageShowroo
         ],
       ),
       ),
+    );
+    },
     );
   }
 

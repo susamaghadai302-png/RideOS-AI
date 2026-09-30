@@ -97,7 +97,6 @@ class WifiGatewayAdapter implements VehicleConnectivityAdapter {
       speedKmh: null,
       rpm: null,
       batteryVoltage: 13.2,
-      isSimulated: false // empty/unsupported state,
     );
   }
 

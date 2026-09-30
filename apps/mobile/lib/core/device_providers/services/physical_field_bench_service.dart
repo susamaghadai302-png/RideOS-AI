@@ -102,7 +102,7 @@ class PhysicalFieldBenchService {
       averagePacketLossPct: _packetLossPct,
       connectionInterruptions: _connectionDropsDuringRide,
       detectedDtcs: List.unmodifiable(_detectedDtcs),
-      dataSource: _telematicsEngine.activeProvider?.dataSourceClassification ?? TelemetryDataSource.simulated,
+      dataSource: _telematicsEngine.activeProvider?.dataSourceClassification ?? TelemetryDataSource.benchTest,
     );
   }
 
@@ -128,7 +128,7 @@ class PhysicalFieldBenchService {
         reconnectCount: _reconnectCount,
         sensorFreshnessSeconds: freshness,
         dataQualityScore: qualityScore,
-        source: _telematicsEngine.activeProvider?.dataSourceClassification ?? TelemetryDataSource.simulated,
+        source: _telematicsEngine.activeProvider?.dataSourceClassification ?? TelemetryDataSource.benchTest,
         rssi: _telematicsEngine.latestSnapshot?.rssi ?? -60,
       );
 

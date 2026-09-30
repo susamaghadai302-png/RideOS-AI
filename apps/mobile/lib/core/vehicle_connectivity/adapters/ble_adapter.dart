@@ -104,7 +104,6 @@ class GenericBleVehicleAdapter implements VehicleConnectivityAdapter {
       speedKmh: null,
       rpm: null,
       batteryVoltage: null,
-      isSimulated: false, // empty/unsupported state
     );
   }
 
