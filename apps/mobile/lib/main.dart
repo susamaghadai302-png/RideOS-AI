@@ -20,6 +20,9 @@ import 'features/navigation/domain/services/route_service.dart';
 import 'features/navigation/domain/services/location_service.dart';
 import 'features/navigation/domain/services/navigation_voice_service.dart';
 import 'features/navigation/presentation/bloc/navigation_bloc.dart';
+import 'features/navigation/presentation/bloc/navigation_state.dart';
+import 'core/vehicle_connectivity/services/smart_display_connection_manager.dart';
+import 'core/vehicle_connectivity/models/rideos_display_packet.dart';
 import 'features/obd_tpms/core/ble/obd_ble_service.dart';
 import 'features/obd_tpms/data/datasources/obd_remote_datasource.dart';
 import 'features/obd_tpms/presentation/bloc/obd_bloc.dart';
@@ -152,6 +155,39 @@ class _RideOSAppState extends State<RideOSApp> {
               if (Platform.isIOS) {
                 navBloc.stream.listen((state) {
                   CarPlayStateBridge.onNavigationUpdate(state);
+                  
+                  // Also send to Bluetooth Smart Display if connected
+                  if (state is NavigationActiveState) {
+                    final packet = RideOSDisplayPacket(
+                      timestamp: DateTime.now(),
+                      navigationState: 'ACTIVE',
+                      maneuverType: state.currentStep?.instruction,
+                      maneuverDistanceMeters: (state.distanceRemainingKm ?? 0) * 1000,
+                      distanceToDestinationMeters: (state.distanceRemainingKm ?? 0) * 1000, // Or route total
+                      eta: state.durationRemainingMins?.toString(),
+                      streetName: state.currentStep?.instruction,
+                      speedKmh: state.currentFix?.speedKmh,
+                      connectionStatus: SmartDisplayConnectionManager().currentState.name.toUpperCase(),
+                    );
+                    SmartDisplayConnectionManager().sendNavigationUpdate(packet);
+                  }
+                });
+              } else {
+                navBloc.stream.listen((state) {
+                  if (state is NavigationActiveState) {
+                    final packet = RideOSDisplayPacket(
+                      timestamp: DateTime.now(),
+                      navigationState: 'ACTIVE',
+                      maneuverType: state.currentStep?.instruction,
+                      maneuverDistanceMeters: (state.distanceRemainingKm ?? 0) * 1000,
+                      distanceToDestinationMeters: (state.distanceRemainingKm ?? 0) * 1000, // Or route total
+                      eta: state.durationRemainingMins?.toString(),
+                      streetName: state.currentStep?.instruction,
+                      speedKmh: state.currentFix?.speedKmh,
+                      connectionStatus: SmartDisplayConnectionManager().currentState.name.toUpperCase(),
+                    );
+                    SmartDisplayConnectionManager().sendNavigationUpdate(packet);
+                  }
                 });
               }
               

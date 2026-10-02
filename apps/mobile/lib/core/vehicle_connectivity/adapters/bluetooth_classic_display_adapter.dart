@@ -4,11 +4,15 @@ import '../models/vehicle_capabilities.dart';
 import '../models/vehicle_variant_taxonomy.dart';
 import 'display_adapter_registry.dart';
 import 'vehicle_connectivity_adapter.dart';
+import '../models/rideos_display_packet.dart';
+import '../protocols/display_protocol_encoder.dart';
+import 'dart:convert';
 
 import 'dart:async';
 
 class BluetoothClassicDisplayAdapter extends DisplayAdapter {
   final DisplayDeviceProfile _profile;
+  final DisplayProtocolEncoder _encoder = GenericJsonDisplayEncoder();
   final _bluetoothClassic = BluetoothClassic();
   AdapterConnectionState _currentState = AdapterConnectionState.disconnected;
 
@@ -79,9 +83,14 @@ class BluetoothClassicDisplayAdapter extends DisplayAdapter {
 
   @override
   Future<bool> sendDisplayPacket(dynamic packet) async {
+    if (packet is! RideOSDisplayPacket) return false;
     if (_currentState != AdapterConnectionState.connected) return false;
     try {
-      await _bluetoothClassic.write('rideos_packet'); // send dummy encoded packet
+      final encodedPayload = _encoder.encode(packet);
+      final frame = _encoder.frame(encodedPayload);
+      // bluetooth_classic write accepts String, so we may need to encode to base64 or pass as utf8 string if the plugin supports raw bytes.
+      // Assuming utf8 string for now since write(String data) is all it exposes.
+      await _bluetoothClassic.write(utf8.decode(frame, allowMalformed: true));
       return true;
     } catch (_) {
       return false;

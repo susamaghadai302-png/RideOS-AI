@@ -4,11 +4,14 @@ import '../models/vehicle_capabilities.dart';
 import '../models/vehicle_variant_taxonomy.dart';
 import 'display_adapter_registry.dart';
 import 'vehicle_connectivity_adapter.dart';
+import '../models/rideos_display_packet.dart';
+import '../protocols/display_protocol_encoder.dart';
 
 import 'dart:async';
 
 class GenericBleDisplayAdapter extends DisplayAdapter {
   final DisplayDeviceProfile _profile;
+  final DisplayProtocolEncoder _encoder = GenericJsonDisplayEncoder();
   AdapterConnectionState _currentState = AdapterConnectionState.disconnected;
 
   GenericBleDisplayAdapter(this._profile);
@@ -110,10 +113,12 @@ class GenericBleDisplayAdapter extends DisplayAdapter {
 
   @override
   Future<bool> sendDisplayPacket(dynamic packet) async {
+    if (packet is! RideOSDisplayPacket) return false;
     if (_currentState != AdapterConnectionState.connected || _writeCharacteristic == null) return false;
     try {
-      // In a real app, serialize the packet. Here we send a dummy payload that signifies a real write.
-      await _writeCharacteristic!.write([0x01, 0x02], withoutResponse: true);
+      final encodedPayload = _encoder.encode(packet);
+      final frame = _encoder.frame(encodedPayload);
+      await _writeCharacteristic!.write(frame, withoutResponse: true);
       return true;
     } catch (e) {
       return false;

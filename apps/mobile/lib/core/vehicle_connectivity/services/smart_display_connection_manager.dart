@@ -57,13 +57,19 @@ class SmartDisplayConnectionManager {
         final results = await FlutterBluePlus.scanResults.first;
         for (final r in results) {
           final name = (r.device.platformName.isNotEmpty ? r.device.platformName : r.advertisementData.advName).toLowerCase();
-          // Filter candidate displays (motorcycle displays usually broadcast specifics)
-          if (name.contains('display') || name.contains('dash') || name.contains('tft') || name.contains('cluster')) {
+          
+          if (name.contains('android auto') || name.contains('carplay')) {
+            // These are projection displays, we do not support them over generic BT SPP/BLE
+            continue; 
+          }
+          
+          // Must explicitly match known smart display protocols
+          if (name.contains('rideos') || name.contains('smartdash') || name.contains('y-connect') || name.contains('my ride')) {
             _updateState(SmartDisplayState.deviceFound);
             _updateState(SmartDisplayState.identifying);
             
             final profile = DisplayDeviceProfile(
-              manufacturer: 'Generic',
+              manufacturer: 'SupportedVendor',
               model: name,
               transportType: 'BLE',
               protocolType: 'GENERIC_BLE',
@@ -84,12 +90,17 @@ class SmartDisplayConnectionManager {
         final paired = await btClassic.getPairedDevices();
         for (final d in paired) {
           final name = (d.name ?? '').toLowerCase();
-          if (name.contains('display') || name.contains('dash') || name.contains('tft') || name.contains('cluster')) {
+          
+          if (name.contains('android auto') || name.contains('carplay')) {
+            continue; // Skip projection stacks
+          }
+          
+          if (name.contains('rideos') || name.contains('smartdash') || name.contains('y-connect') || name.contains('my ride')) {
             _updateState(SmartDisplayState.deviceFound);
             _updateState(SmartDisplayState.identifying);
             
             final profile = DisplayDeviceProfile(
-              manufacturer: 'Generic',
+              manufacturer: 'SupportedVendor',
               model: name,
               transportType: 'BT_CLASSIC',
               protocolType: 'GENERIC_CLASSIC',
