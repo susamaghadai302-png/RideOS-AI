@@ -3,6 +3,8 @@ import 'display_protocol.dart';
 import 'rideos_native_display_protocol.dart';
 import 'generic_ble_display_protocol.dart';
 import 'bluetooth_classic_display_protocol.dart';
+import 'yamaha_navilite_protocol.dart';
+import 'ktm_gen3_protocol.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DISPLAY PROTOCOL REGISTRY
@@ -51,5 +53,7 @@ class DisplayProtocolRegistry {
     register(ProtocolBundle(protocol: RideOSNativeDisplayProtocol()));
     register(ProtocolBundle(protocol: GenericBleDisplayProtocol()));
     register(ProtocolBundle(protocol: BluetoothClassicDisplayProtocol()));
+    register(ProtocolBundle(protocol: YamahaNaviLiteBluetoothProtocol()));
+    register(ProtocolBundle(protocol: KtmGen3BluetoothProtocol()));
   }
 }

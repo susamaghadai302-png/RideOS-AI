@@ -10,17 +10,17 @@ void main() {
       manager = SmartDisplayConnectionManager();
     });
 
-    test('initial state is idle', () {
-      expect(manager.currentState, SmartDisplayState.idle);
+    test('initial state is disconnected', () {
+      expect(manager.currentState, SmartDisplayState.disconnected);
     });
 
-    test('autoConnect starts scanning', () async {
+    test('autoConnect starts discovering', () async {
       // We aren't fully mocking flutter_blue_plus here, 
       // but we can verify it immediately enters scanning state.
       // Since autoConnect involves real plugin calls, we just start it
       // and assert the synchronous state transition.
       manager.autoConnect();
-      expect(manager.currentState, SmartDisplayState.scanning);
+      expect(manager.currentState, SmartDisplayState.discovering);
     });
 
     test('disconnect resets state to disconnected', () async {

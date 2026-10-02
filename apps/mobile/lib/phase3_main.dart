@@ -20,8 +20,8 @@ class _Phase3AValidationRunnerState extends State<Phase3AValidationRunner> {
     super.initState();
     _manager.stateStream.listen((state) {
       setState(() => _status = state.name.toUpperCase());
-      if (state == SmartDisplayState.streaming || state == SmartDisplayState.unsupported || state == SmartDisplayState.error) {
-        print("PHASE3A_RESULT: DONE");
+      if (state == SmartDisplayState.streaming || state == SmartDisplayState.unsupported || state == SmartDisplayState.disconnected) {
+        debugPrint("PHASE3A_RESULT: DONE");
       }
     });
     _runValidation();

@@ -14,20 +14,19 @@ import 'device_scanner.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 enum SmartDisplayState {
-  idle,
-  scanning,
-  deviceFound,
+  discovering,
+  candidateFound,
   identifying,
   connecting,
+  probing,
+  handshaking,
   negotiating,
   connected,
   streaming,
+  degraded,
   reconnecting,
   disconnected,
   unsupported,
-  handshakeFailed,
-  timeout,
-  error,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,7 +48,7 @@ class SmartDisplayConnectionManager {
   final DeviceScanner _scanner = DeviceScanner();
   final DisplayProtocolRegistry _protocolRegistry = DisplayProtocolRegistry();
 
-  SmartDisplayState _currentState = SmartDisplayState.idle;
+  SmartDisplayState _currentState = SmartDisplayState.disconnected;
   DisplayDeviceProfile? _activeProfile;
   DisplayProtocol? _activeProtocol;
   DisplayTransport? _activeTransport;
@@ -83,14 +82,14 @@ class SmartDisplayConnectionManager {
   //    scan → filter → classify → probe → handshake → caps → stream
 
   Future<void> autoConnect() async {
-    if (_currentState == SmartDisplayState.scanning ||
+    if (_currentState == SmartDisplayState.discovering ||
         _currentState == SmartDisplayState.streaming) {
       return;
     }
 
     _failureReason = null;
     _reconnectAttempts = 0;
-    _setState(SmartDisplayState.scanning);
+    _setState(SmartDisplayState.discovering);
 
     // 1. Scan BLE + Classic
     _lastScanResults = await _scanner.scan();
@@ -121,7 +120,7 @@ class SmartDisplayConnectionManager {
       return pa.compareTo(pb);
     });
 
-    _setState(SmartDisplayState.deviceFound);
+    _setState(SmartDisplayState.candidateFound);
 
     // 4. Try each candidate in priority order
     for (final candidate in candidates) {
@@ -130,8 +129,7 @@ class SmartDisplayConnectionManager {
     }
 
     // None succeeded
-    if (_currentState != SmartDisplayState.unsupported &&
-        _currentState != SmartDisplayState.handshakeFailed) {
+    if (_currentState != SmartDisplayState.unsupported) {
       _failureReason = 'No candidate responded to protocol probes';
       _setState(SmartDisplayState.unsupported);
     }
@@ -175,6 +173,7 @@ class SmartDisplayConnectionManager {
 
     // ── REAL PROTOCOL LIFECYCLE ──────────────────────────────────────────────
     try {
+      _setState(SmartDisplayState.probing);
       // 1. Probe — does the device speak this protocol?
       final probed = await _activeProtocol!.probe(_activeTransport!);
       if (!probed) {
@@ -182,10 +181,11 @@ class SmartDisplayConnectionManager {
             '${target.name} did not respond to ${_activeProtocol!.protocolName} probe';
         await _activeTransport?.disconnect();
         _activeTransport = null;
-        _setState(SmartDisplayState.handshakeFailed);
+        _setState(SmartDisplayState.unsupported);
         return false;
       }
 
+      _setState(SmartDisplayState.handshaking);
       // 2. Handshake
       final handshook = await _activeProtocol!.handshake(_activeTransport!);
       if (!handshook) {
@@ -193,10 +193,11 @@ class SmartDisplayConnectionManager {
             'Handshake with ${target.name} failed — device rejected session';
         await _activeTransport?.disconnect();
         _activeTransport = null;
-        _setState(SmartDisplayState.handshakeFailed);
+        _setState(SmartDisplayState.unsupported);
         return false;
       }
 
+      _setState(SmartDisplayState.negotiating);
       // 3. Capability negotiation
       _negotiatedCapabilities =
           await _activeProtocol!.getCapabilities(_activeTransport!);
@@ -209,7 +210,7 @@ class SmartDisplayConnectionManager {
             'Session start on ${target.name} failed — display refused';
         await _activeTransport?.disconnect();
         _activeTransport = null;
-        _setState(SmartDisplayState.handshakeFailed);
+        _setState(SmartDisplayState.unsupported);
         return false;
       }
 
@@ -224,7 +225,7 @@ class SmartDisplayConnectionManager {
       _failureReason = 'Protocol error: $e';
       await _activeTransport?.disconnect();
       _activeTransport = null;
-      _setState(SmartDisplayState.error);
+      _setState(SmartDisplayState.disconnected);
       return false;
     }
   }

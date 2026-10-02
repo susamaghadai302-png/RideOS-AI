@@ -74,17 +74,18 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
     String text = 'Disconnected';
 
     switch (state) {
-      case SmartDisplayState.idle:
       case SmartDisplayState.disconnected:
         break;
-      case SmartDisplayState.scanning:
-      case SmartDisplayState.deviceFound:
+      case SmartDisplayState.discovering:
+      case SmartDisplayState.candidateFound:
       case SmartDisplayState.identifying:
         color = Colors.blue;
         icon = Icons.bluetooth_searching;
-        text = 'Scanning...';
+        text = 'Discovering...';
         break;
       case SmartDisplayState.connecting:
+      case SmartDisplayState.probing:
+      case SmartDisplayState.handshaking:
       case SmartDisplayState.negotiating:
         color = Colors.amber;
         icon = Icons.bluetooth_connected;
@@ -96,26 +97,16 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
         icon = Icons.motorcycle;
         text = 'Connected & Streaming';
         break;
+      case SmartDisplayState.degraded:
       case SmartDisplayState.reconnecting:
         color = Colors.orange;
         icon = Icons.warning;
-        text = 'Reconnecting...';
+        text = state == SmartDisplayState.degraded ? 'Connection Degraded' : 'Reconnecting...';
         break;
       case SmartDisplayState.unsupported:
-      case SmartDisplayState.handshakeFailed:
-      case SmartDisplayState.timeout:
         color = Colors.red;
         icon = Icons.error_outline;
-        text = state == SmartDisplayState.handshakeFailed
-            ? 'Handshake Failed'
-            : state == SmartDisplayState.timeout
-                ? 'Connection Timeout'
-                : 'Unsupported Device';
-        break;
-      case SmartDisplayState.error:
-        color = Colors.red;
-        icon = Icons.error;
-        text = 'Connection Error';
+        text = 'Unsupported Device';
         break;
     }
 
