@@ -61,8 +61,8 @@ class BluetoothClassicDisplayAdapter extends DisplayAdapter {
       await _bluetoothClassic.initPermissions();
       // standard SPP or custom UUID for display
       final uuid = _profile.serviceUuids.isNotEmpty ? _profile.serviceUuids.first : "00001101-0000-1000-8000-00805F9B34FB";
-      bool connected = await _bluetoothClassic.connect(targetIdentifier, uuid);
-      if (connected) {
+      bool? connected = await _bluetoothClassic.connect(targetIdentifier, uuid);
+      if (connected == true) {
         _currentState = AdapterConnectionState.connected;
         return true;
       }
@@ -80,17 +80,23 @@ class BluetoothClassicDisplayAdapter extends DisplayAdapter {
   @override
   Future<bool> sendDisplayPacket(dynamic packet) async {
     if (_currentState != AdapterConnectionState.connected) return false;
-    // encode packet
-    return true;
+    try {
+      await _bluetoothClassic.write('rideos_packet'); // send dummy encoded packet
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
   Future<RawVehicleTelemetryPacket> readTelemetry() async {
-    return RawVehicleTelemetryPacket(timestamp: DateTime.now());
+    throw UnsupportedError('Telemetry not supported via display interface');
   }
 
   @override
-  Future<bool> authenticate({String? secretKey, String? pinCode}) async => true;
+  Future<bool> authenticate({String? secretKey, String? pinCode}) async {
+    throw UnsupportedError('Authentication not supported');
+  }
 
   @override
   Future<List<String>> readDiagnostics() async => [];

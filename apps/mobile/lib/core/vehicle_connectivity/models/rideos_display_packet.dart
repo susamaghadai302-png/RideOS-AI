@@ -20,9 +20,11 @@ class RideOSDisplayPacket {
   final double? tripDistance;
   final String? rideDuration;
   final bool? dayNightMode;
+  final String? connectionStatus;
 
   const RideOSDisplayPacket({
     required this.timestamp,
+    this.connectionStatus,
     this.navigationState,
     this.maneuverType,
     this.maneuverDistanceMeters,

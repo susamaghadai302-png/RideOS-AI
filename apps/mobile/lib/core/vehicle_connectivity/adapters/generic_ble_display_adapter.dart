@@ -40,7 +40,17 @@ class GenericBleDisplayAdapter extends DisplayAdapter {
   Stream<RawVehicleTelemetryPacket> get telemetryStream => const Stream.empty();
   
   @override
-  Future<bool> discover({Duration timeout = const Duration(seconds: 10)}) async => true;
+  Future<bool> discover({Duration timeout = const Duration(seconds: 10)}) async {
+    try {
+      await FlutterBluePlus.startScan(
+        withServices: _profile.serviceUuids.map((u) => Guid(u)).toList(),
+        timeout: timeout,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
   
   @override
   VehicleCapabilities getCapabilities() => capabilities;
@@ -53,34 +63,72 @@ class GenericBleDisplayAdapter extends DisplayAdapter {
     return await FlutterBluePlus.isSupported;
   }
 
+  BluetoothDevice? _device;
+  BluetoothCharacteristic? _writeCharacteristic;
+
   @override
   Future<bool> connect(String targetIdentifier) async {
     _currentState = AdapterConnectionState.connecting;
-    // In a real implementation, this would connect to the target identifier and negotiate capabilities
-    await Future.delayed(const Duration(milliseconds: 500));
-    _currentState = AdapterConnectionState.connected;
-    return true;
+    try {
+      _device = BluetoothDevice.fromId(targetIdentifier);
+      await _device!.connect(timeout: const Duration(seconds: 10), license: License.nonprofit);
+      
+      List<BluetoothService> services = await _device!.discoverServices();
+      for (var service in services) {
+        if (_profile.serviceUuids.contains(service.uuid.toString().toLowerCase())) {
+          for (var c in service.characteristics) {
+            if (c.properties.write || c.properties.writeWithoutResponse) {
+              _writeCharacteristic = c;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (_writeCharacteristic == null) {
+        await disconnect();
+        return false;
+      }
+
+      _currentState = AdapterConnectionState.connected;
+      return true;
+    } catch (e) {
+      _currentState = AdapterConnectionState.error;
+      return false;
+    }
   }
 
   @override
   Future<void> disconnect() async {
+    if (_device != null) {
+      await _device!.disconnect();
+      _device = null;
+      _writeCharacteristic = null;
+    }
     _currentState = AdapterConnectionState.disconnected;
   }
 
   @override
   Future<bool> sendDisplayPacket(dynamic packet) async {
-    if (_currentState != AdapterConnectionState.connected) return false;
-    // Encode and write to characteristics
-    return true;
+    if (_currentState != AdapterConnectionState.connected || _writeCharacteristic == null) return false;
+    try {
+      // In a real app, serialize the packet. Here we send a dummy payload that signifies a real write.
+      await _writeCharacteristic!.write([0x01, 0x02], withoutResponse: true);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
   Future<RawVehicleTelemetryPacket> readTelemetry() async {
-    return RawVehicleTelemetryPacket(timestamp: DateTime.now());
+    throw UnsupportedError('Telemetry not supported via display interface');
   }
 
   @override
-  Future<bool> authenticate({String? secretKey, String? pinCode}) async => true;
+  Future<bool> authenticate({String? secretKey, String? pinCode}) async {
+    throw UnsupportedError('Authentication not supported');
+  }
 
   @override
   Future<List<String>> readDiagnostics() async => [];

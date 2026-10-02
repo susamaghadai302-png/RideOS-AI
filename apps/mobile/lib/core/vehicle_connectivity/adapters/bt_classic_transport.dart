@@ -16,8 +16,8 @@ class BtClassicTransport implements UartTransport {
   Future<bool> connect(String macAddress) async {
     try {
       await _bluetoothClassic.initPermissions();
-      bool connected = await _bluetoothClassic.connect(macAddress, "00001101-0000-1000-8000-00805F9B34FB");
-      if (!connected) return false;
+      bool? connected = await _bluetoothClassic.connect(macAddress, "00001101-0000-1000-8000-00805F9B34FB");
+      if (connected != true) return false;
 
       _rxSubscription = _bluetoothClassic.onDeviceDataReceived().listen((Uint8List data) {
         final str = ascii.decode(data, allowInvalid: true);
