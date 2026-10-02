@@ -3,6 +3,8 @@ import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/vehicle_connectivity/models/vehicle_connection_lifecycle.dart';
 import '../../../../core/vehicle_connectivity/services/production_vehicle_connection_manager.dart';
 import '../../../../core/widgets/cinematic_background.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'device_scanner_modal.dart';
 
 class VehicleConnectionDiagnosticsScreen extends StatefulWidget {
   const VehicleConnectionDiagnosticsScreen({super.key});
@@ -16,11 +18,18 @@ class _VehicleConnectionDiagnosticsScreenState extends State<VehicleConnectionDi
   bool _isRunningDiagnostic = false;
 
   Future<void> _runDiagnostics() async {
+    final BluetoothDevice? device = await showModalBottomSheet(
+      context: context,
+      builder: (c) => const DeviceScannerModal(),
+    );
+
+    if (device == null) return;
+
     setState(() => _isRunningDiagnostic = true);
     await _connectionManager.startConnectionPipeline(
-      deviceName: 'Y-Connect_CCU_98A2',
-      advertisedServices: ['0000fee0-0000-1000-8000-00805f9b34fb'],
-      macAddress: 'AA:BB:CC:DD:EE:FF',
+      deviceName: device.platformName.isNotEmpty ? device.platformName : 'Unknown',
+      advertisedServices: [], // We can pass actual services if needed
+      macAddress: device.remoteId.str,
     );
     if (mounted) {
       setState(() => _isRunningDiagnostic = false);

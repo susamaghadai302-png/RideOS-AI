@@ -30,6 +30,9 @@ class RawVehicleTelemetryPacket {
   final String? rideMode;
   final bool? isAbsActive;
   final bool? isTractionControlActive;
+  final double? throttlePositionPct;
+  final double? intakeAirTempC;
+  final double? manifoldAbsolutePressureKpa;
   final List<String> activeDtcCodes;
 
   const RawVehicleTelemetryPacket({
@@ -47,6 +50,9 @@ class RawVehicleTelemetryPacket {
     this.rideMode,
     this.isAbsActive,
     this.isTractionControlActive,
+    this.throttlePositionPct,
+    this.intakeAirTempC,
+    this.manifoldAbsolutePressureKpa,
     this.activeDtcCodes = const [],
   });
 }

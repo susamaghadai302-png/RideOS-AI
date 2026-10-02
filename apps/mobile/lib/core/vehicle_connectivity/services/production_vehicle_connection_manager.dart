@@ -4,6 +4,7 @@ import '../models/vehicle_connection_lifecycle.dart';
 import '../../vehicle_capabilities/models/universal_vehicle_capability_models.dart';
 import '../../vehicle_capabilities/services/scalable_vehicle_capability_engine.dart';
 import '../../telemetry_engine/services/vehicle_telemetry_engine.dart';
+import '../adapters/obd_gateway_adapter.dart';
 
 class ProductionVehicleConnectionManager {
   static final ProductionVehicleConnectionManager _instance = ProductionVehicleConnectionManager._internal();
@@ -44,21 +45,35 @@ class ProductionVehicleConnectionManager {
       macAddress: macAddress,
     );
 
-    if (variant.compatibility == CompatibilityLevel.hardwareRequired) {
-      _updateSession(_currentSession.copyWith(
-        state: ConnectionLifecycleState.hardwareRequired,
-        resolvedVariant: variant,
-        failureReason: 'Base trim level lacks factory Bluetooth CCU module. External OBD-II adapter required.',
-      ));
-      return;
-    }
-
     _updateSession(_currentSession.copyWith(
-      state: ConnectionLifecycleState.connectionFailed,
       resolvedVariant: variant,
       protocolName: variant.protocol.protocolName,
-      failureReason: 'Physical transport layer unavailable.',
     ));
+
+    // Actually attempt connection
+    final adapter = ObdGatewayAdapter();
+    
+    _updateSession(_currentSession.copyWith(state: ConnectionLifecycleState.connecting));
+    final success = await adapter.connect(macAddress);
+
+    if (success) {
+      _updateSession(_currentSession.copyWith(state: ConnectionLifecycleState.connected));
+      
+      adapter.telemetryStream.listen((packet) {
+        telemetryEngine.processRawPacket(packet);
+        _updateSession(_currentSession.copyWith(
+          state: ConnectionLifecycleState.telemetryActive,
+          lastPacketTimestamp: packet.timestamp,
+          packetsReceived: _currentSession.packetsReceived + 1,
+        ));
+      });
+      
+    } else {
+      _updateSession(_currentSession.copyWith(
+        state: ConnectionLifecycleState.connectionFailed,
+        failureReason: 'Physical transport connection failed.',
+      ));
+    }
   }
 
   /// Safe Command Execution with explicit capability whitelist

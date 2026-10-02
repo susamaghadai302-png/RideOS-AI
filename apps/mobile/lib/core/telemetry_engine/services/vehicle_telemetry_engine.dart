@@ -39,11 +39,11 @@ class VehicleTelemetryEngine {
     });
 
     _rawTelemetrySubscription = _connectivityEngine.telemetryStream.listen((packet) {
-      _processRawPacket(packet);
+      processRawPacket(packet);
     });
   }
 
-  void _processRawPacket(RawVehicleTelemetryPacket packet) {
+  void processRawPacket(RawVehicleTelemetryPacket packet) {
     _staleDataWatchdog?.cancel();
 
     final caps = _connectivityEngine.activeCapabilities;
