@@ -1,35 +1,44 @@
-import 'package:bluetooth_classic/bluetooth_classic.dart';
 import '../models/display_device_profile.dart';
 import '../models/vehicle_capabilities.dart';
 import '../models/vehicle_variant_taxonomy.dart';
 import 'display_adapter_registry.dart';
 import 'vehicle_connectivity_adapter.dart';
 import '../models/rideos_display_packet.dart';
-import '../protocols/display_protocol_encoder.dart';
-import 'dart:convert';
-
+import '../protocols/display_protocol.dart';
+import '../protocols/display_protocol_registry.dart';
+import '../services/smart_display_connection_manager.dart';
 import 'dart:async';
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BLUETOOTH CLASSIC DISPLAY ADAPTER
+//
+//  Legacy adapter interface wrapping the new DisplayProtocol architecture.
+//  Delegates actual protocol work to the resolved DisplayProtocol.
+// ─────────────────────────────────────────────────────────────────────────────
 
 class BluetoothClassicDisplayAdapter extends DisplayAdapter {
   final DisplayDeviceProfile _profile;
-  final DisplayProtocolEncoder _encoder = GenericJsonDisplayEncoder();
-  final _bluetoothClassic = BluetoothClassic();
+  late final DisplayProtocol? _protocol;
   AdapterConnectionState _currentState = AdapterConnectionState.disconnected;
+  ClassicDisplayTransport? _transport;
 
-  BluetoothClassicDisplayAdapter(this._profile);
+  BluetoothClassicDisplayAdapter(this._profile) {
+    final bundle = DisplayProtocolRegistry().resolveForProfile(_profile);
+    _protocol = bundle?.protocol;
+  }
 
   @override
   DisplayDeviceProfile get displayProfile => _profile;
 
   @override
   String get adapterId => 'bt_classic_display';
-  
+
   @override
   String get adapterName => 'Bluetooth Classic Smart Display';
-  
+
   @override
-  String get version => '1.0.0';
-  
+  String get version => '2.0.0';
+
   @override
   VehicleConnectivityType get connectivityType => VehicleConnectivityType.bluetoothClassic;
 
@@ -37,61 +46,90 @@ class BluetoothClassicDisplayAdapter extends DisplayAdapter {
   VehicleCapabilities get capabilities => VehicleCapabilities.displayOnlyCluster();
 
   @override
-    AdapterConnectionState get connectionState => _currentState;
+  AdapterConnectionState get connectionState => _currentState;
+
   @override
   Stream<AdapterConnectionState> get stateStream => Stream.value(_currentState);
-  
+
   @override
   Stream<RawVehicleTelemetryPacket> get telemetryStream => const Stream.empty();
-  
+
   @override
   Future<bool> discover({Duration timeout = const Duration(seconds: 10)}) async => true;
-  
+
   @override
   VehicleCapabilities getCapabilities() => capabilities;
-  
+
   @override
   Future<bool> sendCommand({required String commandName, Map<String, dynamic>? parameters}) async => false;
 
-
-  Future<bool> isAvailable() async {
-    return true; // We can assume classic BT is mostly available
-  }
+  Future<bool> isAvailable() async => true;
 
   @override
   Future<bool> connect(String targetIdentifier) async {
     _currentState = AdapterConnectionState.connecting;
+
+    if (_protocol == null) {
+      _currentState = AdapterConnectionState.error;
+      return false;
+    }
+
     try {
-      await _bluetoothClassic.initPermissions();
-      // standard SPP or custom UUID for display
-      final uuid = _profile.serviceUuids.isNotEmpty ? _profile.serviceUuids.first : "00001101-0000-1000-8000-00805F9B34FB";
-      bool? connected = await _bluetoothClassic.connect(targetIdentifier, uuid);
-      if (connected == true) {
-        _currentState = AdapterConnectionState.connected;
-        return true;
+      _transport = ClassicDisplayTransport();
+      final connected = await _transport!.connect(targetIdentifier);
+      if (!connected) {
+        _currentState = AdapterConnectionState.error;
+        return false;
       }
-    } catch (_) {}
-    _currentState = AdapterConnectionState.error;
-    return false;
+
+      // Run the real protocol lifecycle
+      final probed = await _protocol!.probe(_transport!);
+      if (!probed) {
+        await _transport!.disconnect();
+        _currentState = AdapterConnectionState.error;
+        return false;
+      }
+
+      final handshook = await _protocol!.handshake(_transport!);
+      if (!handshook) {
+        await _transport!.disconnect();
+        _currentState = AdapterConnectionState.error;
+        return false;
+      }
+
+      _currentState = AdapterConnectionState.connected;
+      return true;
+    } catch (_) {
+      _currentState = AdapterConnectionState.error;
+      return false;
+    }
   }
 
   @override
   Future<void> disconnect() async {
-    await _bluetoothClassic.disconnect();
+    if (_transport != null) {
+      if (_protocol != null) {
+        try {
+          await _protocol!.disconnect(_transport!);
+        } catch (_) {}
+      }
+      await _transport!.disconnect();
+      _transport = null;
+    }
     _currentState = AdapterConnectionState.disconnected;
   }
 
   @override
   Future<bool> sendDisplayPacket(dynamic packet) async {
     if (packet is! RideOSDisplayPacket) return false;
-    if (_currentState != AdapterConnectionState.connected) return false;
+    if (_currentState != AdapterConnectionState.connected || _transport == null || _protocol == null) return false;
+
     try {
-      final encodedPayload = _encoder.encode(packet);
-      final frame = _encoder.frame(encodedPayload);
-      // bluetooth_classic write accepts String, so we may need to encode to base64 or pass as utf8 string if the plugin supports raw bytes.
-      // Assuming utf8 string for now since write(String data) is all it exposes.
-      await _bluetoothClassic.write(utf8.decode(frame, allowMalformed: true));
-      return true;
+      return await _protocol!.sendPacket(
+        _transport!,
+        packet,
+        _profile.supportedCapabilities,
+      );
     } catch (_) {
       return false;
     }

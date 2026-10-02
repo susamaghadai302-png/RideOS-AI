@@ -5,29 +5,42 @@ import '../models/vehicle_variant_taxonomy.dart';
 import 'display_adapter_registry.dart';
 import 'vehicle_connectivity_adapter.dart';
 import '../models/rideos_display_packet.dart';
-import '../protocols/display_protocol_encoder.dart';
+import '../protocols/display_protocol.dart';
+import '../protocols/display_protocol_registry.dart';
+import '../services/smart_display_connection_manager.dart';
 
 import 'dart:async';
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  GENERIC BLE DISPLAY ADAPTER
+//
+//  Legacy adapter interface wrapping the new DisplayProtocol architecture.
+//  Delegates actual protocol work to the resolved DisplayProtocol.
+// ─────────────────────────────────────────────────────────────────────────────
+
 class GenericBleDisplayAdapter extends DisplayAdapter {
   final DisplayDeviceProfile _profile;
-  final DisplayProtocolEncoder _encoder = GenericJsonDisplayEncoder();
+  late final DisplayProtocol? _protocol;
   AdapterConnectionState _currentState = AdapterConnectionState.disconnected;
+  BleDisplayTransport? _transport;
 
-  GenericBleDisplayAdapter(this._profile);
+  GenericBleDisplayAdapter(this._profile) {
+    final bundle = DisplayProtocolRegistry().resolveForProfile(_profile);
+    _protocol = bundle?.protocol;
+  }
 
   @override
   DisplayDeviceProfile get displayProfile => _profile;
 
   @override
   String get adapterId => 'generic_ble_display';
-  
+
   @override
   String get adapterName => 'Generic BLE Smart Display';
-  
+
   @override
-  String get version => '1.0.0';
-  
+  String get version => '2.0.0';
+
   @override
   VehicleConnectivityType get connectivityType => VehicleConnectivityType.ble;
 
@@ -35,18 +48,22 @@ class GenericBleDisplayAdapter extends DisplayAdapter {
   VehicleCapabilities get capabilities => VehicleCapabilities.displayOnlyCluster();
 
   @override
-    AdapterConnectionState get connectionState => _currentState;
+  AdapterConnectionState get connectionState => _currentState;
+
   @override
   Stream<AdapterConnectionState> get stateStream => Stream.value(_currentState);
-  
+
   @override
   Stream<RawVehicleTelemetryPacket> get telemetryStream => const Stream.empty();
-  
+
   @override
   Future<bool> discover({Duration timeout = const Duration(seconds: 10)}) async {
     try {
+      final serviceGuids = _profile.serviceUuids.isNotEmpty
+          ? _profile.serviceUuids.map((u) => Guid(u)).toList()
+          : <Guid>[];
       await FlutterBluePlus.startScan(
-        withServices: _profile.serviceUuids.map((u) => Guid(u)).toList(),
+        withServices: serviceGuids,
         timeout: timeout,
       );
       return true;
@@ -54,42 +71,46 @@ class GenericBleDisplayAdapter extends DisplayAdapter {
       return false;
     }
   }
-  
+
   @override
   VehicleCapabilities getCapabilities() => capabilities;
-  
+
   @override
   Future<bool> sendCommand({required String commandName, Map<String, dynamic>? parameters}) async => false;
-
 
   Future<bool> isAvailable() async {
     return await FlutterBluePlus.isSupported;
   }
 
-  BluetoothDevice? _device;
-  BluetoothCharacteristic? _writeCharacteristic;
-
   @override
   Future<bool> connect(String targetIdentifier) async {
     _currentState = AdapterConnectionState.connecting;
+
+    if (_protocol == null) {
+      _currentState = AdapterConnectionState.error;
+      return false;
+    }
+
     try {
-      _device = BluetoothDevice.fromId(targetIdentifier);
-      await _device!.connect(timeout: const Duration(seconds: 10), license: License.nonprofit);
-      
-      List<BluetoothService> services = await _device!.discoverServices();
-      for (var service in services) {
-        if (_profile.serviceUuids.contains(service.uuid.toString().toLowerCase())) {
-          for (var c in service.characteristics) {
-            if (c.properties.write || c.properties.writeWithoutResponse) {
-              _writeCharacteristic = c;
-              break;
-            }
-          }
-        }
+      _transport = BleDisplayTransport();
+      final connected = await _transport!.connect(targetIdentifier);
+      if (!connected) {
+        _currentState = AdapterConnectionState.error;
+        return false;
       }
-      
-      if (_writeCharacteristic == null) {
-        await disconnect();
+
+      // Run the real protocol lifecycle
+      final probed = await _protocol!.probe(_transport!);
+      if (!probed) {
+        await _transport!.disconnect();
+        _currentState = AdapterConnectionState.error;
+        return false;
+      }
+
+      final handshook = await _protocol!.handshake(_transport!);
+      if (!handshook) {
+        await _transport!.disconnect();
+        _currentState = AdapterConnectionState.error;
         return false;
       }
 
@@ -103,10 +124,14 @@ class GenericBleDisplayAdapter extends DisplayAdapter {
 
   @override
   Future<void> disconnect() async {
-    if (_device != null) {
-      await _device!.disconnect();
-      _device = null;
-      _writeCharacteristic = null;
+    if (_transport != null) {
+      if (_protocol != null) {
+        try {
+          await _protocol!.disconnect(_transport!);
+        } catch (_) {}
+      }
+      await _transport!.disconnect();
+      _transport = null;
     }
     _currentState = AdapterConnectionState.disconnected;
   }
@@ -114,12 +139,14 @@ class GenericBleDisplayAdapter extends DisplayAdapter {
   @override
   Future<bool> sendDisplayPacket(dynamic packet) async {
     if (packet is! RideOSDisplayPacket) return false;
-    if (_currentState != AdapterConnectionState.connected || _writeCharacteristic == null) return false;
+    if (_currentState != AdapterConnectionState.connected || _transport == null || _protocol == null) return false;
+
     try {
-      final encodedPayload = _encoder.encode(packet);
-      final frame = _encoder.frame(encodedPayload);
-      await _writeCharacteristic!.write(frame, withoutResponse: true);
-      return true;
+      return await _protocol!.sendPacket(
+        _transport!,
+        packet,
+        _profile.supportedCapabilities,
+      );
     } catch (e) {
       return false;
     }
