@@ -1,0 +1,23 @@
+name: rideos_display_receiver
+description: >-
+  RideOS Smart Display Receiver — a real companion app that acts as a 
+  Bluetooth two-wheeler smart display target for end-to-end protocol testing.
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_blue_plus: ^2.3.12
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.2
+
+flutter:
+  uses-material-design: true

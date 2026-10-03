@@ -16,7 +16,6 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
   @override
   void initState() {
     super.initState();
-    // Subscribe to state changes to rebuild
     _manager.stateStream.listen((state) {
       if (mounted) setState(() {});
     });
@@ -25,9 +24,7 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
   Future<void> _handleAutoConnect() async {
     setState(() => _isAutoConnecting = true);
     await _manager.autoConnect();
-    if (mounted) {
-      setState(() => _isAutoConnecting = false);
-    }
+    if (mounted) setState(() => _isAutoConnecting = false);
   }
 
   Future<void> _handleDisconnect() async {
@@ -37,12 +34,8 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Premium dark mode
-      appBar: AppBar(
-        title: const Text('Smart Display'),
-        backgroundColor: Colors.black,
-        elevation: 0,
-      ),
+      backgroundColor: Colors.black,
+      appBar: AppBar(title: const Text('Smart Display'), backgroundColor: Colors.black, elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -57,10 +50,16 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
               const SizedBox(height: 24),
               _buildCapabilitiesSection(),
               const SizedBox(height: 24),
+              _buildDiagnosticsSection(),
+              const SizedBox(height: 24),
               _buildLivePreviewSection(),
             ],
             if (_manager.lastScanResults.isNotEmpty && _manager.activeProfile == null)
               _buildScanResults(),
+            if (_manager.failureReason != null) ...[
+              const SizedBox(height: 16),
+              _buildErrorSection(),
+            ],
           ],
         ),
       ),
@@ -113,27 +112,24 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
           Icon(icon, color: color, size: 48),
           const SizedBox(height: 12),
-          Text(
-            text,
-            style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
-          ),
+          Text(text, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
           if (state == SmartDisplayState.unsupported)
             const Padding(
               padding: EdgeInsets.only(top: 8.0),
               child: Text(
-                'The detected device does not support the RideOS Display Protocol or Generic BLE/SPP modes.',
+                'Device does not support RideOS Display Protocol or Generic BLE/SPP modes.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.redAccent, fontSize: 12),
               ),
-            )
+            ),
         ],
       ),
     );
@@ -149,7 +145,7 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
         icon: const Icon(Icons.close),
         label: const Text('Disconnect'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red.withOpacity(0.2),
+          backgroundColor: Colors.red.withValues(alpha: 0.2),
           foregroundColor: Colors.red,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -159,7 +155,7 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
 
     return ElevatedButton.icon(
       onPressed: _isAutoConnecting ? null : _handleAutoConnect,
-      icon: _isAutoConnecting 
+      icon: _isAutoConnecting
           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
           : const Icon(Icons.search),
       label: Text(_isAutoConnecting ? 'Discovering...' : 'Auto Discover Smart Display'),
@@ -174,16 +170,18 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
 
   Widget _buildActiveDeviceSection() {
     final profile = _manager.activeProfile!;
+    final diag = _manager.diagnostics;
     return _buildSection(
-      title: 'Detected Device',
+      title: 'DETECTED DEVICE',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _infoRow('Model', profile.model),
           _infoRow('Manufacturer', profile.manufacturer),
-          _infoRow('Transport', profile.transportType),
-          _infoRow('Protocol', profile.protocolType),
+          _infoRow('Transport', diag.transportType.isNotEmpty ? diag.transportType : profile.transportType),
+          _infoRow('Protocol', diag.protocolVersion.isNotEmpty ? diag.protocolVersion : profile.protocolType),
           _infoRow('Mode', profile.displayMode.name),
+          _infoRow('Verification', profile.verificationStatus.name),
         ],
       ),
     );
@@ -191,12 +189,9 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
 
   Widget _buildCapabilitiesSection() {
     final negotiated = _manager.negotiatedCapabilities;
-    if (negotiated.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
+    if (negotiated.isEmpty) return const SizedBox.shrink();
     return _buildSection(
-      title: 'Negotiated Capabilities',
+      title: 'NEGOTIATED CAPABILITIES',
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -204,28 +199,65 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.2),
+              color: Colors.green.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.green.withOpacity(0.5)),
+              border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
             ),
-            child: Text(
-              cap.name,
-              style: const TextStyle(color: Colors.greenAccent, fontSize: 12),
-            ),
+            child: Text(cap.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 12)),
           );
         }).toList(),
       ),
     );
   }
 
-  Widget _buildLivePreviewSection() {
-    // Only show live preview if we are streaming
-    if (_manager.currentState != SmartDisplayState.streaming) {
-      return const SizedBox.shrink();
-    }
-    
+  Widget _buildDiagnosticsSection() {
+    final diag = _manager.diagnostics;
     return _buildSection(
-      title: 'Live Preview (HUD Mode)',
+      title: 'CONNECTION DIAGNOSTICS',
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Colors.grey.shade900, borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          children: [
+            Row(children: [
+              Expanded(child: _diagMetric('Packets Sent', '${diag.packetsSent}')),
+              Expanded(child: _diagMetric('Bytes Sent', '${diag.bytesSent}')),
+              Expanded(child: _diagMetric('Failed', '${diag.packetsFailed}')),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: _diagMetric('RSSI', '${diag.rssi} dBm')),
+              Expanded(child: _diagMetric('Reconnects', '${diag.reconnectAttempts}')),
+              Expanded(child: _diagMetric('Acked', '${diag.packetsAcked}')),
+            ]),
+            const SizedBox(height: 8),
+            _infoRow('Protocol', diag.protocolVersion),
+            if (diag.lastHandshakeTime != null)
+              _infoRow('Last Handshake', _fmtTime(diag.lastHandshakeTime!)),
+            if (diag.lastPacketTime != null)
+              _infoRow('Last Packet', _fmtTime(diag.lastPacketTime!)),
+            if (diag.lastErrorReason != null)
+              _infoRow('Last Error', diag.lastErrorReason!),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _diagMetric(String label, String value) {
+    return Column(children: [
+      Text(value, style: const TextStyle(color: Colors.cyanAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+      Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10)),
+    ]);
+  }
+
+  String _fmtTime(DateTime dt) =>
+      '${dt.hour}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
+
+  Widget _buildLivePreviewSection() {
+    if (_manager.currentState != SmartDisplayState.streaming) return const SizedBox.shrink();
+    return _buildSection(
+      title: 'LIVE PREVIEW (HUD MODE)',
       child: Container(
         height: 150,
         decoration: BoxDecoration(
@@ -234,15 +266,12 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
           border: Border.all(color: Colors.white24),
         ),
         child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.turn_right, size: 48, color: Colors.blueAccent),
-              SizedBox(height: 8),
-              Text('250 m', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-              Text('Main Street', style: TextStyle(color: Colors.white70, fontSize: 14)),
-            ],
-          ),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.turn_right, size: 48, color: Colors.blueAccent),
+            SizedBox(height: 8),
+            Text('250 m', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+            Text('Main Street', style: TextStyle(color: Colors.white70, fontSize: 14)),
+          ]),
         ),
       ),
     );
@@ -250,57 +279,58 @@ class _SmartDisplaySettingsScreenState extends State<SmartDisplaySettingsScreen>
 
   Widget _buildScanResults() {
     return _buildSection(
-      title: 'Scan Results',
+      title: 'SCAN RESULTS',
       child: Column(
         children: _manager.lastScanResults.map((d) {
-          final isUnsupported = d.classification == DeviceClassification.phoneOrPc ||
+          final isSkip = d.classification == DeviceClassification.phoneOrPc ||
               d.classification == DeviceClassification.unknown ||
               d.classification == DeviceClassification.projectionDevice;
-          
           return ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              isUnsupported ? Icons.devices : Icons.motorcycle,
-              color: isUnsupported ? Colors.grey : Colors.blueAccent,
-            ),
+            leading: Icon(isSkip ? Icons.devices : Icons.motorcycle, color: isSkip ? Colors.grey : Colors.blueAccent),
             title: Text(d.name.isEmpty ? 'Unknown Device' : d.name, style: const TextStyle(color: Colors.white)),
-            subtitle: Text(
-              '${d.transport} • ${d.classification.name}',
-              style: TextStyle(color: isUnsupported ? Colors.grey : Colors.blueAccent.shade100, fontSize: 12),
-            ),
-            trailing: isUnsupported 
-                ? const Text('Unsupported', style: TextStyle(color: Colors.redAccent, fontSize: 12))
-                : null,
+            subtitle: Text('${d.transport} • ${d.classification.name} • ${d.rssi} dBm',
+                style: TextStyle(color: isSkip ? Colors.grey : Colors.blueAccent.shade100, fontSize: 12)),
+            trailing: isSkip
+                ? const Text('Skip', style: TextStyle(color: Colors.redAccent, fontSize: 12))
+                : const Text('Candidate', style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
           );
         }).toList(),
       ),
     );
   }
 
-  Widget _buildSection({required String title, required Widget child}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(color: Colors.white54, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 1),
-        ),
-        const SizedBox(height: 12),
-        child,
-      ],
+  Widget _buildErrorSection() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+        const SizedBox(width: 8),
+        Expanded(child: Text(_manager.failureReason ?? '', style: const TextStyle(color: Colors.redAccent, fontSize: 12))),
+      ]),
     );
+  }
+
+  Widget _buildSection({required String title, required Widget child}) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: const TextStyle(color: Colors.white54, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 1)),
+      const SizedBox(height: 12),
+      child,
+    ]);
   }
 
   Widget _infoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white70)),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        ],
-      ),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label, style: const TextStyle(color: Colors.white70)),
+        Flexible(child: Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), textAlign: TextAlign.end)),
+      ]),
     );
   }
 }

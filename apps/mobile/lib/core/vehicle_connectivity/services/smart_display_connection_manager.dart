@@ -8,6 +8,7 @@ import '../models/rideos_display_packet.dart';
 import '../protocols/display_protocol.dart';
 import '../protocols/display_protocol_registry.dart';
 import 'device_scanner.dart';
+import 'connection_diagnostics.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SMART DISPLAY CONNECTION STATES
@@ -55,6 +56,7 @@ class SmartDisplayConnectionManager {
   Set<DisplayCapability> _negotiatedCapabilities = {};
   List<ScannedDevice> _lastScanResults = [];
   String? _failureReason;
+  final ConnectionDiagnostics _diagnostics = ConnectionDiagnostics();
 
   final _stateController = StreamController<SmartDisplayState>.broadcast();
   final _capabilitiesController =
@@ -76,6 +78,7 @@ class SmartDisplayConnectionManager {
       _capabilitiesController.stream;
   List<ScannedDevice> get lastScanResults => _lastScanResults;
   String? get failureReason => _failureReason;
+  ConnectionDiagnostics get diagnostics => _diagnostics;
 
   // ── AUTO CONNECT ─────────────────────────────────────────────────────────
   //  The primary rider flow:

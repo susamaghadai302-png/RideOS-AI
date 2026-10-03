@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/protocols/display_protocol.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/protocols/yamaha_navilite_protocol.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/protocols/ktm_gen3_protocol.dart';
-import 'package:rideos_mobile/core/vehicle_connectivity/protocols/generic_ble_display_protocol.dart';
+
 import 'package:rideos_mobile/core/vehicle_connectivity/models/rideos_display_packet.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/models/display_capability.dart';
 
