@@ -14,16 +14,17 @@ class GenericBleDisplayProtocol implements DisplayProtocol {
   @override
   String get requiredTransport => 'BLE';
 
+  @override
+  bool get isResearchOnly => false;
+
   static const int _stx = 0x02;
   static const int _etx = 0x03;
 
   @override
   Future<bool> probe(DisplayTransport transport) async {
-    // For generic BLE, we probe by discovering characteristics and sending a simple ping
     final characteristicsReady = await transport.discoverAndSelectCharacteristics();
     if (!characteristicsReady) return false;
 
-    // Send a generic ping json
     final pingFrame = _buildFrame(Uint8List.fromList(utf8.encode('{"cmd":"ping"}')));
     final response = await transport.sendAndReceive(pingFrame, timeout: const Duration(seconds: 1));
     
@@ -41,7 +42,6 @@ class GenericBleDisplayProtocol implements DisplayProtocol {
 
   @override
   Future<bool> handshake(DisplayTransport transport) async {
-    // Probe already verifies the basic command set. Send handshake JSON.
     final handshakeFrame = _buildFrame(Uint8List.fromList(utf8.encode('{"cmd":"handshake","v":1}')));
     final response = await transport.sendAndReceive(handshakeFrame, timeout: const Duration(seconds: 2));
     
@@ -59,25 +59,18 @@ class GenericBleDisplayProtocol implements DisplayProtocol {
 
   @override
   Future<Set<DisplayCapability>> getCapabilities(DisplayTransport transport) async {
-    // Request capabilities
     final capFrame = _buildFrame(Uint8List.fromList(utf8.encode('{"cmd":"caps"}')));
     final response = await transport.sendAndReceive(capFrame, timeout: const Duration(seconds: 2));
     
-    final defaultCaps = {
-      DisplayCapability.turnByTurnNavigation,
-      DisplayCapability.nextTurn,
-      DisplayCapability.distanceToTurn,
-      DisplayCapability.eta,
-      DisplayCapability.clock,
-    };
-    
-    if (response == null || response.isEmpty) return defaultCaps;
+    // ── CRITICAL: NO FALSE FALLBACK ──────────────────────────────────────────
+    // If the device does not respond, return EMPTY. Never invent capabilities.
+    if (response == null || response.isEmpty) return {};
     final payload = _extractPayload(response);
-    if (payload == null) return defaultCaps;
+    if (payload == null) return {};
     
     try {
       final json = jsonDecode(utf8.decode(payload));
-      if (json['caps'] is! List) return defaultCaps;
+      if (json['caps'] is! List) return {};
       
       final caps = <DisplayCapability>{};
       final capList = json['caps'] as List;
@@ -94,10 +87,16 @@ class GenericBleDisplayProtocol implements DisplayProtocol {
       if (capList.contains('weather')) caps.add(DisplayCapability.weather);
       if (capList.contains('clock')) caps.add(DisplayCapability.clock);
       if (capList.contains('speed')) caps.add(DisplayCapability.speed);
+      if (capList.contains('temperature')) caps.add(DisplayCapability.temperature);
+      if (capList.contains('battery')) caps.add(DisplayCapability.phoneBattery);
+      if (capList.contains('call')) caps.add(DisplayCapability.callNotification);
+      if (capList.contains('sos')) caps.add(DisplayCapability.emergencySos);
+      if (capList.contains('routeDeviation')) caps.add(DisplayCapability.routeDeviation);
       
-      return caps.isEmpty ? defaultCaps : caps;
+      // Return ONLY what the device explicitly declared.
+      return caps;
     } catch (_) {
-      return defaultCaps;
+      return {};
     }
   }
 
@@ -133,12 +132,16 @@ class GenericBleDisplayProtocol implements DisplayProtocol {
     if (!activeCapabilities.contains(DisplayCapability.speed)) {
       json.remove('spd');
     }
+    if (!activeCapabilities.contains(DisplayCapability.phoneBattery)) {
+      json.remove('bat');
+    }
     if (!activeCapabilities.contains(DisplayCapability.turnByTurnNavigation)) {
       json.remove('nav');
       json.remove('man');
       json.remove('man_m');
       json.remove('eta');
       json.remove('street');
+      json.remove('tot_m');
     }
     
     final payload = Uint8List.fromList(utf8.encode(jsonEncode(json)));

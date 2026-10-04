@@ -199,12 +199,47 @@ class SmartDisplayConnectionManager {
         _setState(SmartDisplayState.unsupported);
         return false;
       }
+      _diagnostics.recordHandshake(_activeProtocol!.protocolId);
 
       _setState(SmartDisplayState.negotiating);
       // 3. Capability negotiation
       _negotiatedCapabilities =
           await _activeProtocol!.getCapabilities(_activeTransport!);
       _capabilitiesController.add(_negotiatedCapabilities);
+
+      // ── CRITICAL: REJECT EMPTY CAPABILITIES ───────────────────────────────
+      // If the device returned NO capabilities, the negotiation failed.
+      // Do NOT proceed to streaming with an empty capability set.
+      if (_negotiatedCapabilities.isEmpty) {
+        _failureReason =
+            'Capability negotiation with ${target.name} returned empty — '
+            'device did not declare any supported features';
+        await _activeTransport?.disconnect();
+        _activeTransport = null;
+        _setState(SmartDisplayState.unsupported);
+        return false;
+      }
+
+      // ── RESEARCH-ONLY GUARD ───────────────────────────────────────────────
+      // Research protocols may probe/handshake/negotiate to gather data,
+      // but must NOT automatically enter streaming unless the user
+      // explicitly overrides or the protocol is validated on real hardware.
+      if (_activeProtocol!.isResearchOnly) {
+        _failureReason =
+            '${_activeProtocol!.protocolName} responded successfully but '
+            'is RESEARCH_ONLY. Automatic streaming is blocked until this '
+            'protocol is validated on real ${target.name} hardware. '
+            'Capabilities detected: ${_negotiatedCapabilities.map((c) => c.name).join(", ")}';
+        _diagnostics.recordTransport(_activeProtocol!.requiredTransport);
+        // Keep the profile so the UI can show what was discovered
+        _activeProfile = _activeProfile!.copyWith(
+          verificationStatus: VerificationStatus.softwareOnly,
+        );
+        await _activeTransport?.disconnect();
+        _activeTransport = null;
+        _setState(SmartDisplayState.disconnected);
+        return false;
+      }
 
       // 4. Start session
       final started = await _activeProtocol!.startSession(_activeTransport!);
@@ -217,15 +252,17 @@ class SmartDisplayConnectionManager {
         return false;
       }
 
-      // 5. SUCCESS
+      // 5. SUCCESS — only after genuine probe + handshake + caps + session
       _reconnectAttempts = 0;
       _failureReason = null;
+      _diagnostics.recordTransport(_activeProtocol!.requiredTransport);
       _setState(SmartDisplayState.connected);
       _setState(SmartDisplayState.streaming);
       return true;
 
     } catch (e) {
       _failureReason = 'Protocol error: $e';
+      _diagnostics.recordPacketFailed(e.toString());
       await _activeTransport?.disconnect();
       _activeTransport = null;
       _setState(SmartDisplayState.disconnected);

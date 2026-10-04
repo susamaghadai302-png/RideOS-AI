@@ -88,6 +88,37 @@ class DisplayDeviceProfile {
     );
   }
 
+  /// General-purpose copy with optional field overrides.
+  DisplayDeviceProfile copyWith({
+    String? manufacturer,
+    String? model,
+    String? transportType,
+    String? protocolType,
+    DeviceClassification? classification,
+    DisplayMode? displayMode,
+    List<String>? serviceUuids,
+    List<String>? characteristics,
+    Set<DisplayCapability>? supportedCapabilities,
+    String? firmwareVersion,
+    String? macAddress,
+    VerificationStatus? verificationStatus,
+  }) {
+    return DisplayDeviceProfile(
+      manufacturer: manufacturer ?? this.manufacturer,
+      model: model ?? this.model,
+      transportType: transportType ?? this.transportType,
+      protocolType: protocolType ?? this.protocolType,
+      classification: classification ?? this.classification,
+      displayMode: displayMode ?? this.displayMode,
+      serviceUuids: serviceUuids ?? this.serviceUuids,
+      characteristics: characteristics ?? this.characteristics,
+      supportedCapabilities: supportedCapabilities ?? this.supportedCapabilities,
+      firmwareVersion: firmwareVersion ?? this.firmwareVersion,
+      macAddress: macAddress ?? this.macAddress,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'manufacturer': manufacturer,
     'model': model,

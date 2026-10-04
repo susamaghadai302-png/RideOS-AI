@@ -52,6 +52,10 @@ class ConnectionDiagnostics {
     rssi = value;
   }
 
+  void recordTransport(String transport) {
+    transportType = transport;
+  }
+
   void reset() {
     packetsSent = 0;
     packetsAcked = 0;

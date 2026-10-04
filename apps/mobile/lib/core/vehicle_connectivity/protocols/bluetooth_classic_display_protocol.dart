@@ -14,6 +14,9 @@ class BluetoothClassicDisplayProtocol implements DisplayProtocol {
   @override
   String get requiredTransport => 'BT_CLASSIC';
 
+  @override
+  bool get isResearchOnly => false;
+
   static const int _sync = 0x7E;
 
   @override
@@ -55,21 +58,15 @@ class BluetoothClassicDisplayProtocol implements DisplayProtocol {
     final capFrame = _buildFrame(Uint8List.fromList(utf8.encode('{"cmd":"caps"}')));
     final response = await transport.sendAndReceive(capFrame, timeout: const Duration(seconds: 2));
     
-    final defaultCaps = {
-      DisplayCapability.turnByTurnNavigation,
-      DisplayCapability.nextTurn,
-      DisplayCapability.distanceToTurn,
-      DisplayCapability.eta,
-      DisplayCapability.clock,
-    };
-    
-    if (response == null || response.isEmpty) return defaultCaps;
+    // ── CRITICAL: NO FALSE FALLBACK ──────────────────────────────────────────
+    // If the device does not respond, return EMPTY. Never invent capabilities.
+    if (response == null || response.isEmpty) return {};
     final payload = _extractPayload(response);
-    if (payload == null) return defaultCaps;
+    if (payload == null) return {};
     
     try {
       final json = jsonDecode(utf8.decode(payload));
-      if (json['caps'] is! List) return defaultCaps;
+      if (json['caps'] is! List) return {};
       
       final caps = <DisplayCapability>{};
       final capList = json['caps'] as List;
@@ -86,10 +83,16 @@ class BluetoothClassicDisplayProtocol implements DisplayProtocol {
       if (capList.contains('weather')) caps.add(DisplayCapability.weather);
       if (capList.contains('clock')) caps.add(DisplayCapability.clock);
       if (capList.contains('speed')) caps.add(DisplayCapability.speed);
+      if (capList.contains('temperature')) caps.add(DisplayCapability.temperature);
+      if (capList.contains('battery')) caps.add(DisplayCapability.phoneBattery);
+      if (capList.contains('call')) caps.add(DisplayCapability.callNotification);
+      if (capList.contains('sos')) caps.add(DisplayCapability.emergencySos);
+      if (capList.contains('routeDeviation')) caps.add(DisplayCapability.routeDeviation);
       
-      return caps.isEmpty ? defaultCaps : caps;
+      // Return ONLY what the device explicitly declared.
+      return caps;
     } catch (_) {
-      return defaultCaps;
+      return {};
     }
   }
 
@@ -125,12 +128,16 @@ class BluetoothClassicDisplayProtocol implements DisplayProtocol {
     if (!activeCapabilities.contains(DisplayCapability.speed)) {
       json.remove('spd');
     }
+    if (!activeCapabilities.contains(DisplayCapability.phoneBattery)) {
+      json.remove('bat');
+    }
     if (!activeCapabilities.contains(DisplayCapability.turnByTurnNavigation)) {
       json.remove('nav');
       json.remove('man');
       json.remove('man_m');
       json.remove('eta');
       json.remove('street');
+      json.remove('tot_m');
     }
     
     final payload = Uint8List.fromList(utf8.encode(jsonEncode(json)));

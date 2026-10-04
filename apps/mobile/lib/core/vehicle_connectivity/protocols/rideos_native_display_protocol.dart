@@ -14,6 +14,9 @@ class RideOSNativeDisplayProtocol implements DisplayProtocol {
   @override
   String get requiredTransport => 'BLE';
 
+  @override
+  bool get isResearchOnly => false;
+
   static const int _stx = 0x02;
   static const int _etx = 0x03;
 
@@ -46,19 +49,12 @@ class RideOSNativeDisplayProtocol implements DisplayProtocol {
     final capFrame = _buildFrame(Uint8List.fromList([0x03]));
     final response = await transport.sendAndReceive(capFrame, timeout: const Duration(seconds: 2));
     
-    // Default safe capabilities if negotiation fails or returns empty
-    final defaultCaps = {
-      DisplayCapability.turnByTurnNavigation,
-      DisplayCapability.nextTurn,
-      DisplayCapability.distanceToTurn,
-      DisplayCapability.eta,
-      DisplayCapability.streetName,
-      DisplayCapability.clock,
-    };
-    
-    if (response == null || response.isEmpty) return defaultCaps;
+    // ── CRITICAL: NO FALSE FALLBACK ──────────────────────────────────────────
+    // If the device does not respond, we return an EMPTY set.
+    // The connection manager must treat empty capabilities as a failed negotiation.
+    if (response == null || response.isEmpty) return {};
     final payload = _extractPayload(response);
-    if (payload == null || payload.length < 2 || payload[0] != 0x03) return defaultCaps;
+    if (payload == null || payload.length < 2 || payload[0] != 0x03) return {};
     
     // Parse capability byte mask from payload
     try {
@@ -80,10 +76,16 @@ class RideOSNativeDisplayProtocol implements DisplayProtocol {
       if (capMap['spd'] == true) caps.add(DisplayCapability.speed);
       if (capMap['notif'] == true) caps.add(DisplayCapability.callNotification);
       if (capMap['map'] == true) caps.add(DisplayCapability.vectorMap);
+      if (capMap['tmp'] == true) caps.add(DisplayCapability.temperature);
+      if (capMap['bat'] == true) caps.add(DisplayCapability.phoneBattery);
+      if (capMap['sos'] == true) caps.add(DisplayCapability.emergencySos);
+      if (capMap['rdev'] == true) caps.add(DisplayCapability.routeDeviation);
       
-      return caps.isEmpty ? defaultCaps : caps;
+      // Return ONLY what the device explicitly declared.
+      return caps;
     } catch (_) {
-      return defaultCaps;
+      // Parse failure = unknown capabilities, return empty.
+      return {};
     }
   }
 
@@ -102,11 +104,14 @@ class RideOSNativeDisplayProtocol implements DisplayProtocol {
   Future<bool> sendPacket(DisplayTransport transport, RideOSDisplayPacket packet, Set<DisplayCapability> activeCapabilities) async {
     final json = packet.toJson();
     
-    // Filter out capabilities not supported
+    // Strip fields not in the negotiated set
     if (!activeCapabilities.contains(DisplayCapability.weather)) {
       json.remove('wthr');
       json.remove('tmp');
       json.remove('rain');
+    }
+    if (!activeCapabilities.contains(DisplayCapability.temperature)) {
+      json.remove('tmp');
     }
     if (!activeCapabilities.contains(DisplayCapability.clock)) {
       json.remove('clk');
@@ -114,12 +119,25 @@ class RideOSNativeDisplayProtocol implements DisplayProtocol {
     if (!activeCapabilities.contains(DisplayCapability.speed)) {
       json.remove('spd');
     }
+    if (!activeCapabilities.contains(DisplayCapability.phoneBattery)) {
+      json.remove('bat');
+    }
     if (!activeCapabilities.contains(DisplayCapability.turnByTurnNavigation)) {
       json.remove('nav');
       json.remove('man');
       json.remove('man_m');
       json.remove('eta');
       json.remove('street');
+      json.remove('tot_m');
+    }
+    if (!activeCapabilities.contains(DisplayCapability.callNotification)) {
+      json.remove('call');
+    }
+    if (!activeCapabilities.contains(DisplayCapability.emergencySos)) {
+      json.remove('sos');
+    }
+    if (!activeCapabilities.contains(DisplayCapability.routeDeviation)) {
+      json.remove('rdev');
     }
     
     json['proto'] = protocolId;

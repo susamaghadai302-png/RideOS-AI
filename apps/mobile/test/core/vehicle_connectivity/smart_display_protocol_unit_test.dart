@@ -73,12 +73,15 @@ void main() {
     });
 
     test('KTM Protocol Handshake Success', () async {
-      transport.responseData = Uint8List.fromList([0x00]);
+      // KTM now requires 0xBB ACK for handshake
+      transport.responseData = Uint8List.fromList([0xBB]);
       final result = await ktm.handshake(transport);
       expect(result, isTrue);
     });
 
     test('KTM Capability Negotiation', () async {
+      // KTM now queries device — 0xBB + bitmask 0x01 = nav capabilities
+      transport.responseData = Uint8List.fromList([0xBB, 0x01]);
       final caps = await ktm.getCapabilities(transport);
       expect(caps.contains(DisplayCapability.turnByTurnNavigation), isTrue);
       expect(caps.contains(DisplayCapability.streetName), isTrue);

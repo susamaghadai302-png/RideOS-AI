@@ -20,6 +20,11 @@ abstract class DisplayProtocol {
   /// The physical transport this protocol requires (e.g., 'BLE' or 'BT_CLASSIC').
   String get requiredTransport;
 
+  /// If true, this protocol is based on research/public docs and is UNVERIFIED
+  /// on real hardware. It must not be automatically used for transmission
+  /// unless explicitly overridden or genuinely validated.
+  bool get isResearchOnly;
+
   /// Performs a fast, non-state-changing probe to see if the connected
   /// device actually speaks this protocol. Must return true ONLY if
   /// explicit evidence (e.g., correct frame format response) is received.
