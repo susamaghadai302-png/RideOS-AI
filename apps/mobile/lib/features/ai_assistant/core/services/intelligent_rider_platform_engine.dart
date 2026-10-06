@@ -66,7 +66,7 @@ class IntelligentRiderPlatformEngine {
 
     // 4. Maintenance health
     int maintenanceScore = 100;
-    final currentOdometer = null; // No odometer in telemetry yet
+    const currentOdometer = null; // No odometer in telemetry yet
     
     if (summary.maintenanceRecords.isNotEmpty && currentOdometer != null) {
       final nextService = summary.maintenanceRecords.first;

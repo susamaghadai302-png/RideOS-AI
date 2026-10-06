@@ -23,8 +23,8 @@ void main() {
 
       await expectLater(
         mapFactory.activeProvider.calculateRoute(
-          origin: mp.LatLng(12.9716, 77.5946),
-          destination: mp.LatLng(12.9352, 77.6245),
+          origin: const mp.LatLng(12.9716, 77.5946),
+          destination: const mp.LatLng(12.9352, 77.6245),
         ),
         throwsStateError,
       );

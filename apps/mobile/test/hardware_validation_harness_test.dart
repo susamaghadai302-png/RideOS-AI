@@ -37,13 +37,13 @@ void main() {
 
     test('7. ELM327 Response Parsing (Speed & RPM)', () async {
       // RPM Request 010C
-      final rpmRaw = '41 0C 1A F8';
+      const rpmRaw = '41 0C 1A F8';
       final rpmBytes = Obd2CommandBuilder.parseAsciiHexToBytes(rpmRaw);
       final rpmValue = DiagnosticPid.engineRpm.decode(rpmBytes.sublist(2));
       expect(rpmValue, 1726.0); // (26 * 256 + 248) / 4 = 1726
 
       // Speed Request 010D
-      final speedRaw = '41 0D 32';
+      const speedRaw = '41 0D 32';
       final speedBytes = Obd2CommandBuilder.parseAsciiHexToBytes(speedRaw);
       final speedValue = DiagnosticPid.vehicleSpeed.decode(speedBytes.sublist(2));
       expect(speedValue, 50.0); // 50 km/h

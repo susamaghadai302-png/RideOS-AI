@@ -273,7 +273,7 @@ void main() {
 
   group('Device Profile', () {
     test('supports() returns true for included capability', () {
-      final profile = DisplayDeviceProfile(
+      const profile = DisplayDeviceProfile(
         manufacturer: 'RideOS',
         model: 'Display v1',
         transportType: 'BLE',
@@ -285,7 +285,7 @@ void main() {
     });
 
     test('withCapabilities creates updated profile', () {
-      final profile = DisplayDeviceProfile(
+      const profile = DisplayDeviceProfile(
         manufacturer: 'RideOS',
         model: 'Display v1',
         transportType: 'BLE',
@@ -297,7 +297,7 @@ void main() {
     });
 
     test('No entry is HARDWARE_VERIFIED without real testing', () {
-      final profile = DisplayDeviceProfile(
+      const profile = DisplayDeviceProfile(
         manufacturer: 'Test',
         model: 'TestDevice',
         transportType: 'BLE',
@@ -307,7 +307,7 @@ void main() {
     });
 
     test('toJson serializes correctly', () {
-      final profile = DisplayDeviceProfile(
+      const profile = DisplayDeviceProfile(
         manufacturer: 'Yamaha',
         model: 'NaviLite',
         transportType: 'BLE',
@@ -336,7 +336,7 @@ void main() {
     });
 
     test('Default device profile is unverified', () {
-      final profile = DisplayDeviceProfile(
+      const profile = DisplayDeviceProfile(
         manufacturer: 'Unknown',
         model: 'Unknown',
         transportType: 'BLE',

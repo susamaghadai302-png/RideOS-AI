@@ -8,7 +8,7 @@ void main() {
 class Phase3AValidationRunner extends StatefulWidget {
   const Phase3AValidationRunner({super.key});
   @override
-  _Phase3AValidationRunnerState createState() => _Phase3AValidationRunnerState();
+  State<Phase3AValidationRunner> createState() => _Phase3AValidationRunnerState();
 }
 
 class _Phase3AValidationRunnerState extends State<Phase3AValidationRunner> {
@@ -29,10 +29,10 @@ class _Phase3AValidationRunnerState extends State<Phase3AValidationRunner> {
 
   Future<void> _runValidation() async {
     try {
-      print("==== PHASE 3A SMART DISPLAY VALIDATION START ====");
+      debugPrint("==== PHASE 3A SMART DISPLAY VALIDATION START ====");
       await _manager.autoConnect();
     } catch (e, stack) {
-      print("PHASE3A_RESULT: ERROR - $e\n$stack");
+      debugPrint("PHASE3A_RESULT: ERROR - $e\n$stack");
       setState(() => _status = "ERROR: $e");
     }
   }

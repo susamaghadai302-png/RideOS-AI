@@ -6,12 +6,14 @@ import '../domain/models/navigation_models.dart';
 import '../domain/models/ride_route_models.dart';
 import '../core/adapters/route_adapter.dart';
 import '../core/adapters/google_route_adapter.dart';
+import '../core/services/route_request_coordinator.dart';
 
 class TurnByTurnNavigationEngine {
   static final TurnByTurnNavigationEngine _instance = TurnByTurnNavigationEngine._internal();
   factory TurnByTurnNavigationEngine() => _instance;
 
   final RouteAdapter _routingEngine = GoogleRouteAdapter();
+  late final RouteRequestCoordinator _coordinator;
 
   NavigationSessionState _state = NavigationSessionState.idle;
   NavigationSessionState get state => _state;
@@ -66,7 +68,9 @@ class TurnByTurnNavigationEngine {
 
   int _offRouteSampleCount = 0;
 
-  TurnByTurnNavigationEngine._internal();
+  TurnByTurnNavigationEngine._internal() {
+    _coordinator = RouteRequestCoordinator(_routingEngine);
+  }
 
   /// Starts route preview toward a target destination
   Future<void> selectDestination({
@@ -76,19 +80,27 @@ class TurnByTurnNavigationEngine {
     _transitionTo(NavigationSessionState.destinationSelected);
     _currentGpsPosition = origin;
 
-    _availableAlternatives = await _routingEngine.calculateRoute(
-      RideRouteRequest(
-        origin: origin,
-        destination: destination,
-        twoWheelerMode: true,
-      ),
-    );
+    _coordinator.cancelAll(); // Cancel any in-flight previous requests
 
-    if (_availableAlternatives.isNotEmpty) {
-      _activeRoute = _availableAlternatives.first;
-      _remainingDistanceKm = _activeRoute!.totalDistanceKm;
-      _remainingDurationMinutes = _activeRoute!.totalDurationMinutes.toDouble();
-      _transitionTo(NavigationSessionState.routePreview);
+    try {
+      _availableAlternatives = await _coordinator.calculateRoute(
+        RideRouteRequest(
+          origin: origin,
+          destination: destination,
+          twoWheelerMode: true,
+        ),
+      );
+
+      if (_availableAlternatives.isNotEmpty) {
+        _activeRoute = _availableAlternatives.first;
+        _remainingDistanceKm = _activeRoute!.totalDistanceKm;
+        _remainingDurationMinutes = _activeRoute!.totalDurationMinutes.toDouble();
+        _transitionTo(NavigationSessionState.routePreview);
+      }
+    } catch (e) {
+      if (e is StateError && e.message == 'Request Cancelled') return;
+      _transitionTo(NavigationSessionState.idle);
+      rethrow;
     }
   }
 
@@ -111,6 +123,7 @@ class TurnByTurnNavigationEngine {
 
   /// Cancels active navigation session
   void cancelNavigation() {
+    _coordinator.cancelAll();
     _transitionTo(NavigationSessionState.cancelled);
     _activeRoute = null;
     _availableAlternatives = [];
@@ -124,12 +137,19 @@ class TurnByTurnNavigationEngine {
     required LatLng position,
     required double speedKmh,
     required double headingDeg,
+    double accuracyMeters = 10.0,
   }) {
     _currentGpsPosition = position;
     _currentSpeedKmh = speedKmh;
     _currentHeadingDeg = headingDeg;
 
     if (_state != NavigationSessionState.navigating || _activeRoute == null) return;
+    
+    // Ignore highly inaccurate GPS ticks
+    if (accuracyMeters > 50.0) return;
+
+    // Dynamic threshold: base 35m + accuracy margin
+    final double dynamicThreshold = 35.0 + (accuracyMeters * 0.5);
 
     // 1. Check Arrival at Destination (within 25 meters of destination)
     final destination = _activeRoute!.fullPolyline.isNotEmpty ? _activeRoute!.fullPolyline.last : position;
@@ -146,8 +166,8 @@ class TurnByTurnNavigationEngine {
     // 2. Evaluate closest point on active route
     final minDistanceToRouteMeters = _calculateDistanceToRoute(position, _activeRoute!.fullPolyline);
 
-    // 3. Off-Route Detection (Threshold: > 35m for 3 consecutive samples)
-    if (minDistanceToRouteMeters > 35.0) {
+    // 3. Off-Route Detection (Threshold: dynamic for 3 consecutive samples)
+    if (minDistanceToRouteMeters > dynamicThreshold && speedKmh > 5.0) {
       _offRouteSampleCount++;
       if (_offRouteSampleCount >= 3 && _state != NavigationSessionState.offRoute) {
         _handleOffRoute(position);
@@ -181,22 +201,32 @@ class TurnByTurnNavigationEngine {
 
     if (_activeRoute != null && _activeRoute!.fullPolyline.isNotEmpty) {
       final destination = _activeRoute!.fullPolyline.last;
-      _availableAlternatives = await _routingEngine.calculateRoute(
-        RideRouteRequest(
-          origin: currentPos,
-          destination: destination,
-          twoWheelerMode: true,
-        ),
-      );
+      _coordinator.metrics.rerouteRequests++;
+      
+      try {
+        _availableAlternatives = await _coordinator.calculateRoute(
+          RideRouteRequest(
+            origin: currentPos,
+            destination: destination,
+            twoWheelerMode: true,
+          ),
+        );
 
-      if (_availableAlternatives.isNotEmpty) {
-        _activeRoute = _availableAlternatives.first;
-        _currentSegmentIndex = 0;
-        _remainingDistanceKm = _activeRoute!.totalDistanceKm;
-        _remainingDurationMinutes = _activeRoute!.totalDurationMinutes.toDouble();
-        _offRouteSampleCount = 0;
-        _updateCurrentInstruction();
-        _transitionTo(NavigationSessionState.navigating);
+        if (_availableAlternatives.isNotEmpty) {
+          _activeRoute = _availableAlternatives.first;
+          _currentSegmentIndex = 0;
+          _remainingDistanceKm = _activeRoute!.totalDistanceKm;
+          _remainingDurationMinutes = _activeRoute!.totalDurationMinutes.toDouble();
+          _offRouteSampleCount = 0;
+          _updateCurrentInstruction();
+          _transitionTo(NavigationSessionState.navigating);
+        }
+      } catch (e) {
+        if (e is StateError && e.message == 'Request Cancelled') return;
+        // On transient failure, fallback to off route
+        _transitionTo(NavigationSessionState.offRoute);
+        _currentInstruction = 'Offline: Rerouting unavailable';
+        _currentManeuverIcon = Icons.cloud_off_rounded;
       }
     }
   }

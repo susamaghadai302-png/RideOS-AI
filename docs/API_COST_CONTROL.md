@@ -18,9 +18,12 @@ Mapping APIs (especially Google Routes API) charge per request. In a live naviga
 - Implement a cooldown period (e.g., 10-15 seconds) after a successful reroute before another reroute can be triggered. 
 - If the rider takes multiple wrong turns in rapid succession, the system waits for the cooldown to expire before hitting the API again.
 
-### Rule 4: Caching and Offline Fallback
-- Recently calculated routes should be kept in memory.
-- If an exact origin/destination request is made within a short time window, the system should return the cached `RideRouteResponse` rather than hitting the network.
+### Rule 4: Caching and Offline Fallback (IMPLEMENTED)
+- Recently calculated routes are kept in an LRU memory cache via `RouteRequestCoordinator`.
+- If an exact origin/destination request is made within a 5-minute window, the system returns the cached `CachedRouteResponse` rather than hitting the network.
+- Coalescing (Deduplication): Concurrent identical requests share the same in-flight `Future`.
+- Cancellation: Late/abandoned request results are aborted dynamically via `generationId`.
+- Backoff: Transient failures use exponential bounded backoff. Permanent config errors (API Keys) fail immediately.
 - If the API quota is exhausted (HTTP 429), the application must immediately fall back to the graceful offline state (or an open-source alternative like OSRM if configured).
 
 ## 3. Telemetry Sync Cost Control

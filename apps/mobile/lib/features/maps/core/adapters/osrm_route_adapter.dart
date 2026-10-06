@@ -27,7 +27,7 @@ class OsrmRouteAdapter implements RouteAdapter {
 
   RideRouteResponse _mapToCanonical(RouteCalculationResult result, RideRouteRequest request) {
     // OSRM Public API doesn't support live traffic, tolls, or true 2-wheeler
-    final metadata = RideRouteMetadata(
+    const metadata = RideRouteMetadata(
       twoWheelerRouting: DataAvailability.unsupported, // We pass TWO_WHEELER request, but OSRM falls back to driving
       liveTraffic: DataAvailability.unsupported,
       alternativeRoutes: DataAvailability.supported,

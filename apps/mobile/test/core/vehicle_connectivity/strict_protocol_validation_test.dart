@@ -148,7 +148,7 @@ void main() {
 
   group('Unsupported Device Detection', () {
     test('Default profile is unverified', () {
-      final profile = const DisplayDeviceProfile(
+      const profile = DisplayDeviceProfile(
         manufacturer: 'Unknown',
         model: 'Random BLE Module',
         transportType: 'BLE',
@@ -158,7 +158,7 @@ void main() {
     });
 
     test('copyWith preserves fields and updates verification', () {
-      final profile = const DisplayDeviceProfile(
+      const profile = DisplayDeviceProfile(
         manufacturer: 'Yamaha',
         model: 'R15 CCU',
         transportType: 'BLE',

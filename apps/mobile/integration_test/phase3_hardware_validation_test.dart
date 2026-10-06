@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/adapters/obd_gateway_adapter.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/services/phase3_validation_controller.dart';
 

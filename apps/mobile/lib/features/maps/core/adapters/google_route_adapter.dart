@@ -25,7 +25,7 @@ class GoogleRouteAdapter implements RouteAdapter {
 
   RideRouteResponse _mapToCanonical(RouteCalculationResult result, RideRouteRequest request) {
     // Google Routes API natively supports live traffic and true TWO_WHEELER routing
-    final metadata = RideRouteMetadata(
+    const metadata = RideRouteMetadata(
       twoWheelerRouting: DataAvailability.supported,
       liveTraffic: DataAvailability.supported,
       alternativeRoutes: DataAvailability.supported,

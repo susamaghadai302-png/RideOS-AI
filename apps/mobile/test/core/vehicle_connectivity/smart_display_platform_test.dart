@@ -70,7 +70,9 @@ Uint8List buildBleFrame(Uint8List payload) {
   frame.setAll(1, payload);
   frame[payload.length + 1] = 0x03;
   int crc = 0;
-  for (int i = 0; i < payload.length; i++) crc ^= payload[i];
+  for (int i = 0; i < payload.length; i++) {
+    crc ^= payload[i];
+  }
   frame[payload.length + 2] = crc;
   return frame;
 }
@@ -247,7 +249,7 @@ void main() {
 
   group('DisplayDeviceProfile', () {
     test('supports() returns true for included capability', () {
-      final profile = DisplayDeviceProfile(
+      const profile = DisplayDeviceProfile(
         manufacturer: 'RideOS',
         model: 'Test',
         transportType: 'BLE',

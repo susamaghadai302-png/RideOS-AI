@@ -151,7 +151,7 @@ class SmartDisplayUiBuilder {
     }
 
     if (_has(DisplayCapability.routeDeviation) && packet.safetyAlert == 'route_deviation') {
-      alerts.add(DisplayField(
+      alerts.add(const DisplayField(
         fieldId: 'route_deviation',
         label: 'REROUTING',
         value: 'Off route — recalculating',
@@ -171,7 +171,7 @@ class SmartDisplayUiBuilder {
     }
 
     if (_has(DisplayCapability.emergencySos) && packet.safetyAlert == 'sos') {
-      alerts.add(DisplayField(
+      alerts.add(const DisplayField(
         fieldId: 'sos',
         label: 'SOS',
         value: 'Emergency alert triggered',
@@ -181,7 +181,7 @@ class SmartDisplayUiBuilder {
     }
 
     if (_has(DisplayCapability.connectionLostAlert) && packet.connectionStatus == 'DISCONNECTED') {
-      alerts.add(DisplayField(
+      alerts.add(const DisplayField(
         fieldId: 'connection_lost',
         label: 'DISCONNECTED',
         value: 'Bluetooth connection lost',
