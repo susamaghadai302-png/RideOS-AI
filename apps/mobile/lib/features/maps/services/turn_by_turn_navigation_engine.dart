@@ -31,6 +31,9 @@ class TurnByTurnNavigationEngine {
   int _currentSegmentIndex = 0;
   int get currentSegmentIndex => _currentSegmentIndex;
 
+  DateTime? _lastRerouteTime;
+  static const Duration _rerouteCooldown = Duration(seconds: 15);
+
   double _remainingDistanceKm = 0.0;
   double get remainingDistanceKm => _remainingDistanceKm;
 
@@ -160,6 +163,14 @@ class TurnByTurnNavigationEngine {
   }
 
   Future<void> _handleOffRoute(LatLng currentPos) async {
+    final now = DateTime.now();
+    if (_lastRerouteTime != null && now.difference(_lastRerouteTime!) < _rerouteCooldown) {
+      _currentInstruction = 'Return to route. Rerouting paused...';
+      _currentManeuverIcon = Icons.warning_amber_rounded;
+      return;
+    }
+    _lastRerouteTime = now;
+
     _transitionTo(NavigationSessionState.offRoute);
     _proximityState = ManeuverProximityState.rerouting;
     _currentInstruction = 'Off route — Recalculating directions...';
