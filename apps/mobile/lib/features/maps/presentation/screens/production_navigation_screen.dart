@@ -30,7 +30,7 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
     super.initState();
     _navEngine.updateGpsLocation(
       position: _origin,
-      speedKmh: 42.0,
+      speedKmh: 0.0,
       headingDeg: 45.0,
     );
   }

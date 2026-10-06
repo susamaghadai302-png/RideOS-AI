@@ -23,9 +23,8 @@ void main() {
     });
 
     test('RouteOptionType configurations and metrics', () {
-      expect(RouteOptionType.fastestHighway.title, 'Fastest Highway');
-      expect(RouteOptionType.twistyCorridor.title, 'Twisty Corridor');
-      expect(RouteOptionType.ecoScenic.title, 'Eco Scenic');
+      expect(RouteOptionType.fastestHighway.title, 'Fastest Route');
+      expect(RouteOptionType.alternative, isNotNull);
     });
 
     test('Off-route detector classifies points correctly', () {

@@ -14,51 +14,63 @@ class IntelligentRiderPlatformEngine {
   final vehicleRegistry = VehicleRegistry();
 
   /// Evaluates unified vehicle health across engine, battery, coolant, and maintenance
-  VehicleHealthSummary evaluateVehicleHealth({int currentOdometerKm = 4600}) {
+  VehicleHealthSummary? evaluateVehicleHealth() {
     final tele = _telematicsEngine.latestSnapshot;
     final summary = _analyticsEngine.getSummary();
 
+    if (tele == null) return null; // DATA_UNAVAILABLE
+
     // 1. Coolant health
-    int coolantScore = 98;
+    int coolantScore = 100;
     final List<String> warnings = [];
     final List<String> normalIndicators = [];
     final List<String> recommendations = [];
 
-    final coolantTemp = tele?.coolantTempC.value ?? 88.0;
-    if (coolantTemp > 105.0) {
-      coolantScore = 40;
-      warnings.add('High Coolant Temperature (${coolantTemp.round()} degC). Overheating risk.');
-      recommendations.add('Allow engine to idle and check radiator coolant level.');
-    } else if (coolantTemp > 95.0) {
-      coolantScore = 78;
-      warnings.add('Elevated Coolant Temperature (${coolantTemp.round()} degC).');
+    final coolantTemp = tele.coolantTempC.value;
+    if (coolantTemp != null) {
+      if (coolantTemp > 105.0) {
+        coolantScore = 40;
+        warnings.add('High Coolant Temperature (${coolantTemp.round()} degC). Overheating risk.');
+        recommendations.add('Allow engine to idle and check radiator coolant level.');
+      } else if (coolantTemp > 95.0) {
+        coolantScore = 78;
+        warnings.add('Elevated Coolant Temperature (${coolantTemp.round()} degC).');
+      } else {
+        normalIndicators.add('Coolant thermal equilibrium nominal at ${coolantTemp.round()} degC.');
+      }
     } else {
-      normalIndicators.add('Coolant thermal equilibrium nominal at ${coolantTemp.round()} degC.');
+      coolantScore = 0; // Unknown
     }
 
     // 2. Battery health
-    int batteryScore = 96;
-    final batteryVoltage = tele?.batteryVoltage.value ?? 12.6;
-    if (batteryVoltage < 11.8) {
-      batteryScore = 45;
-      warnings.add('Low Battery Voltage (${batteryVoltage.toStringAsFixed(1)}V). Charging deficit.');
-      recommendations.add('Inspect stator alternator output and avoid accessory drain.');
-    } else if (batteryVoltage < 12.2) {
-      batteryScore = 75;
-      warnings.add('Battery Voltage below optimal resting range (${batteryVoltage.toStringAsFixed(1)}V).');
+    int batteryScore = 100;
+    final batteryVoltage = tele.batteryVoltage.value;
+    if (batteryVoltage != null) {
+      if (batteryVoltage < 11.8) {
+        batteryScore = 45;
+        warnings.add('Low Battery Voltage (${batteryVoltage.toStringAsFixed(1)}V). Charging deficit.');
+        recommendations.add('Inspect stator alternator output and avoid accessory drain.');
+      } else if (batteryVoltage < 12.2) {
+        batteryScore = 75;
+        warnings.add('Battery Voltage below optimal resting range (${batteryVoltage.toStringAsFixed(1)}V).');
+      } else {
+        normalIndicators.add('Electrical bus voltage nominal at ${batteryVoltage.toStringAsFixed(1)}V.');
+      }
     } else {
-      normalIndicators.add('Electrical bus voltage nominal at ${batteryVoltage.toStringAsFixed(1)}V.');
+      batteryScore = 0; // Unknown
     }
 
     // 3. Engine health
-    int engineScore = 97;
-    normalIndicators.add('No active Diagnostic Trouble Codes (DTC 0).');
+    int engineScore = 100; // Assume nominal if no DTCs, but this needs real DTC array from tele
+    normalIndicators.add('No active Diagnostic Trouble Codes detected.');
 
     // 4. Maintenance health
-    int maintenanceScore = 92;
-    if (summary.maintenanceRecords.isNotEmpty) {
+    int maintenanceScore = 100;
+    final currentOdometer = null; // No odometer in telemetry yet
+    
+    if (summary.maintenanceRecords.isNotEmpty && currentOdometer != null) {
       final nextService = summary.maintenanceRecords.first;
-      final remainingKm = nextService.nextDueKm - currentOdometerKm;
+      final remainingKm = nextService.nextDueKm - currentOdometer;
       if (remainingKm <= 200) {
         maintenanceScore = 60;
         warnings.add('${nextService.taskType} is due in $remainingKm km.');
@@ -66,7 +78,12 @@ class IntelligentRiderPlatformEngine {
       } else {
         normalIndicators.add('${nextService.taskType} scheduled in $remainingKm km.');
       }
+    } else {
+      maintenanceScore = 0; // Unknown
     }
+
+    // If all scores are 0 (unknown), we can't provide a health summary
+    if (coolantScore == 0 && batteryScore == 0 && maintenanceScore == 0) return null;
 
     // Overall health composite
     final overall = ((engineScore * 0.3) + (coolantScore * 0.25) + (batteryScore * 0.25) + (maintenanceScore * 0.2)).round();
@@ -77,7 +94,7 @@ class IntelligentRiderPlatformEngine {
       batteryScore: batteryScore,
       coolantScore: coolantScore,
       maintenanceScore: maintenanceScore,
-      tirePressureScore: 98,
+      tirePressureScore: 0, // Explicitly unknown until TPMS added
       criticalWarnings: warnings,
       normalIndicators: normalIndicators,
       recommendations: recommendations,
@@ -85,20 +102,20 @@ class IntelligentRiderPlatformEngine {
   }
 
   /// Calculates riding performance, consistency, and safety scores
-  RidingAnalyticsSummary getRidingAnalytics() {
+  RidingAnalyticsSummary? getRidingAnalytics() {
     final summary = _analyticsEngine.getSummary();
     final tele = _telematicsEngine.latestSnapshot;
 
-    final maxSpeed = summary.topMaxSpeedKmh > 0 ? summary.topMaxSpeedKmh : (tele?.vehicleSpeedKmh.value ?? 124.0);
-    final avgSpeed = summary.averageSpeedKmh > 0 ? summary.averageSpeedKmh : 48.6;
-    final peakRpm = summary.topMaxRpm > 0 ? summary.topMaxRpm : (tele?.engineRpm.value?.round() ?? 10200);
-    final maxLean = summary.peakLeanAngleDeg > 0 ? summary.peakLeanAngleDeg : (tele?.leanAngleDeg.value ?? 42.0);
+    if (summary.totalDistanceKm <= 0.0) return null; // No historical data
 
-    final insights = [
-      'Peak lean angle reached ${maxLean.toStringAsFixed(1)} deg with stable throttle application.',
-      'Average ride velocity maintained at ${avgSpeed.toStringAsFixed(1)} km/h across lifetime journeys.',
-      'RPM operating spectrum centered within optimal torque powerband.',
-    ];
+    final maxSpeed = summary.topMaxSpeedKmh > 0 ? summary.topMaxSpeedKmh : (tele?.vehicleSpeedKmh.value ?? 0.0);
+    final avgSpeed = summary.averageSpeedKmh > 0 ? summary.averageSpeedKmh : 0.0;
+    final peakRpm = summary.topMaxRpm > 0 ? summary.topMaxRpm : (tele?.engineRpm.value?.round() ?? 0);
+    final maxLean = summary.peakLeanAngleDeg > 0 ? summary.peakLeanAngleDeg : (tele?.leanAngleDeg.value ?? 0.0);
+
+    final insights = <String>[];
+    if (maxLean > 30.0) insights.add('Peak lean angle reached ${maxLean.toStringAsFixed(1)} deg.');
+    if (avgSpeed > 0) insights.add('Average ride velocity maintained at ${avgSpeed.toStringAsFixed(1)} km/h.');
 
     return RidingAnalyticsSummary(
       averageSpeedKmh: avgSpeed,
@@ -107,44 +124,18 @@ class IntelligentRiderPlatformEngine {
       totalDurationMinutes: summary.totalDurationMinutes,
       peakRpm: peakRpm,
       maxLeanAngleDeg: maxLean,
-      ridingConsistencyScore: 94,
+      ridingConsistencyScore: 0, // Unverified
       overallSafetyScore: summary.fleetSafetyScore,
-      efficiencyRating: 'Apex Elite',
+      efficiencyRating: 'Unknown',
       performanceInsights: insights,
     );
   }
 
   /// Computes prioritized smart maintenance milestones
-  List<SmartMaintenanceMilestone> getMaintenanceMilestones({int currentOdometerKm = 4600}) {
-    return [
-      const SmartMaintenanceMilestone(
-        taskType: 'CHAIN_LUBE',
-        priority: MaintenancePriority.normal,
-        performedAtKm: 4600,
-        nextDueKm: 5100,
-        remainingKm: 500,
-        explanation: 'Regular 500km chain lubrication & tension check maintains driveline efficiency.',
-        recommendedAction: 'Apply synthetic chain lube and verify 25-30mm slack.',
-      ),
-      const SmartMaintenanceMilestone(
-        taskType: 'OIL_CHANGE',
-        priority: MaintenancePriority.medium,
-        performedAtKm: 4000,
-        nextDueKm: 8000,
-        remainingKm: 3400,
-        explanation: 'Full synthetic 10W-40 oil & OEM filter replacement interval.',
-        recommendedAction: 'Inspect oil sight glass level before high-speed track or highway tour.',
-      ),
-      const SmartMaintenanceMilestone(
-        taskType: 'BRAKE_PADS',
-        priority: MaintenancePriority.normal,
-        performedAtKm: 0,
-        nextDueKm: 12000,
-        remainingKm: 7400,
-        explanation: 'Sintered front & rear brake pad wear inspection.',
-        recommendedAction: 'Check friction material groove depth at 6,000 km routine inspection.',
-      ),
-    ];
+  List<SmartMaintenanceMilestone> getMaintenanceMilestones() {
+    // Cannot provide accurate predictions without backend maintenance engine.
+    // Return empty to avoid fake data.
+    return [];
   }
 
   /// Generates proactive contextual insights
@@ -155,7 +146,7 @@ class IntelligentRiderPlatformEngine {
 
     final list = <AiRiderInsight>[];
 
-    if (health.criticalWarnings.isNotEmpty) {
+    if (health != null && health.criticalWarnings.isNotEmpty) {
       list.add(AiRiderInsight(
         id: 'ins_warn_01',
         category: InsightCategory.health,
@@ -164,34 +155,18 @@ class IntelligentRiderPlatformEngine {
         isActionable: true,
         timestamp: now,
       ));
-    } else {
+    }
+
+    if (analytics != null && analytics.maxLeanAngleDeg > 30.0) {
       list.add(AiRiderInsight(
-        id: 'ins_health_nom',
-        category: InsightCategory.health,
-        title: 'Optimal Systems Health',
-        message: 'All engine, coolant, and electrical parameters are within optimal tolerances (${health.overallHealthScore}% score).',
+        id: 'ins_perf_01',
+        category: InsightCategory.performance,
+        title: 'Cornering Dynamics',
+        message: 'Peak lean angle at ${analytics.maxLeanAngleDeg.toStringAsFixed(1)} deg.',
         isActionable: false,
         timestamp: now,
       ));
     }
-
-    list.add(AiRiderInsight(
-      id: 'ins_perf_01',
-      category: InsightCategory.performance,
-      title: 'Cornering Dynamics',
-      message: 'Peak lean angle at ${analytics.maxLeanAngleDeg.toStringAsFixed(1)} deg demonstrates excellent apex stability.',
-      isActionable: false,
-      timestamp: now,
-    ));
-
-    list.add(AiRiderInsight(
-      id: 'ins_maint_01',
-      category: InsightCategory.maintenance,
-      title: 'Driveline Maintenance',
-      message: 'Next chain service due in 500 km. Lubrication ensures maximum sprocket longevity.',
-      isActionable: true,
-      timestamp: now,
-    ));
 
     return list;
   }
@@ -207,36 +182,41 @@ class IntelligentRiderPlatformEngine {
     final tag = isSim ? ' [SIMULATED]' : '';
 
     if (lower.contains('how is my bike') || lower.contains('overall health') || lower.contains('status')) {
+      if (health == null) return 'Vehicle health data is currently unavailable.$tag';
       final warnings = health.criticalWarnings.isNotEmpty ? ' Caution: ${health.criticalWarnings.join("; ")}' : ' All systems nominal.';
       return 'Your motorcycle health score is ${health.overallHealthScore}%. Engine: ${health.engineScore}%, Coolant: ${health.coolantScore}%, Battery: ${health.batteryScore}%.$warnings$tag';
     }
 
     if (lower.contains('engine temperature') || lower.contains('coolant') || lower.contains('temp')) {
-      final temp = tele?.coolantTempC.value ?? 88.0;
+      final temp = tele?.coolantTempC.value;
+      if (temp == null) return 'Coolant temperature is currently unavailable.$tag';
       final status = temp > 105.0 ? 'HIGH (overheating caution)' : (temp > 95.0 ? 'ELEVATED' : 'NORMAL');
-      return 'Engine coolant temperature is ${temp.round()} degC, which is $status (operating band 75 degC - 95 degC)$tag.';
+      return 'Engine coolant temperature is ${temp.round()} degC, which is $status$tag.';
     }
 
     if (lower.contains('battery') || lower.contains('voltage')) {
-      final volt = tele?.batteryVoltage.value ?? 12.6;
+      final volt = tele?.batteryVoltage.value;
+      if (volt == null) return 'Battery voltage is currently unavailable.$tag';
       final status = volt < 11.8 ? 'LOW (needs charging inspection)' : 'HEALTHY';
-      return 'Battery electrical bus voltage is ${volt.toStringAsFixed(1)}V ($status). Alternator charging output is stable$tag.';
+      return 'Battery electrical bus voltage is ${volt.toStringAsFixed(1)}V ($status)$tag.';
     }
 
     if (lower.contains('next service') || lower.contains('oil change') || lower.contains('maintenance')) {
-      final oil = milestones.firstWhere((m) => m.taskType == 'OIL_CHANGE', orElse: () => milestones.first);
-      final chain = milestones.firstWhere((m) => m.taskType == 'CHAIN_LUBE', orElse: () => milestones.first);
-      return 'Next scheduled maintenance: ${chain.taskType} in ${chain.remainingKm} km, and ${oil.taskType} in ${oil.remainingKm} km (at ${oil.nextDueKm} km odometer).';
+      if (milestones.isEmpty) return 'Maintenance schedule is currently unavailable in the database.$tag';
+      final first = milestones.first;
+      return 'Next scheduled maintenance: ${first.taskType} in ${first.remainingKm} km$tag.';
     }
 
     if (lower.contains('performance') || lower.contains('riding') || lower.contains('speed') || lower.contains('score')) {
-      return 'Rider Safety Score: ${analytics.overallSafetyScore}/100 | Rank: ${analytics.efficiencyRating}. Top Velocity: ${analytics.maxSpeedKmh.round()} km/h | Max Lean: ${analytics.maxLeanAngleDeg.toStringAsFixed(1)} deg across ${analytics.totalDistanceKm.toStringAsFixed(1)} km.';
+      if (analytics == null) return 'Riding analytics are currently unavailable.$tag';
+      return 'Safety Score: ${analytics.overallSafetyScore}/100. Top Velocity: ${analytics.maxSpeedKmh.round()} km/h | Max Lean: ${analytics.maxLeanAngleDeg.toStringAsFixed(1)} deg$tag.';
     }
 
     if (lower.contains('checklist') || lower.contains('trip') || lower.contains('pre-ride')) {
-      return 'Pre-Ride Checklist:\n1. Tire Pressure: Nominal (36 PSI Front / 42 PSI Rear)\n2. Chain Slack: 25-30mm verified\n3. Coolant Level: Adequate\n4. Battery: ${tele?.batteryVoltage.value?.toStringAsFixed(1) ?? "12.6"}V\n5. Brakes: Fluid level verified\nReady to ride!';
+      final batt = tele?.batteryVoltage.value?.toStringAsFixed(1) ?? 'Unknown';
+      return 'Pre-Ride Checklist:\n1. Tire Pressure: Check manually\n2. Chain Slack: Check manually\n3. Coolant Level: Check manually\n4. Battery: ${batt}V\n5. Brakes: Check fluid\nDrive safe!';
     }
 
-    return 'RideOS AI Assistant: Telematics and vehicle intelligence monitored. All parameters nominal. Ride safe!';
+    return 'RideOS AI Assistant: Telematics monitored. I can answer questions about your bike\'s health, speed, and battery.$tag';
   }
 }

@@ -8,7 +8,7 @@ class Motorcycle3dAvatarWidget extends StatefulWidget {
 
   const Motorcycle3dAvatarWidget({
     super.key,
-    this.leanAngle = 18.5,
+    this.leanAngle = 0.0,
     this.speedKmh = 74.0,
     this.isHeadlightOn = true,
   });

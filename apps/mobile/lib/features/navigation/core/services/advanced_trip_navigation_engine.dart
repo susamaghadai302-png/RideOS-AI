@@ -102,7 +102,7 @@ class AdvancedTripNavigationEngine {
         distanceKm: 64.2,
         durationMinutes: 58.0,
         averageSpeedKmh: 66.4,
-        maxSpeedKmh: 142.0,
+        maxSpeedKmh: 0.0,
         safetyScore: 98,
         efficiencyRating: 'Apex Elite',
         notes: 'Track-pace canyon carving with smooth cornering roll-on.',

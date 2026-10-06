@@ -38,7 +38,7 @@ class DigitalTwinService {
       batteryPct: 94.0,
       fuelPct: 78.0,
       frontTirePsi: 36.0,
-      rearTirePsi: 42.0,
+      rearTirePsi: 0.0,
       oilLifePct: 88.0,
       brakePadLifePct: 82.0,
       isEngineActive: true,

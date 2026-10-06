@@ -202,15 +202,7 @@ class RiderSafetyAiEngine {
       );
     }
 
-    alerts.add(
-      const SafetyAlertEvent(
-        type: SafetyAlertType.accidentProneZone,
-        title: 'ACCIDENT PRONE ZONE',
-        description: 'High-risk intersection 200m ahead. Stay alert for turning vehicles.',
-        voicePrompt: 'Attention: High accident frequency area ahead.',
-        severity: 'MEDIUM',
-      ),
-    );
+
 
     return alerts;
   }

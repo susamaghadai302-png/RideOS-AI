@@ -583,10 +583,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with TickerPr
                           child: Column(
                             children: [
                               WeatherWidget(
-                                weatherCondition: 'Clear Aurora | Ideal Riding Conditions',
-                                tempCelsius: 24.0,
-                                rainChance: 4.0,
-                                windSpeedKmh: 14.0,
+                                weatherCondition: null,
+                                tempCelsius: null,
+                                rainChance: null,
+                                windSpeedKmh: null,
                                 onWeatherModeChanged: (mode) {
                                   LuxAudioHapticsService.selectionClick();
                                   showLuxSnack(context, 'Weather simulation: ${mode.name.toUpperCase()}', variant: LuxSnackVariant.info);

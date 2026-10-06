@@ -106,7 +106,7 @@ class _IntelligentRiderPlatformScreenState extends State<IntelligentRiderPlatfor
                         border: Border.all(color: RoadOSColors.apexEmerald.withValues(alpha: 0.5)),
                       ),
                       child: Text(
-                        '${health.overallHealthScore}% OPTIMAL',
+                        '${health?.overallHealthScore ?? 0}% OPTIMAL',
                         style: const TextStyle(color: RoadOSColors.apexEmerald, fontSize: 9, fontWeight: FontWeight.w900),
                       ),
                     ),
@@ -115,13 +115,13 @@ class _IntelligentRiderPlatformScreenState extends State<IntelligentRiderPlatfor
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: _buildHealthBar('Engine', health.engineScore, RoadOSColors.hyperOrange)),
+                    Expanded(child: _buildHealthBar('Engine', health?.engineScore ?? 0, RoadOSColors.hyperOrange)),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildHealthBar('Coolant', health.coolantScore, RoadOSColors.cyberCyan)),
+                    Expanded(child: _buildHealthBar('Coolant', health?.coolantScore ?? 0, RoadOSColors.cyberCyan)),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildHealthBar('Battery', health.batteryScore, RoadOSColors.apexEmerald)),
+                    Expanded(child: _buildHealthBar('Battery', health?.batteryScore ?? 0, RoadOSColors.apexEmerald)),
                     const SizedBox(width: 8),
-                    Expanded(child: _buildHealthBar('Service', health.maintenanceScore, RoadOSColors.electricBlue)),
+                    Expanded(child: _buildHealthBar('Service', health?.maintenanceScore ?? 0, RoadOSColors.electricBlue)),
                   ],
                 ),
               ],
@@ -158,16 +158,16 @@ class _IntelligentRiderPlatformScreenState extends State<IntelligentRiderPlatfor
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('RIDER PERFORMANCE MATRIX', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                    Text(analytics.efficiencyRating, style: const TextStyle(color: RoadOSColors.hyperOrange, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text(analytics?.efficiencyRating ?? 'N/A', style: const TextStyle(color: RoadOSColors.hyperOrange, fontSize: 11, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildStatMetric('SAFETY SCORE', '${analytics.overallSafetyScore}/100', RoadOSColors.apexEmerald),
-                    _buildStatMetric('TOP SPEED', '${analytics.maxSpeedKmh.round()} km/h', RoadOSColors.cyberCyan),
-                    _buildStatMetric('MAX LEAN', '${analytics.maxLeanAngleDeg.toStringAsFixed(1)} deg', RoadOSColors.warningAmber),
+                    _buildStatMetric('SAFETY SCORE', '${analytics?.overallSafetyScore ?? 0}/100', RoadOSColors.apexEmerald),
+                    _buildStatMetric('TOP SPEED', '${analytics?.maxSpeedKmh.round() ?? 0} km/h', RoadOSColors.cyberCyan),
+                    _buildStatMetric('MAX LEAN', '${analytics?.maxLeanAngleDeg.toStringAsFixed(1) ?? "0.0"} deg', RoadOSColors.warningAmber),
                   ],
                 ),
               ],

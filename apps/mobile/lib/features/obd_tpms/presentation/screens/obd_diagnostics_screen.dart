@@ -91,7 +91,7 @@ class _ObdDiagnosticsScreenState extends State<ObdDiagnosticsScreen> {
                   // TPMS Sensors
                   TpmsTireVisualizerWidget(
                     frontPsi: _isConnected ? (telemetry.frontTirePsi ?? 36.0) : 0.0,
-                    rearPsi: _isConnected ? (telemetry.rearTirePsi ?? 42.0) : 0.0,
+                    rearPsi: _isConnected ? (telemetry.rearTirePsi ?? 0.0) : 0.0,
                     tireTempC: _isConnected ? (telemetry.tireTempC ?? 32.0) : 0.0,
                     lowPressureWarning: telemetry.lowPressureWarning,
                   ),

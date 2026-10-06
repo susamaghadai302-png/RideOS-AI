@@ -422,7 +422,7 @@ class MasterTelemetrySnapshot {
         lateralGForce: 0.0,
         longitudinalGForce: 0.0,
         frontTirePressurePsi: 36.0,
-        rearTirePressurePsi: 42.0,
+        rearTirePressurePsi: 0.0,
         odometerKm: 0,
         isSimulated: isSimulated,
         timestamp: DateTime.now(),

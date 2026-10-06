@@ -75,7 +75,7 @@ class ConnectionDiagnosticsService {
       discoveredCharacteristicsCount: activeAdapter != null ? 14 : 0,
       isAuthenticated: activeAdapter != null,
       isTelemetryStreaming: activeAdapter != null,
-      latencyMs: activeAdapter != null ? 18.5 : 0.0,
+      latencyMs: 0.0,
       packetsReceived: activeAdapter != null ? 1420 : 0,
       protocolName: activeAdapter?.adapterName ?? 'Generic Telematics Bus',
       adapterVersion: activeAdapter?.version ?? '2.4.0',

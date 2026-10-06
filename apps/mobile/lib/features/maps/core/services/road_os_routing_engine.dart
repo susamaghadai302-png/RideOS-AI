@@ -7,9 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 
 enum RouteOptionType {
-  fastestHighway('Fastest Highway', 'Highway Express', 'Normal Traffic', RoadOSColors.cyberCyan),
-  twistyCorridor('Twisty Corridor', 'Scenic Curves', 'Twisty Apex', RoadOSColors.hyperOrange),
-  ecoScenic('Eco Scenic', 'Direct Connect', 'Minimum Fuel', RoadOSColors.apexEmerald);
+  fastestHighway('Fastest Route', 'Direct Path', 'Primary', RoadOSColors.cyberCyan),
+  alternative('Alternative Route', 'Alternative', 'Alternate', RoadOSColors.hyperOrange),
+  safeCorridor('Safe Corridor (Unavailable)', 'Traffic/Safety Score Unknown', 'Unavailable', Colors.grey),
+  scenicTwists('Scenic Curves (Unavailable)', 'Topography Unknown', 'Unavailable', Colors.grey),
+  ecoEfficient('Eco Route (Unavailable)', 'Fuel Est Unknown', 'Unavailable', Colors.grey);
 
   final String title;
   final String metrics;
@@ -178,9 +180,7 @@ class RoadOsRoutingEngine {
 
             final optionType = i == 0
                 ? RouteOptionType.fastestHighway
-                : i == 1
-                    ? RouteOptionType.twistyCorridor
-                    : RouteOptionType.ecoScenic;
+                : RouteOptionType.alternative;
 
             calculatedRoutes.add(
               RouteCalculationResult(

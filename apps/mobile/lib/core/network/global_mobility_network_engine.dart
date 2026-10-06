@@ -45,7 +45,7 @@ class GlobalMobilityNetworkEngine {
     return const [
       AnalyticsInsight(metricName: 'Total Network Ride Distance', value: 1420500.0, unit: 'MILES', trendDirection: 'UPWARD'),
       AnalyticsInsight(metricName: 'Average Fleet Safety Score', value: 99.4, unit: 'INDEX_100', trendDirection: 'STABLE'),
-      AnalyticsInsight(metricName: 'Fuel / Energy Saved by AI Routing', value: 18.5, unit: 'PERCENT', trendDirection: 'OPTIMIZED'),
+      AnalyticsInsight(metricName: 'Fuel / Energy Saved by AI Routing', value: 0.0, unit: 'PERCENT', trendDirection: 'UNAVAILABLE'),
     ];
   }
 }

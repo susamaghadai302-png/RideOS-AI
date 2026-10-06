@@ -47,7 +47,7 @@ class AiRouteOptimizerService {
 
   // Rider preference learning memory
   int totalRidesLogged = 42;
-  double averageLeanPreferenceDeg = 24.5;
+  double averageLeanPreferenceDeg = 0.0;
 
   Future<List<AiRouteRecommendation>> generateOptimizedRoutes({
     required MapCoordinates origin,

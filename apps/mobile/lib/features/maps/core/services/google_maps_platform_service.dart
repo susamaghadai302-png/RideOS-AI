@@ -328,9 +328,7 @@ class GoogleMapsPlatformService {
 
             final routeType = i == 0
                 ? RouteOptionType.fastestHighway
-                : i == 1
-                    ? RouteOptionType.twistyCorridor
-                    : RouteOptionType.ecoScenic;
+                : RouteOptionType.alternative;
 
             calculatedRoutes.add(
               RouteCalculationResult(

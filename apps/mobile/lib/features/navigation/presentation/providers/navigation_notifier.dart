@@ -52,7 +52,7 @@ class NavigationNotifier extends StateNotifier<ui_state.NavigationState> {
       currentManeuverText: 'Head North on Skyline Boulevard',
       distanceToNextTurnMeters: 450,
       speedKmh: 65.0,
-      leanAngle: 18.5,
+      leanAngle: 0.0,
     );
   }
 

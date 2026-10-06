@@ -227,7 +227,7 @@ class GlobalCommunityMarketplaceCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _buildItem('Accessories', '15% Off Helmet', Icons.headset_mic_rounded, RoadOSColors.cyberCyan)),
+              Expanded(child: _buildItem('Accessories', 'Accessories Store', Icons.headset_mic_rounded, RoadOSColors.cyberCyan)),
               const SizedBox(width: 8),
               Expanded(child: _buildItem('Insurance', 'Instant Quote', Icons.verified_user_rounded, RoadOSColors.apexEmerald)),
               const SizedBox(width: 8),

@@ -5,18 +5,18 @@ import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/widgets/living_3d_environment.dart';
 
 class WeatherWidget extends StatelessWidget {
-  final String weatherCondition;
-  final double tempCelsius;
-  final double rainChance;
-  final double windSpeedKmh;
+  final String? weatherCondition;
+  final double? tempCelsius;
+  final double? rainChance;
+  final double? windSpeedKmh;
   final Function(RideOSWeatherMode)? onWeatherModeChanged;
 
   const WeatherWidget({
     super.key,
-    this.weatherCondition = 'Clear Aurora Sky',
-    this.tempCelsius = 24.5,
-    this.rainChance = 5.0,
-    this.windSpeedKmh = 12.0,
+    this.weatherCondition,
+    this.tempCelsius,
+    this.rainChance,
+    this.windSpeedKmh,
     this.onWeatherModeChanged,
   });
 
@@ -38,7 +38,7 @@ class WeatherWidget extends StatelessWidget {
                 ],
               ),
               Text(
-                '${tempCelsius.round()} degC',
+                tempCelsius != null ? '${tempCelsius!.round()} degC' : '-- degC',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: RoadOSColors.cyberCyan),
               ),
             ],
@@ -49,14 +49,14 @@ class WeatherWidget extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  weatherCondition,
+                  weatherCondition ?? 'DATA_UNAVAILABLE',
                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: RoadOSColors.platinumWhite),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
-                'Rain: ${rainChance.round()}% | Wind: ${windSpeedKmh.round()} km/h',
+                'Rain: ${rainChance != null ? '${rainChance!.round()}%' : '--'} | Wind: ${windSpeedKmh != null ? '${windSpeedKmh!.round()} km/h' : '--'}',
                 style: const TextStyle(fontSize: 10, color: RoadOSColors.textMuted),
               ),
             ],

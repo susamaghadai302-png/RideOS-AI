@@ -23,7 +23,7 @@ class ObdSensorEntity extends Equatable {
   const ObdSensorEntity({
     required this.rpm,
     this.speedKmh = 68.0,
-    this.engineLoadPct = 42.0,
+    this.engineLoadPct = 0.0,
     required this.coolantTempC,
     this.intakeAirTempC = 28.0,
     required this.throttlePct,

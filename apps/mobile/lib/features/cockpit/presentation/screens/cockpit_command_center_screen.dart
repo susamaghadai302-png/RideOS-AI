@@ -20,7 +20,7 @@ class _CockpitCommandCenterScreenState extends State<CockpitCommandCenterScreen>
   late AnimationController _animController;
   final double _speed = 124.0;
   final double _rpm = 9800.0;
-  final double _leanAngle = 24.5;
+  final double _leanAngle = 0.0; // DATA_UNAVAILABLE
   final double _throttlePercent = 78.0;
   final double _gForce = 1.42;
 

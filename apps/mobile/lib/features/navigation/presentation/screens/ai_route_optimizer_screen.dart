@@ -79,7 +79,7 @@ class _AiRouteOptimizerScreenState extends State<AiRouteOptimizerScreen> {
                         children: [
                           Text('JARVIS AI LEARNING ENGINE', style: TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold, fontSize: 13)),
                           SizedBox(height: 2),
-                          Text('Learned from 42 past rides | Average lean preference: 24.5 deg', style: TextStyle(color: RoadOSColors.textMuted, fontSize: 11)),
+                          Text('DATA_UNAVAILABLE - No historical telemetry', style: TextStyle(color: RoadOSColors.textMuted, fontSize: 11)),
                         ],
                       ),
                     ),
