@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/design_system/roados_tokens.dart';
 import '../../../../core/design_system/roados_components.dart';
+import 'package:latlong2/latlong.dart' as ll2;
 import '../../core/map_provider.dart';
 import '../../core/map_provider_factory.dart';
 import '../../domain/models/navigation_models.dart';
+import '../../domain/models/ride_route_models.dart';
 import '../../services/turn_by_turn_navigation_engine.dart';
 import '../../../../core/widgets/cinematic_background.dart';
 
@@ -22,6 +24,9 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
   final _origin = const LatLng(12.9716, 77.5946); // Downtown Center
   final _destination = const LatLng(12.9352, 77.6245); // Tech Park Hub
 
+  ll2.LatLng get _originLl2 => ll2.LatLng(_origin.latitude, _origin.longitude);
+  ll2.LatLng get _destinationLl2 => ll2.LatLng(_destination.latitude, _destination.longitude);
+
   PoiCategory? _selectedCategory;
   final TextEditingController _searchController = TextEditingController();
 
@@ -29,7 +34,7 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
   void initState() {
     super.initState();
     _navEngine.updateGpsLocation(
-      position: _origin,
+      position: _originLl2,
       speedKmh: 0.0,
       headingDeg: 45.0,
     );
@@ -48,7 +53,7 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
   }
 
   void _previewRoute() {
-    _navEngine.selectDestination(origin: _origin, destination: _destination);
+    _navEngine.selectDestination(origin: _originLl2, destination: _destinationLl2);
   }
 
   @override
@@ -68,7 +73,7 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
               Positioned.fill(
                 child: _mapProvider.buildMapView(
                   options: MapOptions(
-                    initialCenter: _navEngine.currentGpsPosition ?? _origin,
+                    initialCenter: _navEngine.currentGpsPosition != null ? LatLng(_navEngine.currentGpsPosition!.latitude, _navEngine.currentGpsPosition!.longitude) : _origin,
                     initialZoom: 16.0,
                     showTraffic: true,
                     enableTilt: _navEngine.cameraMode == CameraMode.navigation3D,
@@ -90,7 +95,7 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
                         color: RoadOSColors.errorCrimson,
                       ),
                   ],
-                  polylinePoints: _navEngine.activeRoute?.waypoints,
+                  polylinePoints: _navEngine.activeRoute?.fullPolyline.map((p) => LatLng(p.latitude, p.longitude)).toList(),
                 ),
               ),
 
@@ -142,13 +147,36 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
 
   Widget _buildTurnInstructionBanner(NavigationSessionState state) {
     final isAlert = state == NavigationSessionState.offRoute || state == NavigationSessionState.rerouting;
+    final proximity = _navEngine.proximityState;
+
+    Color bannerColor = const Color(0xFF070B18).withValues(alpha: 0.95);
+    Color borderColor = RoadOSColors.borderTranslucent;
+    Color iconColor = RoadOSColors.electricBlue;
+    Color iconBgColor = RoadOSColors.electricBlue.withValues(alpha: 0.15);
+
+    if (isAlert || proximity == ManeuverProximityState.rerouting) {
+      bannerColor = RoadOSColors.errorCrimson.withValues(alpha: 0.95);
+      borderColor = Colors.redAccent;
+      iconColor = Colors.white;
+      iconBgColor = Colors.white.withValues(alpha: 0.2);
+    } else if (proximity == ManeuverProximityState.immediate) {
+      bannerColor = RoadOSColors.hyperOrange.withValues(alpha: 0.95);
+      borderColor = RoadOSColors.hyperOrange;
+      iconColor = Colors.white;
+      iconBgColor = Colors.white.withValues(alpha: 0.2);
+    } else if (proximity == ManeuverProximityState.approaching) {
+      bannerColor = RoadOSColors.apexEmerald.withValues(alpha: 0.95);
+      borderColor = RoadOSColors.apexEmerald;
+      iconColor = Colors.white;
+      iconBgColor = Colors.white.withValues(alpha: 0.2);
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: isAlert ? RoadOSColors.errorCrimson.withValues(alpha: 0.95) : const Color(0xFF070B18).withValues(alpha: 0.95),
+        color: bannerColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isAlert ? Colors.redAccent : RoadOSColors.borderTranslucent),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.4),
@@ -162,10 +190,10 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isAlert ? Colors.white.withValues(alpha: 0.2) : RoadOSColors.electricBlue.withValues(alpha: 0.15),
+              color: iconBgColor,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(_navEngine.currentManeuverIcon, color: isAlert ? Colors.white : RoadOSColors.electricBlue, size: 28),
+            child: Icon(_navEngine.currentManeuverIcon, color: iconColor, size: 28),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -182,7 +210,7 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
                 const SizedBox(height: 2),
                 Text(
                   isAlert ? 'Recalculating alternative path...' : 'In ${_navEngine.distanceToNextManeuverMeters.toStringAsFixed(0)} meters',
-                  style: TextStyle(color: isAlert ? Colors.white70 : RoadOSColors.textMuted, fontSize: 12),
+                  style: TextStyle(color: (isAlert || proximity == ManeuverProximityState.immediate || proximity == ManeuverProximityState.approaching) ? Colors.white70 : RoadOSColors.textMuted, fontSize: 12),
                 ),
               ],
             ),
@@ -364,9 +392,9 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: alt.isRecommended ? RoadOSColors.electricBlue.withValues(alpha: 0.12) : Colors.black,
+                color: alt.routeType == RideRouteType.fastest ? RoadOSColors.electricBlue.withValues(alpha: 0.12) : Colors.black,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: alt.isRecommended ? RoadOSColors.electricBlue : RoadOSColors.borderTranslucent),
+                border: Border.all(color: alt.routeType == RideRouteType.fastest ? RoadOSColors.electricBlue : RoadOSColors.borderTranslucent),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -374,8 +402,8 @@ class _ProductionNavigationScreenState extends State<ProductionNavigationScreen>
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(alt.title, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                      Text('${alt.routeResult.totalDistanceKm.toStringAsFixed(1)} km | ~${alt.routeResult.estimatedDurationMinutes.toInt()} mins', style: const TextStyle(color: RoadOSColors.textMuted, fontSize: 11)),
+                      Text(alt.routeType.displayName, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text('${alt.totalDistanceKm.toStringAsFixed(1)} km | ~${alt.totalDurationMinutes} mins', style: const TextStyle(color: RoadOSColors.textMuted, fontSize: 11)),
                     ],
                   ),
                   ElevatedButton(

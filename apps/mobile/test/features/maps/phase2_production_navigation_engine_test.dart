@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rideos_mobile/features/maps/core/map_provider.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:rideos_mobile/features/maps/domain/models/navigation_models.dart';
 import 'package:rideos_mobile/features/maps/services/turn_by_turn_navigation_engine.dart';
 

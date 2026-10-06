@@ -1,0 +1,50 @@
+#!/bin/bash
+# adb wrapper to bypass Realme UI "Install via USB" prompt by using push + pm install
+
+REAL_ADB="/usr/local/bin/adb"
+
+# We want to intercept "install" commands.
+# Example: adb -s 10.225.115.92:36813 install -t /path/to/apk
+
+is_install=0
+args=("$@")
+device=""
+
+# Parse arguments to see if it's an install
+for i in "${!args[@]}"; do
+    if [[ "${args[$i]}" == "install" ]]; then
+        is_install=1
+    fi
+    if [[ "${args[$i]}" == "-s" ]]; then
+        device="${args[$((i+1))]}"
+    fi
+done
+
+if [[ $is_install -eq 1 ]]; then
+    # Find the APK (it's usually the last argument ending in .apk)
+    apk=""
+    for arg in "${args[@]}"; do
+        if [[ "$arg" == *.apk ]]; then
+            apk="$arg"
+        fi
+    done
+
+    if [[ -n "$apk" ]]; then
+        echo "=== ADB WRAPPER INTERCEPT: push + pm install for $apk ==="
+        
+        target_path="/data/local/tmp/app_$(basename "$apk")"
+        
+        if [[ -n "$device" ]]; then
+            "$REAL_ADB" -s "$device" push "$apk" "$target_path"
+            "$REAL_ADB" -s "$device" shell pm install -r -t "$target_path"
+        else
+            "$REAL_ADB" push "$apk" "$target_path"
+            "$REAL_ADB" shell pm install -r -t "$target_path"
+        fi
+        
+        exit $?
+    fi
+fi
+
+# If not install or no APK found, pass through to real ADB
+exec "$REAL_ADB" "$@"

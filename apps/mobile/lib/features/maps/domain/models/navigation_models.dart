@@ -33,6 +33,14 @@ enum NavigationSessionState {
   }
 }
 
+enum ManeuverProximityState {
+  normal,
+  approaching,
+  immediate,
+  rerouting,
+  gpsUnavailable
+}
+
 enum CameraMode {
   northUp,
   headingUp,

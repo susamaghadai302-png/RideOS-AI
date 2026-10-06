@@ -6,7 +6,8 @@ import 'package:rideos_mobile/core/device_providers/services/physical_field_benc
 import 'package:rideos_mobile/core/cloud_sync/services/cloud_sync_manager.dart';
 import 'package:rideos_mobile/core/cloud_sync/models/sync_state_models.dart';
 import 'package:rideos_mobile/features/maps/core/map_provider_factory.dart';
-import 'package:rideos_mobile/features/maps/core/map_provider.dart';
+import 'package:rideos_mobile/features/maps/core/map_provider.dart' as mp;
+import 'package:latlong2/latlong.dart';
 import 'package:rideos_mobile/features/maps/services/turn_by_turn_navigation_engine.dart';
 
 import 'package:rideos_mobile/features/fleet_analytics/services/fleet_analytics_engine.dart';
@@ -22,8 +23,8 @@ void main() {
 
       await expectLater(
         mapFactory.activeProvider.calculateRoute(
-          origin: origin,
-          destination: destination,
+          origin: mp.LatLng(12.9716, 77.5946),
+          destination: mp.LatLng(12.9352, 77.6245),
         ),
         throwsStateError,
       );

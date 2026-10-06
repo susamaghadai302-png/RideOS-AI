@@ -218,7 +218,7 @@ class RoadOsRoutingEngine {
       debugPrint('[OSRM Multi-Route Routing Notice]: $e');
     }
 
-    throw Exception('Routing providers unavailable');
+    throw StateError('Routing providers unavailable');
   }
 
   /// Calculates a single road route

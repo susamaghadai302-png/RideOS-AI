@@ -1,15 +1,17 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../core/map_provider.dart';
+import 'package:latlong2/latlong.dart';
 import '../domain/models/navigation_models.dart';
-import 'astar_routing_engine.dart';
+import '../domain/models/ride_route_models.dart';
+import '../core/adapters/route_adapter.dart';
+import '../core/adapters/google_route_adapter.dart';
 
 class TurnByTurnNavigationEngine {
   static final TurnByTurnNavigationEngine _instance = TurnByTurnNavigationEngine._internal();
   factory TurnByTurnNavigationEngine() => _instance;
 
-  final _routingEngine = AStarRoutingEngine();
+  final RouteAdapter _routingEngine = GoogleRouteAdapter();
 
   NavigationSessionState _state = NavigationSessionState.idle;
   NavigationSessionState get state => _state;
@@ -20,11 +22,11 @@ class TurnByTurnNavigationEngine {
   CameraMode _cameraMode = CameraMode.followLocation;
   CameraMode get cameraMode => _cameraMode;
 
-  RouteResult? _activeRoute;
-  RouteResult? get activeRoute => _activeRoute;
+  RideRouteResponse? _activeRoute;
+  RideRouteResponse? get activeRoute => _activeRoute;
 
-  List<AlternativeRoute> _availableAlternatives = [];
-  List<AlternativeRoute> get availableAlternatives => List.unmodifiable(_availableAlternatives);
+  List<RideRouteResponse> _availableAlternatives = [];
+  List<RideRouteResponse> get availableAlternatives => List.unmodifiable(_availableAlternatives);
 
   int _currentSegmentIndex = 0;
   int get currentSegmentIndex => _currentSegmentIndex;
@@ -40,6 +42,9 @@ class TurnByTurnNavigationEngine {
 
   String _currentInstruction = 'Prepare to ride';
   String get currentInstruction => _currentInstruction;
+
+  ManeuverProximityState _proximityState = ManeuverProximityState.normal;
+  ManeuverProximityState get proximityState => _proximityState;
 
   final String _nextStreetName = '';
   String get nextStreetName => _nextStreetName;
@@ -64,35 +69,36 @@ class TurnByTurnNavigationEngine {
   Future<void> selectDestination({
     required LatLng origin,
     required LatLng destination,
-    RoutePreference preference = RoutePreference.fastest,
   }) async {
     _transitionTo(NavigationSessionState.destinationSelected);
     _currentGpsPosition = origin;
 
-    _availableAlternatives = await _routingEngine.calculateRoutes(
-      origin: origin,
-      destination: destination,
-      preference: preference,
+    _availableAlternatives = await _routingEngine.calculateRoute(
+      RideRouteRequest(
+        origin: origin,
+        destination: destination,
+        twoWheelerMode: true,
+      ),
     );
 
     if (_availableAlternatives.isNotEmpty) {
-      _activeRoute = _availableAlternatives.first.routeResult;
+      _activeRoute = _availableAlternatives.first;
       _remainingDistanceKm = _activeRoute!.totalDistanceKm;
-      _remainingDurationMinutes = _activeRoute!.estimatedDurationMinutes;
+      _remainingDurationMinutes = _activeRoute!.totalDurationMinutes.toDouble();
       _transitionTo(NavigationSessionState.routePreview);
     }
   }
 
   /// Engages live turn-by-turn navigation
-  void startNavigation({AlternativeRoute? selectedAlternative}) {
+  void startNavigation({RideRouteResponse? selectedAlternative}) {
     if (selectedAlternative != null) {
-      _activeRoute = selectedAlternative.routeResult;
+      _activeRoute = selectedAlternative;
     }
     if (_activeRoute == null) return;
 
     _currentSegmentIndex = 0;
     _remainingDistanceKm = _activeRoute!.totalDistanceKm;
-    _remainingDurationMinutes = _activeRoute!.estimatedDurationMinutes;
+    _remainingDurationMinutes = _activeRoute!.totalDurationMinutes.toDouble();
     _cameraMode = CameraMode.navigation3D;
     _offRouteSampleCount = 0;
 
@@ -123,7 +129,8 @@ class TurnByTurnNavigationEngine {
     if (_state != NavigationSessionState.navigating || _activeRoute == null) return;
 
     // 1. Check Arrival at Destination (within 25 meters of destination)
-    final distanceToDestMeters = _distanceBetweenMeters(position, _activeRoute!.waypoints.last);
+    final destination = _activeRoute!.fullPolyline.isNotEmpty ? _activeRoute!.fullPolyline.last : position;
+    final distanceToDestMeters = _distanceBetweenMeters(position, destination);
     if (distanceToDestMeters < 25.0) {
       _currentInstruction = 'You have arrived at your destination';
       _currentManeuverIcon = Icons.flag_rounded;
@@ -134,7 +141,7 @@ class TurnByTurnNavigationEngine {
     }
 
     // 2. Evaluate closest point on active route
-    final minDistanceToRouteMeters = _calculateDistanceToRoute(position, _activeRoute!.waypoints);
+    final minDistanceToRouteMeters = _calculateDistanceToRoute(position, _activeRoute!.fullPolyline);
 
     // 3. Off-Route Detection (Threshold: > 35m for 3 consecutive samples)
     if (minDistanceToRouteMeters > 35.0) {
@@ -154,24 +161,28 @@ class TurnByTurnNavigationEngine {
 
   Future<void> _handleOffRoute(LatLng currentPos) async {
     _transitionTo(NavigationSessionState.offRoute);
+    _proximityState = ManeuverProximityState.rerouting;
     _currentInstruction = 'Off route — Recalculating directions...';
     _currentManeuverIcon = Icons.sync_rounded;
 
     await Future.delayed(const Duration(milliseconds: 600));
     _transitionTo(NavigationSessionState.rerouting);
 
-    if (_activeRoute != null) {
-      final destination = _activeRoute!.waypoints.last;
-      _availableAlternatives = await _routingEngine.calculateRoutes(
-        origin: currentPos,
-        destination: destination,
+    if (_activeRoute != null && _activeRoute!.fullPolyline.isNotEmpty) {
+      final destination = _activeRoute!.fullPolyline.last;
+      _availableAlternatives = await _routingEngine.calculateRoute(
+        RideRouteRequest(
+          origin: currentPos,
+          destination: destination,
+          twoWheelerMode: true,
+        ),
       );
 
       if (_availableAlternatives.isNotEmpty) {
-        _activeRoute = _availableAlternatives.first.routeResult;
+        _activeRoute = _availableAlternatives.first;
         _currentSegmentIndex = 0;
         _remainingDistanceKm = _activeRoute!.totalDistanceKm;
-        _remainingDurationMinutes = _activeRoute!.estimatedDurationMinutes;
+        _remainingDurationMinutes = _activeRoute!.totalDurationMinutes.toDouble();
         _offRouteSampleCount = 0;
         _updateCurrentInstruction();
         _transitionTo(NavigationSessionState.navigating);
@@ -180,34 +191,48 @@ class TurnByTurnNavigationEngine {
   }
 
   void _progressAlongRoute(LatLng currentPos) {
-    if (_activeRoute == null || _activeRoute!.segments.isEmpty) return;
+    if (_activeRoute == null || _activeRoute!.segments.isEmpty || _activeRoute!.segments[0].maneuvers.isEmpty) return;
 
-    if (_currentSegmentIndex < _activeRoute!.segments.length) {
-      final segment = _activeRoute!.segments[_currentSegmentIndex];
-      _distanceToNextManeuverMeters = _distanceBetweenMeters(currentPos, segment.endPoint);
+    final maneuvers = _activeRoute!.segments[0].maneuvers;
+
+    if (_currentSegmentIndex < maneuvers.length) {
+      final maneuver = maneuvers[_currentSegmentIndex];
+      _distanceToNextManeuverMeters = _distanceBetweenMeters(currentPos, maneuver.coordinate);
 
       // Advance to next segment if within 15 meters of junction waypoint
-      if (_distanceToNextManeuverMeters < 15.0 && _currentSegmentIndex < _activeRoute!.segments.length - 1) {
+      if (_distanceToNextManeuverMeters < 15.0 && _currentSegmentIndex < maneuvers.length - 1) {
         _currentSegmentIndex++;
         _updateCurrentInstruction();
+      } else {
+        // Update proximity state based on distance
+        if (_distanceToNextManeuverMeters < 50.0) {
+          _proximityState = ManeuverProximityState.immediate;
+        } else if (_distanceToNextManeuverMeters < 250.0) {
+          _proximityState = ManeuverProximityState.approaching;
+        } else {
+          _proximityState = ManeuverProximityState.normal;
+        }
       }
     }
   }
 
   void _updateCurrentInstruction() {
-    if (_activeRoute != null && _currentSegmentIndex < _activeRoute!.segments.length) {
-      final segment = _activeRoute!.segments[_currentSegmentIndex];
-      _currentInstruction = segment.instruction;
-      _distanceToNextManeuverMeters = segment.distanceMeters;
+    if (_activeRoute != null && _activeRoute!.segments.isNotEmpty) {
+      final maneuvers = _activeRoute!.segments[0].maneuvers;
+      if (_currentSegmentIndex < maneuvers.length) {
+        final maneuver = maneuvers[_currentSegmentIndex];
+        _currentInstruction = maneuver.instruction;
+        _distanceToNextManeuverMeters = maneuver.distanceMeters;
 
-      if (_currentInstruction.toLowerCase().contains('turn left')) {
-        _currentManeuverIcon = Icons.turn_left_rounded;
-      } else if (_currentInstruction.toLowerCase().contains('turn right')) {
-        _currentManeuverIcon = Icons.turn_right_rounded;
-      } else if (_currentInstruction.toLowerCase().contains('destination') || _currentInstruction.toLowerCase().contains('approach')) {
-        _currentManeuverIcon = Icons.place_rounded;
-      } else {
-        _currentManeuverIcon = Icons.straight_rounded;
+        if (_currentInstruction.toLowerCase().contains('left')) {
+          _currentManeuverIcon = Icons.turn_left_rounded;
+        } else if (_currentInstruction.toLowerCase().contains('right')) {
+          _currentManeuverIcon = Icons.turn_right_rounded;
+        } else if (_currentInstruction.toLowerCase().contains('destination') || _currentInstruction.toLowerCase().contains('approach')) {
+          _currentManeuverIcon = Icons.place_rounded;
+        } else {
+          _currentManeuverIcon = Icons.straight_rounded;
+        }
       }
     }
   }
