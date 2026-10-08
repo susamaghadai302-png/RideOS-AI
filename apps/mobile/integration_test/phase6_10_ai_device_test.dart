@@ -20,7 +20,7 @@ void main() {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.playIntegrity,
+      providerAndroid: const AndroidPlayIntegrityProvider(),
     );
 
     // 2. Initialize the AI Engine

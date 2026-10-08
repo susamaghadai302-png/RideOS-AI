@@ -50,8 +50,8 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     await FirebaseAppCheck.instance.activate(
-      androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
-      appleProvider: AppleProvider.deviceCheck,
+      providerAndroid: kReleaseMode ? const AndroidPlayIntegrityProvider() : const AndroidDebugProvider(),
+      providerApple: const AppleDeviceCheckProvider(),
     );
   } catch (e) {
     debugPrint('[Firebase Init Warning]: $e');

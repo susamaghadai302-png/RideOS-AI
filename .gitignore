@@ -62,3 +62,4 @@ listeners.txt
 workspace_tree.txt
 *.patch
 scripts/validate.sh
+window_dump*.xml

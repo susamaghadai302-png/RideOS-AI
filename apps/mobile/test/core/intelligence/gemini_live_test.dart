@@ -28,7 +28,7 @@ void main() {
         // Initialize App Check for the test environment
         // In a real device integration test, this uses the real attestation provider.
         await FirebaseAppCheck.instance.activate(
-          androidProvider: AndroidProvider.debug,
+          providerAndroid: const AndroidDebugProvider(),
         );
       } catch (e) {
         debugPrint('Skipping real init: Platform channels missing in test env. $e');
