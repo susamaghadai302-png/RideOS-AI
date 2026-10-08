@@ -21,17 +21,8 @@ subprojects {
 
 subprojects {
     project.plugins.withId("com.android.library") {
-        val androidExt = project.extensions.findByName("android")
-        if (androidExt != null) {
-            try {
-                val setCompileSdk = androidExt.javaClass.getMethod("setCompileSdk", Int::class.java)
-                setCompileSdk.invoke(androidExt, 36)
-            } catch(e: Exception) {
-                try {
-                    val setCompileSdkVersion = androidExt.javaClass.getMethod("setCompileSdkVersion", Int::class.java)
-                    setCompileSdkVersion.invoke(androidExt, 36)
-                } catch(e2: Exception) {}
-            }
+        project.extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
+            compileSdk = 36
         }
     }
 }
