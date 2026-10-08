@@ -36,7 +36,8 @@ dependencies:
   uuid: any
   crypto: any
   camera: ^0.12.1
-  bluetooth_classic: ^0.0.4
+  bluetooth_classic:
+    path: ./packages/bluetooth_classic
   firebase_core: ^4.7.0
   firebase_app_check: ^0.4.3
   firebase_ai: ^4.0.0
