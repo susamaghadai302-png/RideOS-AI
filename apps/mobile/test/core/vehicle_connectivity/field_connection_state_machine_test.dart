@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/models/production_field_test_models.dart';
 import 'package:rideos_mobile/core/vehicle_connectivity/services/field_connection_state_machine.dart';
-import 'package:rideos_mobile/core/vehicle_connectivity/transports/mock_vehicle_transport.dart';
+import 'mocks/mock_vehicle_transport.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -30,7 +30,7 @@ class MockRouteAdapter implements RouteAdapter {
         segments: [],
         sourceProvider: providerName,
         timestamp: DateTime.now(),
-        metadata: RideRouteMetadata(
+        metadata: const RideRouteMetadata(
           twoWheelerRouting: DataAvailability.supported,
           liveTraffic: DataAvailability.unsupported,
           alternativeRoutes: DataAvailability.unsupported,
@@ -48,8 +48,8 @@ void main() {
   group('RouteRequestCoordinator Tests', () {
     late MockRouteAdapter mockAdapter;
     late RouteRequestCoordinator coordinator;
-    final reqA = RideRouteRequest(origin: const LatLng(0,0), destination: const LatLng(1,1), twoWheelerMode: true);
-    final reqB = RideRouteRequest(origin: const LatLng(0,0), destination: const LatLng(2,2), twoWheelerMode: true);
+    const reqA = RideRouteRequest(origin: LatLng(0,0), destination: LatLng(1,1), twoWheelerMode: true);
+    const reqB = RideRouteRequest(origin: LatLng(0,0), destination: LatLng(2,2), twoWheelerMode: true);
 
     setUp(() {
       mockAdapter = MockRouteAdapter();

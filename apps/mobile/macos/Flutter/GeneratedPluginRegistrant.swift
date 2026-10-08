@@ -5,6 +5,10 @@
 import FlutterMacOS
 import Foundation
 
+import firebase_ai
+import firebase_app_check
+import firebase_auth
+import firebase_core
 import flutter_blue_plus_darwin
 import flutter_secure_storage_macos
 import flutter_tts
@@ -18,6 +22,10 @@ import url_launcher_macos
 import webview_flutter_wkwebview
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
+  FirebaseAIPlugin.register(with: registry.registrar(forPlugin: "FirebaseAIPlugin"))
+  FirebaseAppCheckPlugin.register(with: registry.registrar(forPlugin: "FirebaseAppCheckPlugin"))
+  FLTFirebaseAuthPlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseAuthPlugin"))
+  FLTFirebaseCorePlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseCorePlugin"))
   FlutterBluePlusPlugin.register(with: registry.registrar(forPlugin: "FlutterBluePlusPlugin"))
   FlutterSecureStoragePlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStoragePlugin"))
   FlutterTtsPlugin.register(with: registry.registrar(forPlugin: "FlutterTtsPlugin"))

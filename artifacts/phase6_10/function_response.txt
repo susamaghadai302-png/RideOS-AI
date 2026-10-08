@@ -1,0 +1,6 @@
+{
+  "rpm": "UNAVAILABLE",
+  "speedKmh": "UNAVAILABLE",
+  "coolantTempC": "UNAVAILABLE",
+  "batteryVoltage": "UNAVAILABLE"
+}

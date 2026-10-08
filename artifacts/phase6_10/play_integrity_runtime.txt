@@ -1,0 +1,1 @@
+Play Integrity Runtime: Passed via integration test execution. Token exchange verified by Firebase.

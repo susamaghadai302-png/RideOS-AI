@@ -34,7 +34,7 @@ class PlatformEvolutionEngine {
 
   AiModelVersionInfo getActiveAiModelRegistry() {
     return const AiModelVersionInfo(
-      modelId: 'gemini-1.5-flash-edge',
+      modelId: 'gemini-3.8-flash',
       promptVersion: 'v4.2.0-canary',
       evalAccuracyScore: 99.4,
       isCanaryDeployment: true,

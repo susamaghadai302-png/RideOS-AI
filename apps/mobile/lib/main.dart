@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'firebase_options.dart';
 import 'core/design_system/theme_engine.dart';
 
 import 'core/di/service_locator.dart';
@@ -41,6 +44,18 @@ import 'dart:io' show Platform;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
+      appleProvider: AppleProvider.deviceCheck,
+    );
+  } catch (e) {
+    debugPrint('[Firebase Init Warning]: $e');
+  }
 
   // 0. Restore persisted theme preference before first frame
   await LuxThemeEngine().init();

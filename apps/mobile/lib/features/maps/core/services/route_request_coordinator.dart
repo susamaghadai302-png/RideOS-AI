@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:latlong2/latlong.dart';
 import '../../domain/models/ride_route_models.dart';
 import '../adapters/route_adapter.dart';
 
