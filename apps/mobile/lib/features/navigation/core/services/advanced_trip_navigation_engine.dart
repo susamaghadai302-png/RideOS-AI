@@ -90,7 +90,7 @@ class AdvancedTripNavigationEngine {
   /// Returns completed trip history isolated by motorcycle profile
   List<TripRecord> getTripHistory({String? vehicleId}) {
     final now = DateTime.now();
-    final allTrips = [
+    final List<TripRecord> allTrips = [
       TripRecord(
         id: 'trip_001',
         vehicleId: 'v_yamaha_r1m',

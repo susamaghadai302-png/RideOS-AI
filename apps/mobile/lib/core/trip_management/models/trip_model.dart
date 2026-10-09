@@ -83,7 +83,10 @@ class TripRecord {
   final String telemetrySource;
   final double? fuelConsumedLiters;
   final double? batteryConsumedPct;
-  final bool isSynced;
+  final String syncState; // 'PENDING', 'SYNCING', 'SYNCED', 'FAILED'
+  final int syncRetries;
+
+  bool get isSynced => syncState == 'SYNCED';
 
   const TripRecord({
     required this.tripId,
@@ -102,7 +105,8 @@ class TripRecord {
     required this.telemetrySource,
     this.fuelConsumedLiters,
     this.batteryConsumedPct,
-    this.isSynced = false,
+    this.syncState = 'PENDING',
+    this.syncRetries = 0,
   });
 
   TripRecord copyWith({
@@ -122,7 +126,8 @@ class TripRecord {
     String? telemetrySource,
     double? fuelConsumedLiters,
     double? batteryConsumedPct,
-    bool? isSynced,
+    String? syncState,
+    int? syncRetries,
   }) {
     return TripRecord(
       tripId: tripId ?? this.tripId,
@@ -141,7 +146,8 @@ class TripRecord {
       telemetrySource: telemetrySource ?? this.telemetrySource,
       fuelConsumedLiters: fuelConsumedLiters ?? this.fuelConsumedLiters,
       batteryConsumedPct: batteryConsumedPct ?? this.batteryConsumedPct,
-      isSynced: isSynced ?? this.isSynced,
+      syncState: syncState ?? this.syncState,
+      syncRetries: syncRetries ?? this.syncRetries,
     );
   }
 
@@ -162,7 +168,8 @@ class TripRecord {
     'telemetrySource': telemetrySource,
     'fuelConsumedLiters': fuelConsumedLiters,
     'batteryConsumedPct': batteryConsumedPct,
-    'isSynced': isSynced,
+    'syncState': syncState,
+    'syncRetries': syncRetries,
   };
 
   factory TripRecord.fromJson(Map<String, dynamic> json) => TripRecord(
@@ -182,6 +189,7 @@ class TripRecord {
     telemetrySource: json['telemetrySource'] as String? ?? 'BLUETOOTH_BLE',
     fuelConsumedLiters: json['fuelConsumedLiters'] != null ? (json['fuelConsumedLiters'] as num).toDouble() : null,
     batteryConsumedPct: json['batteryConsumedPct'] != null ? (json['batteryConsumedPct'] as num).toDouble() : null,
-    isSynced: json['isSynced'] as bool? ?? false,
+    syncState: json['syncState'] as String? ?? (json['isSynced'] == true ? 'SYNCED' : 'PENDING'),
+    syncRetries: json['syncRetries'] as int? ?? 0,
   );
 }

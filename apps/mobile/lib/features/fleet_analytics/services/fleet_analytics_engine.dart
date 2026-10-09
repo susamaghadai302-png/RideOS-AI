@@ -8,7 +8,7 @@ class FleetAnalyticsEngine {
   FleetAnalyticsSummary getSummary() {
     final now = DateTime.now();
 
-    final rides = [
+    final List<HistoricalRideEntry> rides = [
       HistoricalRideEntry(
         sessionId: 'sess_17868001',
         date: now.subtract(const Duration(hours: 3)),

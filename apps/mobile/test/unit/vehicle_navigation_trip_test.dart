@@ -68,7 +68,7 @@ void main() {
         ],
         gpsSource: 'Vehicle GPS',
         telemetrySource: 'BLUETOOTH_BLE',
-        isSynced: false,
+        syncState: 'PENDING',
       );
 
       final tripJson = trip.toJson();

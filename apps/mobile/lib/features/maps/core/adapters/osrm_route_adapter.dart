@@ -11,9 +11,24 @@ class OsrmRouteAdapter implements RouteAdapter {
 
   @override
   Future<List<RideRouteResponse>> calculateRoute(RideRouteRequest request) async {
-    // Determine internal preference mapping
+    // Map requested preference to internal OSRM option
     RouteOptionType preferredType = RouteOptionType.fastestHighway;
-    
+    if (request.preferredRouteType != null) {
+      switch (request.preferredRouteType!) {
+        case RideRouteType.safe:
+          throw UnsupportedError('Safe routing is genuinely not supported by the OSRM engine.');
+        case RideRouteType.eco:
+          throw UnsupportedError('Eco routing is genuinely not supported by the OSRM engine.');
+        case RideRouteType.scenic:
+          throw UnsupportedError('Scenic routing is genuinely not supported by the OSRM engine.');
+        case RideRouteType.alternative:
+          preferredType = RouteOptionType.alternative;
+          break;
+        case RideRouteType.fastest:
+          preferredType = RouteOptionType.fastestHighway;
+          break;
+      }
+    }
     // Convert generic domain request to provider-specific execution
     final multiResult = await _engine.calculateMultiRoutes(
       start: request.origin,

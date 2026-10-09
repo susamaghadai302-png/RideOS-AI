@@ -48,6 +48,19 @@ describe('NavigationService', () => {
   });
 
   it('should calculate a motorcycle scenic route', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        code: 'Ok',
+        routes: [{
+          distance: 150000,
+          duration: 7200,
+          geometry: { coordinates: [[-122.4194, 37.7749], [-121.8947, 36.6002]] },
+          legs: []
+        }]
+      })
+    }) as jest.Mock;
+
     const result = await service.calculateRoute({
       origin: { lat: 37.7749, lng: -122.4194 },
       destination: { lat: 36.6002, lng: -121.8947 },

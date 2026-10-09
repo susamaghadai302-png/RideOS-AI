@@ -11,7 +11,8 @@ import '../models/trip_state.dart';
 import '../models/trip_model.dart';
 import '../../utils/constants.dart';
 
-final tripLifecycleProvider = StateNotifierProvider<TripLifecycleNotifier, TripLifecycleState>((ref) {
+final tripLifecycleProvider =
+    StateNotifierProvider<TripLifecycleNotifier, TripLifecycleState>((ref) {
   return TripLifecycleNotifier();
 });
 
@@ -95,7 +96,8 @@ class TripManager {
       ],
       gpsSource: initialLoc.source.label,
       telemetrySource: 'BLUETOOTH_BLE',
-      isSynced: false,
+      syncState: 'PENDING',
+      syncRetries: 0,
     );
 
     _lastRecordedPoint = initialPoint;
@@ -135,7 +137,7 @@ class TripManager {
 
     final completedTrip = _currentTrip!.copyWith(
       endTime: DateTime.now(),
-      isSynced: false,
+      syncState: 'PENDING',
     );
 
     _currentTrip = completedTrip;
@@ -157,7 +159,8 @@ class TripManager {
 
   void _startTrackingSubscriptions() {
     _locationSubscription?.cancel();
-    _locationSubscription = VehicleLocationManager().locationStream.listen((loc) {
+    _locationSubscription =
+        VehicleLocationManager().locationStream.listen((loc) {
       if (!_currentState.isRecording || !loc.isAvailable) return;
 
       // Filter out low accuracy jitter (>35m)
@@ -185,7 +188,9 @@ class TripManager {
         newPoint.lng,
       );
 
-      final timeDiffSec = _lastPointTimestamp != null ? now.difference(_lastPointTimestamp!).inSeconds : 0;
+      final timeDiffSec = _lastPointTimestamp != null
+          ? now.difference(_lastPointTimestamp!).inSeconds
+          : 0;
 
       // Spatial and temporal sampling (Record if moved > 6m or every 8s)
       if (distMeters >= 6.0 || timeDiffSec >= 8) {
@@ -194,22 +199,28 @@ class TripManager {
     });
 
     _telemetrySubscription?.cancel();
-    _telemetrySubscription = BluetoothEngine().telemetryStream.listen((telemetry) {
+    _telemetrySubscription =
+        BluetoothEngine().telemetryStream.listen((telemetry) {
       if (!_currentState.isRecording || _currentTrip == null) return;
 
       // If live vehicle speed is higher than current maxSpeed
-      if (telemetry.speed.available && (telemetry.speed.value ?? 0) > _currentTrip!.maxSpeedKmh) {
-        _currentTrip = _currentTrip!.copyWith(maxSpeedKmh: telemetry.speed.value!);
+      if (telemetry.speed.available &&
+          (telemetry.speed.value ?? 0) > _currentTrip!.maxSpeedKmh) {
+        _currentTrip =
+            _currentTrip!.copyWith(maxSpeedKmh: telemetry.speed.value!);
         _activeTripController.add(_currentTrip);
       }
     });
   }
 
-  void _recordPoint(TripPointModel pt, {double incrementalDistanceMeters = 0.0}) {
+  void _recordPoint(TripPointModel pt,
+      {double incrementalDistanceMeters = 0.0}) {
     if (_currentTrip == null) return;
 
-    final updatedPoints = List<TripPointModel>.from(_currentTrip!.points)..add(pt);
-    final newDistKm = _currentTrip!.distanceKm + (incrementalDistanceMeters / 1000.0);
+    final updatedPoints = List<TripPointModel>.from(_currentTrip!.points)
+      ..add(pt);
+    final newDistKm =
+        _currentTrip!.distanceKm + (incrementalDistanceMeters / 1000.0);
 
     double newMaxSpeed = _currentTrip!.maxSpeedKmh;
     if (pt.speedKmh != null && pt.speedKmh! > newMaxSpeed) {
@@ -242,7 +253,8 @@ class TripManager {
       lat: _lastRecordedPoint?.lat,
       lng: _lastRecordedPoint?.lng,
     );
-    final updatedEvents = List<TripEventModel>.from(_currentTrip!.events)..add(event);
+    final updatedEvents = List<TripEventModel>.from(_currentTrip!.events)
+      ..add(event);
     _currentTrip = _currentTrip!.copyWith(events: updatedEvents);
     _activeTripController.add(_currentTrip);
   }
@@ -254,7 +266,9 @@ class TripManager {
         final newDuration = _currentTrip!.durationSeconds + 1;
         double avgSpeed = _currentTrip!.avgSpeedKmh;
         if (newDuration > 0 && _currentTrip!.distanceKm > 0) {
-          avgSpeed = double.parse((_currentTrip!.distanceKm / (newDuration / 3600.0)).toStringAsFixed(1));
+          avgSpeed = double.parse(
+              (_currentTrip!.distanceKm / (newDuration / 3600.0))
+                  .toStringAsFixed(1));
         }
 
         _currentTrip = _currentTrip!.copyWith(
@@ -272,11 +286,15 @@ class TripManager {
     _ref?.read(tripLifecycleProvider.notifier).updateState(state);
   }
 
-  double _calculateDistanceMeters(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistanceMeters(
+      double lat1, double lon1, double lat2, double lon2) {
     const p = 0.017453292519943295;
     final a = 0.5 -
         math.cos((lat2 - lat1) * p) / 2 +
-        math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lon2 - lon1) * p)) / 2;
+        math.cos(lat1 * p) *
+            math.cos(lat2 * p) *
+            (1 - math.cos((lon2 - lon1) * p)) /
+            2;
     return 12742000 * math.asin(math.sqrt(a));
   }
 
@@ -284,8 +302,22 @@ class TripManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final tripsJson = prefs.getStringList('local_trip_history') ?? [];
-      tripsJson.insert(0, jsonEncode(trip.toJson()));
-      await prefs.setStringList('local_trip_history', tripsJson);
+
+      final existingTrips = tripsJson
+          .map((str) =>
+              TripRecord.fromJson(jsonDecode(str) as Map<String, dynamic>))
+          .toList();
+      final index = existingTrips.indexWhere((t) => t.tripId == trip.tripId);
+
+      if (index != -1) {
+        existingTrips[index] = trip;
+      } else {
+        existingTrips.insert(0, trip);
+      }
+
+      final updatedJson =
+          existingTrips.map((t) => jsonEncode(t.toJson())).toList();
+      await prefs.setStringList('local_trip_history', updatedJson);
     } catch (e) {
       debugPrint('[TripManager] Local storage save error: $e');
     }
@@ -295,7 +327,10 @@ class TripManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final tripsJson = prefs.getStringList('local_trip_history') ?? [];
-      return tripsJson.map((str) => TripRecord.fromJson(jsonDecode(str) as Map<String, dynamic>)).toList();
+      return tripsJson
+          .map((str) =>
+              TripRecord.fromJson(jsonDecode(str) as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -304,19 +339,47 @@ class TripManager {
   Future<void> syncPendingTrips() async {
     try {
       final trips = await getLocalTrips();
-      final pending = trips.where((t) => !t.isSynced).toList();
+      final pending = trips
+          .where((t) => t.syncState == 'PENDING' || t.syncState == 'FAILED')
+          .toList();
 
-      for (final trip in pending) {
+      for (var trip in pending) {
+        if (trip.syncRetries >= 5) {
+          debugPrint(
+              '[TripManager] Trip ${trip.tripId} reached max sync retries.');
+          continue; // Bounded retry limit
+        }
+
+        // Apply bounded exponential backoff with jitter
+        final delaySeconds =
+            math.pow(2, trip.syncRetries).toInt() + math.Random().nextInt(5);
+
+        trip = trip.copyWith(
+            syncState: 'SYNCING', syncRetries: trip.syncRetries + 1);
+        await _saveTripLocally(trip);
+
         try {
+          await Future.delayed(Duration(seconds: delaySeconds));
+
           final response = await http.post(
             Uri.parse('${ApiConstants.baseUrl}/trips'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(trip.toJson()),
           );
+
           if (response.statusCode == 200 || response.statusCode == 201) {
-            debugPrint('[TripManager] Synced trip ${trip.tripId} with backend.');
+            debugPrint(
+                '[TripManager] Synced trip ${trip.tripId} with backend.');
+            trip = trip.copyWith(syncState: 'SYNCED');
+            await _saveTripLocally(trip);
+          } else {
+            trip = trip.copyWith(syncState: 'FAILED');
+            await _saveTripLocally(trip);
           }
-        } catch (_) {}
+        } catch (_) {
+          trip = trip.copyWith(syncState: 'FAILED');
+          await _saveTripLocally(trip);
+        }
       }
     } catch (e) {
       debugPrint('[TripManager] Pending sync notice: $e');

@@ -9,9 +9,9 @@ enum DataAvailability {
 
 enum RideRouteType {
   fastest('Fastest Route'),
-  safe('Safe Route (Unavailable)'),
-  eco('Eco Route (Unavailable)'),
-  scenic('Scenic Route (Unavailable)'),
+  safe('Safe Route'),
+  eco('Eco Route'),
+  scenic('Scenic Route'),
   alternative('Alternative Route');
 
   final String displayName;
@@ -25,6 +25,7 @@ class RideRouteRequest {
   final bool twoWheelerMode;
   final bool avoidTolls;
   final bool avoidHighways;
+  final RideRouteType? preferredRouteType;
 
   const RideRouteRequest({
     required this.origin,
@@ -33,6 +34,7 @@ class RideRouteRequest {
     this.twoWheelerMode = true,
     this.avoidTolls = false,
     this.avoidHighways = false,
+    this.preferredRouteType,
   });
 }
 

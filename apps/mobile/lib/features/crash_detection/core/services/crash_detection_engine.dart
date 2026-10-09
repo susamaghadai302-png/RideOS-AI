@@ -1,6 +1,12 @@
 import 'dart:async';
+import '../../../sos_safety/core/crash_detection_algorithm.dart';
 
-enum CrashDetectionState { idle, countdownActive, emergencyTriggered, cancelled }
+enum CrashDetectionState {
+  idle,
+  countdownActive,
+  emergencyTriggered,
+  cancelled
+}
 
 class RiderMedicalProfile {
   final String fullName;
@@ -26,17 +32,33 @@ class CrashDetectionEngine {
   Timer? _timer;
 
   final RiderMedicalProfile medicalProfile = const RiderMedicalProfile();
-  final StreamController<int> _countdownController = StreamController<int>.broadcast();
+  final StreamController<int> _countdownController =
+      StreamController<int>.broadcast();
   Stream<int> get countdownStream => _countdownController.stream;
+
+  final CrashDetectionAlgorithm algorithm = const CrashDetectionAlgorithm();
+  String lastTriggerReason = '';
 
   /// Analyzes IMU accelerometer and gyroscope sensor readings for crash pattern
   bool evaluateSensorInputs({
     required double gForce,
     required double decelerationMps2,
     required double tiltDegrees,
+    double currentSpeedKmh = 50.0,
   }) {
-    // Impact > 4.5 Gs OR rapid stop > 12 m/s² WITH severe tilt > 70 deg
-    if (gForce > 4.5 || (decelerationMps2 > 12.0 && tiltDegrees > 70.0)) {
+    final speedDropKmh = decelerationMps2 * 3.6;
+
+    final evaluation = algorithm.evaluateCrashConfidence(
+      accelMagnitudeG: gForce,
+      rollAngleDeg: tiltDegrees,
+      currentSpeedKmh: currentSpeedKmh,
+      speedDropKmh: speedDropKmh,
+      durationSecSinceSpeedDrop: 2.5,
+      isBleEcuConnected: true,
+    );
+
+    if (evaluation.isCrashDetected) {
+      lastTriggerReason = evaluation.primaryTriggerReason;
       triggerSimulatedImpact(forceG: gForce);
       return true;
     }
@@ -63,7 +85,9 @@ class CrashDetectionEngine {
   }
 
   String generateEmergencyMessage({required double lat, required double lng}) {
-    return 'EMERGENCY SOS ALERT! Rideo Pro detected a motorcycle crash for ${medicalProfile.fullName}. '
+    final reasonPart =
+        lastTriggerReason.isNotEmpty ? ' Reason: $lastTriggerReason.' : '';
+    return 'EMERGENCY SOS ALERT! Rideo Pro detected a motorcycle crash for ${medicalProfile.fullName}.$reasonPart '
         'Location: https://maps.google.com/?q=$lat,$lng. '
         'Blood Type: ${medicalProfile.bloodType}, Allergies: ${medicalProfile.allergies}. '
         'Insurance: ${medicalProfile.insuranceProvider} (${medicalProfile.insurancePolicyNo}).';

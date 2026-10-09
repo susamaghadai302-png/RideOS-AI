@@ -46,11 +46,24 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
+    final options = DefaultFirebaseOptions.currentPlatform;
+
+    // RIDEOS AI - FAIL CLOSED SECURITY GATE
+    // Prevent mock configurations from passing production release constraints.
+    if (kReleaseMode &&
+        (options.projectId == 'rideos-mock-project' ||
+            options.appId.contains('1234567890'))) {
+      throw UnsupportedError(
+          'Production deployment blocked: Detected mock Firebase configuration in release build.');
+    }
+
     await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
+      options: options,
     );
     await FirebaseAppCheck.instance.activate(
-      providerAndroid: kReleaseMode ? const AndroidPlayIntegrityProvider() : const AndroidDebugProvider(),
+      providerAndroid: kReleaseMode
+          ? const AndroidPlayIntegrityProvider()
+          : const AndroidDebugProvider(),
       providerApple: const AppleDeviceCheckProvider(),
     );
   } catch (e) {
@@ -101,7 +114,8 @@ void main() async {
           decoration: BoxDecoration(
             color: const Color(0xFF0F1422),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFFF3366).withValues(alpha: 0.4)),
+            border: Border.all(
+                color: const Color(0xFFFF3366).withValues(alpha: 0.4)),
           ),
           child: Text(
             'Render issue: ${details.exceptionAsString()}',
@@ -163,28 +177,37 @@ class _RideOSAppState extends State<RideOSApp> {
             create: (context) {
               final navBloc = NavigationBloc(
                 routeService: widget.routeService ?? getIt<RouteService>(),
-                locationService: widget.locationService ?? getIt<LocationService>(),
-                voiceService: widget.voiceService ?? getIt<NavigationVoiceService>(),
+                locationService:
+                    widget.locationService ?? getIt<LocationService>(),
+                voiceService:
+                    widget.voiceService ?? getIt<NavigationVoiceService>(),
               );
-              
+
               if (Platform.isIOS) {
                 navBloc.stream.listen((state) {
                   CarPlayStateBridge.onNavigationUpdate(state);
-                  
+
                   // Also send to Bluetooth Smart Display if connected
                   if (state is NavigationActiveState) {
                     final packet = RideOSDisplayPacket(
                       timestamp: DateTime.now(),
                       navigationState: 'ACTIVE',
                       maneuverType: state.currentStep?.instruction,
-                      maneuverDistanceMeters: (state.distanceRemainingKm ?? 0) * 1000,
-                      distanceToDestinationMeters: (state.distanceRemainingKm ?? 0) * 1000, // Or route total
+                      maneuverDistanceMeters:
+                          (state.distanceRemainingKm ?? 0) * 1000,
+                      distanceToDestinationMeters:
+                          (state.distanceRemainingKm ?? 0) *
+                              1000, // Or route total
                       eta: state.durationRemainingMins?.toString(),
                       streetName: state.currentStep?.instruction,
                       speedKmh: state.currentFix?.speedKmh,
-                      connectionStatus: SmartDisplayConnectionManager().currentState.name.toUpperCase(),
+                      connectionStatus: SmartDisplayConnectionManager()
+                          .currentState
+                          .name
+                          .toUpperCase(),
                     );
-                    SmartDisplayConnectionManager().sendNavigationUpdate(packet);
+                    SmartDisplayConnectionManager()
+                        .sendNavigationUpdate(packet);
                   }
                 });
               } else {
@@ -194,18 +217,25 @@ class _RideOSAppState extends State<RideOSApp> {
                       timestamp: DateTime.now(),
                       navigationState: 'ACTIVE',
                       maneuverType: state.currentStep?.instruction,
-                      maneuverDistanceMeters: (state.distanceRemainingKm ?? 0) * 1000,
-                      distanceToDestinationMeters: (state.distanceRemainingKm ?? 0) * 1000, // Or route total
+                      maneuverDistanceMeters:
+                          (state.distanceRemainingKm ?? 0) * 1000,
+                      distanceToDestinationMeters:
+                          (state.distanceRemainingKm ?? 0) *
+                              1000, // Or route total
                       eta: state.durationRemainingMins?.toString(),
                       streetName: state.currentStep?.instruction,
                       speedKmh: state.currentFix?.speedKmh,
-                      connectionStatus: SmartDisplayConnectionManager().currentState.name.toUpperCase(),
+                      connectionStatus: SmartDisplayConnectionManager()
+                          .currentState
+                          .name
+                          .toUpperCase(),
                     );
-                    SmartDisplayConnectionManager().sendNavigationUpdate(packet);
+                    SmartDisplayConnectionManager()
+                        .sendNavigationUpdate(packet);
                   }
                 });
               }
-              
+
               return navBloc;
             },
           ),
@@ -215,8 +245,9 @@ class _RideOSAppState extends State<RideOSApp> {
           ),
           BlocProvider(
             create: (context) => AiAssistantBloc(
-              gateway: widget.aiRemoteDatasource != null 
-                  ? RemoteAiAssistantGatewayAdapter(remoteDatasource: widget.aiRemoteDatasource!)
+              gateway: widget.aiRemoteDatasource != null
+                  ? RemoteAiAssistantGatewayAdapter(
+                      remoteDatasource: widget.aiRemoteDatasource!)
                   : getIt<AIProviderGateway>(),
               intentResolver: getIt<AiIntentResolver>(),
             ),
@@ -233,13 +264,15 @@ class _RideOSAppState extends State<RideOSApp> {
           ),
           BlocProvider(
             create: (context) => SquadBloc(
-              remoteDatasource: widget.squadRemoteDatasource ?? getIt<SquadRemoteDatasource>(),
+              remoteDatasource: widget.squadRemoteDatasource ??
+                  getIt<SquadRemoteDatasource>(),
             ),
           ),
           BlocProvider(
             create: (context) => ObdBloc(
               bleService: widget.obdBleService ?? getIt<ObdBleService>(),
-              remoteDatasource: widget.obdRemoteDatasource ?? getIt<ObdRemoteDatasource>(),
+              remoteDatasource:
+                  widget.obdRemoteDatasource ?? getIt<ObdRemoteDatasource>(),
             ),
           ),
         ],
