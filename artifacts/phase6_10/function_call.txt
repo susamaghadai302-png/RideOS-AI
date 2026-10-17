@@ -1,2 +1,0 @@
-Function call successfully dispatched to: getVehicleTelemetry
-Parameters: {}

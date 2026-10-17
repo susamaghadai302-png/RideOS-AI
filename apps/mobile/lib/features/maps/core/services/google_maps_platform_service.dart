@@ -340,6 +340,7 @@ class GoogleMapsPlatformService {
                 polylinePoints: polylinePoints,
                 steps: stepsList,
                 routeType: routeType,
+                sourceProvider: 'GOOGLE_MAPS',
               ),
             );
           }

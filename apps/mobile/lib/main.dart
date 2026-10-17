@@ -7,6 +7,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'core/design_system/theme_engine.dart';
+import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 
 import 'core/di/service_locator.dart';
 import 'core/network/api_client.dart';
@@ -72,6 +74,18 @@ void main() async {
 
   // 0. Restore persisted theme preference before first frame
   await LuxThemeEngine().init();
+
+  // 0b. Initialize Google Maps Android Renderer
+  final mapsImplementation = GoogleMapsFlutterPlatform.instance;
+  if (mapsImplementation is GoogleMapsFlutterAndroid) {
+    mapsImplementation.useAndroidViewSurface = false;
+    try {
+      final renderer = await mapsImplementation.initializeWithRenderer(AndroidMapRenderer.latest);
+      debugPrint('[Maps SDK Init Success]: Initialized renderer $renderer');
+    } catch (e) {
+      debugPrint('[Maps SDK Init Warning]: $e');
+    }
+  }
 
   // 1. Initialize Network & API Configuration (USB / LAN dual-mode)
   try {

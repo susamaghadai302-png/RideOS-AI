@@ -9,8 +9,8 @@ class MapState extends Equatable {
   final bool isLoading;
 
   const MapState({
-    this.userLat = 37.7749,
-    this.userLng = -122.4194,
+    this.userLat = 20.2961,
+    this.userLng = 85.8245,
     this.zoom = 14.0,
     this.pois = const [],
     this.isLoading = false,

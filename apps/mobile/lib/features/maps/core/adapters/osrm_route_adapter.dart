@@ -13,14 +13,18 @@ class OsrmRouteAdapter implements RouteAdapter {
   Future<List<RideRouteResponse>> calculateRoute(RideRouteRequest request) async {
     // Map requested preference to internal OSRM option
     RouteOptionType preferredType = RouteOptionType.fastestHighway;
+    List<RideRouteWarning> adapterWarnings = [];
     if (request.preferredRouteType != null) {
       switch (request.preferredRouteType!) {
         case RideRouteType.safe:
-          throw UnsupportedError('Safe routing is genuinely not supported by the OSRM engine.');
         case RideRouteType.eco:
-          throw UnsupportedError('Eco routing is genuinely not supported by the OSRM engine.');
         case RideRouteType.scenic:
-          throw UnsupportedError('Scenic routing is genuinely not supported by the OSRM engine.');
+          adapterWarnings.add(RideRouteWarning(
+            text: '${request.preferredRouteType!.displayName} is not supported by the OSRM engine. Falling back to Fastest Route.',
+            severity: 'WARNING',
+          ));
+          preferredType = RouteOptionType.fastestHighway;
+          break;
         case RideRouteType.alternative:
           preferredType = RouteOptionType.alternative;
           break;
@@ -37,10 +41,10 @@ class OsrmRouteAdapter implements RouteAdapter {
       selectedOption: preferredType,
     );
 
-    return multiResult.allRoutes.map((r) => _mapToCanonical(r, request)).toList();
+    return multiResult.allRoutes.map((r) => _mapToCanonical(r, request, additionalWarnings: adapterWarnings)).toList();
   }
 
-  RideRouteResponse _mapToCanonical(RouteCalculationResult result, RideRouteRequest request) {
+  RideRouteResponse _mapToCanonical(RouteCalculationResult result, RideRouteRequest request, {List<RideRouteWarning> additionalWarnings = const []}) {
     // OSRM Public API doesn't support live traffic, tolls, or true 2-wheeler
     const metadata = RideRouteMetadata(
       twoWheelerRouting: DataAvailability.unsupported, // We pass TWO_WHEELER request, but OSRM falls back to driving
@@ -102,7 +106,8 @@ class OsrmRouteAdapter implements RouteAdapter {
           const RideRouteWarning(
             text: 'Two-Wheeler routing unsupported by current provider. Showing driving route.',
             severity: 'WARNING',
-          )
+          ),
+        ...additionalWarnings
       ]
     );
   }

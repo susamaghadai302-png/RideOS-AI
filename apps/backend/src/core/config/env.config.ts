@@ -30,6 +30,8 @@ export const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   GOOGLE_MAPS_API_KEY: z.string().optional(),
   MAPBOX_ACCESS_TOKEN: z.string().optional(),
+  OSRM_BASE_URL: z.string().optional(),
+  ROUTING_API_BASE_URL: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   APPLE_CLIENT_ID: z.string().optional(),
   TWILIO_ACCOUNT_SID: z.string().optional(),

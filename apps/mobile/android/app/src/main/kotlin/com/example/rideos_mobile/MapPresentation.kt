@@ -8,15 +8,15 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
-import com.google.android.libraries.navigation.NavigationViewForAuto
 
 /**
  * Android Auto Virtual Display Presentation
  * 
- * Maps the official Google Navigation SDK NavigationViewForAuto onto the 
+ * Maps the standard Google Maps MapView onto the
  * Android Auto Surface provided by the vehicle DHU.
  * 
  * This presentation maintains strict boundary safety by merely acting as a 
@@ -29,34 +29,34 @@ class MapPresentation(
     display: Display
 ) : Presentation(outerContext, display) {
 
-    private lateinit var navigationView: NavigationViewForAuto
+    private lateinit var mapView: MapView
     private var googleMap: GoogleMap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Instantiate the official Android Auto Navigation View
-        navigationView = NavigationViewForAuto(context)
+        // Instantiate the standard Google MapView
+        mapView = MapView(context)
         val layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
-        navigationView.layoutParams = layoutParams
+        mapView.layoutParams = layoutParams
         
-        setContentView(navigationView)
+        setContentView(mapView)
         
         // Initialize the view with an empty bundle
-        navigationView.onCreate(savedInstanceState)
+        mapView.onCreate(savedInstanceState)
         
         // Asynchronously acquire the GoogleMap surface
-        navigationView.getMapAsync { map ->
+        mapView.getMapAsync { map ->
             googleMap = map
             map.uiSettings.isMapToolbarEnabled = false
             map.uiSettings.isZoomControlsEnabled = false
             map.uiSettings.isCompassEnabled = false
             
-            // Set a default location until canonical updates arrive
-            val defaultLoc = LatLng(37.7749, -122.4194)
+            // Set regional fallback location (Bhubaneswar, Odisha) until canonical updates arrive
+            val defaultLoc = LatLng(20.2961, 85.8245)
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLoc, 15f))
         }
     }
@@ -81,22 +81,22 @@ class MapPresentation(
     // ── Lifecycle Forwarding ────────────────────────────────────────────────
 
     fun notifyStart() {
-        if (::navigationView.isInitialized) {
-            navigationView.onStart()
-            navigationView.onResume()
+        if (::mapView.isInitialized) {
+            mapView.onStart()
+            mapView.onResume()
         }
     }
 
     fun notifyStop() {
-        if (::navigationView.isInitialized) {
-            navigationView.onPause()
-            navigationView.onStop()
+        if (::mapView.isInitialized) {
+            mapView.onPause()
+            mapView.onStop()
         }
     }
 
     fun notifyDestroy() {
-        if (::navigationView.isInitialized) {
-            navigationView.onDestroy()
+        if (::mapView.isInitialized) {
+            mapView.onDestroy()
         }
     }
 }

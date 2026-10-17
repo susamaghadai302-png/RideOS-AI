@@ -24,6 +24,7 @@ apps/mobile/ios/Flutter/Flutter.framework/
 apps/mobile/ios/Flutter/Flutter.podspec
 # Android
 apps/mobile/android/.gradle/
+**/.gradle/
 apps/mobile/android/app/debug/
 apps/mobile/android/app/profile/
 apps/mobile/android/app/release/
@@ -55,6 +56,8 @@ release/
 key.properties
 local.properties
 **/android/local.properties
+google-services.json
+**/google-services.json
 
 # ── Audit / debugging artifacts ────────────────────────────────────────────────
 analyze_out*.txt

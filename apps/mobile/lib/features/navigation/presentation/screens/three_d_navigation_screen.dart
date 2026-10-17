@@ -50,7 +50,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
   final VoiceGuidanceService _voiceService = VoiceGuidanceService();
 
   // Location & Vehicle Marker State (Default anchor: Odisha / India)
-  LatLng? _currentPosition;
+  LatLng _currentPosition = const LatLng(20.2961, 85.8245);
   double? _vehicleHeading;
   double? _currentSpeedKmh;
   double? _gpsAccuracyMeters;
@@ -79,14 +79,17 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
   List<RouteStepManeuver> _activeRouteSteps = [];
   int _currentStepIndex = 0;
   int _offRoutePingsCount = 0;
+  bool _isRerouting = false;
+  DateTime? _lastRerouteAttempt;
+  static const Duration _rerouteCooldown = Duration(seconds: 8);
 
   // Pin Drop & Area Search State
   bool _isPinDropMode = false;
   LatLng? _manualDroppedPin;
   bool _showSearchThisArea = false;
 
-  // Map Tile Theme & Traffic (Defaults to Dark Cyber HUD)
-  MapTileTheme _selectedTileTheme = MapTileTheme.darkHud;
+  // Map Tile Theme & Traffic (Defaults to Street & Buildings for clean standard rendering)
+  MapTileTheme _selectedTileTheme = MapTileTheme.street;
   bool _isTrafficEnabled = true;
 
   // Markers & Polylines
@@ -116,9 +119,16 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
 
   Future<void> _initLocationTracking() async {
     try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled && mounted) {
+        showLuxSnack(context, '⚠️ GPS is turned off. Using Odisha fallback location.', variant: LuxSnackVariant.warning);
+      }
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+      }
+      if ((permission == LocationPermission.denied || permission == LocationPermission.deniedForever) && mounted) {
+        showLuxSnack(context, '📍 Location permission denied. Operating in Odisha fallback mode.', variant: LuxSnackVariant.info);
       }
 
       Position? initialPos = await Geolocator.getLastKnownPosition();
@@ -127,8 +137,8 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
         timeLimit: const Duration(seconds: 4),
       );
 
-      final pos = initialPos;
       if (mounted) {
+        final pos = initialPos;
         setState(() {
           _currentPosition = LatLng(pos.latitude, pos.longitude);
           _vehicleHeading = pos.heading > 0 ? pos.heading : null;
@@ -138,7 +148,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
         });
         _mapController.future.then((c) {
           c.animateCamera(gm.CameraUpdate.newLatLngZoom(
-            gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+            gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
             _currentZoom,
           ));
         });
@@ -165,17 +175,41 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
           if (_isFollowingVehicle) {
             _mapController.future.then((c) {
               c.animateCamera(gm.CameraUpdate.newLatLng(
-                gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
               ));
             });
           }
 
-          // Off-Route Check during active navigation
+          // Active navigation progression and monitoring
           if (_isNavigating && _routePoints.isNotEmpty && _activeDestination != null) {
-            final isOff = RoadOsRoutingEngine.instance.isOffRoute(_currentPosition!, _routePoints, thresholdMeters: 45.0);
+            // 1. Maneuver Step Advancement
+            if (_activeRouteSteps.isNotEmpty && _currentStepIndex < _activeRouteSteps.length - 1) {
+              final currentStep = _activeRouteSteps[_currentStepIndex];
+              if (currentStep.stepCoordinates.isNotEmpty) {
+                final distToManeuver = IndiaPlacesSearchEngine.calculateDistanceKm(_currentPosition, currentStep.stepCoordinates.last);
+                if (distToManeuver < 0.04) {
+                  setState(() => _currentStepIndex++);
+                  _voiceService.speakGuidance(_activeRouteSteps[_currentStepIndex].instruction);
+                }
+              }
+            }
+
+            // 2. Dynamic Distance to Destination & ETA Update
+            final distToDest = IndiaPlacesSearchEngine.calculateDistanceKm(
+              _currentPosition,
+              LatLng(_activeDestination!.latitude!, _activeDestination!.longitude!),
+            );
+            _activeRouteDistanceKm = double.parse(distToDest.toStringAsFixed(1));
+            _activeRouteDurationMin = math.max(1, (distToDest / 0.5).round());
+
+            // 3. Off-Route Check & Auto-Reroute
+            final isOff = RoadOsRoutingEngine.instance.isOffRoute(_currentPosition, _routePoints, thresholdMeters: 45.0);
             if (isOff) {
               _offRoutePingsCount++;
-              if (_offRoutePingsCount >= 2) {
+              final now = DateTime.now();
+              final canReroute = !_isRerouting &&
+                  (_lastRerouteAttempt == null || now.difference(_lastRerouteAttempt!) >= _rerouteCooldown);
+              if (_offRoutePingsCount >= 2 && canReroute) {
                 _offRoutePingsCount = 0;
                 _handleAutoReroute();
               }
@@ -183,11 +217,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
               _offRoutePingsCount = 0;
             }
 
-            // Arrival Check (<30 meters from destination)
-            final distToDest = IndiaPlacesSearchEngine.calculateDistanceKm(
-              _currentPosition!,
-              LatLng(_activeDestination!.latitude!, _activeDestination!.longitude!),
-            );
+            // 4. Arrival Check (<35 meters from destination)
             if (distToDest < 0.035 && _isNavigating) {
               _endTrip(isArrival: true);
             }
@@ -199,6 +229,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
             setState(() {
               _isGpsSignalStrong = false;
             });
+            showLuxSnack(context, '📡 GPS signal weak or lost. Operating in fallback mode.', variant: LuxSnackVariant.warning);
           }
         },
         cancelOnError: false,
@@ -206,39 +237,68 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
     } catch (_) {}
   }
 
-  /// Calculates primary route and all available alternative routes via Google Directions API
+  /// Calculates primary route and all available alternative routes via Google Directions with OSRM fallback
   Future<void> _calculateAndDrawRoute(PlaceSearchResultEntity destination) async {
     _activeDestination = destination;
     final start = _currentPosition;
-    if (start == null) {
-      showLuxSnack(context, 'Current location unavailable', variant: LuxSnackVariant.error);
-      return;
-    }
     if (destination.latitude == null || destination.longitude == null) {
       showLuxSnack(context, 'Destination coordinates unavailable', variant: LuxSnackVariant.error);
       return;
     }
     final end = LatLng(destination.latitude!, destination.longitude!);
 
-    final multiResult = await GoogleMapsPlatformService.instance.calculateDirections(
-      origin: start,
-      destination: end,
-      waypoints: _intermediateWaypoints.where((w) => w.latitude != null && w.longitude != null).map((w) => LatLng(w.latitude!, w.longitude!)).toList(),
-      selectedOption: _selectedRouteOption,
-    );
+    MultiRouteCalculationResult? multiResult;
+    String? routingFailureNotice;
+    try {
+      multiResult = await GoogleMapsPlatformService.instance.calculateDirections(
+        origin: start,
+        destination: end,
+        waypoints: _intermediateWaypoints.where((w) => w.latitude != null && w.longitude != null).map((w) => LatLng(w.latitude!, w.longitude!)).toList(),
+        selectedOption: _selectedRouteOption,
+      );
+    } catch (e) {
+      debugPrint('[Directions Notice]: Google Directions unavailable ($e). Falling back to RoadOS Routing Engine.');
+      try {
+        multiResult = await RoadOsRoutingEngine.instance.calculateMultiRoutes(
+          start: start,
+          destination: end,
+          waypoints: _intermediateWaypoints.where((w) => w.latitude != null && w.longitude != null).map((w) => LatLng(w.latitude!, w.longitude!)).toList(),
+          selectedOption: _selectedRouteOption,
+        );
+      } on RoutingUnavailableException catch (rue) {
+        routingFailureNotice = rue.message;
+        debugPrint('[RoadOS Routing Unavailable]: ${rue.message} (${rue.details})');
+      } catch (err) {
+        routingFailureNotice = 'Routing service unavailable ($err)';
+        debugPrint('[RoadOS Routing Error]: $err');
+      }
+    }
+
+    final resolvedResult = multiResult;
+    if (resolvedResult == null) {
+      if (mounted) {
+        showLuxSnack(
+          context,
+          routingFailureNotice ?? 'Unable to compute route to destination',
+          variant: LuxSnackVariant.error,
+        );
+      }
+      return;
+    }
 
     if (mounted) {
+      final activeRoute = resolvedResult.activeRoute;
       setState(() {
-        _multiRouteResult = multiResult;
-        _activeRoute = multiResult.activeRoute;
+        _multiRouteResult = resolvedResult;
+        _activeRoute = activeRoute;
         _routePoints.clear();
-        _routePoints.addAll(multiResult.activeRoute.polylinePoints);
+        _routePoints.addAll(activeRoute.polylinePoints);
         _manualDroppedPin = null;
         _isPinDropMode = false;
-        _activeRouteSteps = multiResult.activeRoute.steps;
-        _activeRouteDistanceKm = multiResult.activeRoute.distanceKm;
-        _activeRouteDurationMin = multiResult.activeRoute.durationMinutes;
-        _activeRouteEta = multiResult.activeRoute.estimatedArrival;
+        _activeRouteSteps = activeRoute.steps;
+        _activeRouteDistanceKm = activeRoute.distanceKm;
+        _activeRouteDurationMin = activeRoute.durationMinutes;
+        _activeRouteEta = activeRoute.estimatedArrival;
         _currentStepIndex = 0;
       });
 
@@ -266,11 +326,20 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
 
   /// Automated instant reroute when rider deviates from corridor
   Future<void> _handleAutoReroute() async {
-    _voiceService.speak(_voiceService.getRerouteMessage());
-    showLuxSnack(context, '🔄 Off route detected. Recalculating path...', variant: LuxSnackVariant.info);
+    if (_isRerouting) return;
+    _isRerouting = true;
+    _lastRerouteAttempt = DateTime.now();
 
-    if (_activeDestination != null) {
-      await _calculateAndDrawRoute(_activeDestination!);
+    try {
+      RoadOsRoutingEngine.instance.clearCache();
+      _voiceService.speak(_voiceService.getRerouteMessage());
+      showLuxSnack(context, '🔄 Off route detected. Recalculating path...', variant: LuxSnackVariant.info);
+
+      if (_activeDestination != null) {
+        await _calculateAndDrawRoute(_activeDestination!);
+      }
+    } finally {
+      _isRerouting = false;
     }
   }
 
@@ -399,7 +468,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
 
   void _shareCurrentLocation() {
     LuxAudioHapticsService.selectionClick();
-    final text = '📍 Live GPS Location: [${_currentPosition?.latitude.toStringAsFixed(4) ?? '--'}, ${_currentPosition?.longitude.toStringAsFixed(4) ?? '--'}]';
+    final text = '📍 Live GPS Location: [${_currentPosition.latitude.toStringAsFixed(4)}, ${_currentPosition.longitude.toStringAsFixed(4)}]';
     showLuxSnack(context, text, variant: LuxSnackVariant.info);
   }
 
@@ -407,7 +476,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
     LuxAudioHapticsService.selectionClick();
     _mapController.future.then((c) {
       c.animateCamera(gm.CameraUpdate.newCameraPosition(
-        gm.CameraPosition(target: gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude), zoom: _currentZoom, bearing: 0)
+        gm.CameraPosition(target: gm.LatLng(_currentPosition.latitude, _currentPosition.longitude), zoom: _currentZoom, bearing: 0)
       ));
     });
     showLuxSnack(context, '🧭 Compass reset to True North (0 deg)', variant: LuxSnackVariant.info);
@@ -434,7 +503,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
     });
     _mapController.future.then((c) {
       c.animateCamera(gm.CameraUpdate.newLatLngZoom(
-        gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude), _currentZoom
+        gm.LatLng(_currentPosition.latitude, _currentPosition.longitude), _currentZoom
       ));
     });
   }
@@ -497,12 +566,19 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
     });
 
     final currentPos = _currentPosition;
-    if (currentPos == null) return;
 
-    final pois = await GoogleMapsPlatformService.instance.searchNearbyPlaces(
-      location: currentPos,
-      category: cat,
-    );
+    List<PoiEntity> pois = const [];
+    try {
+      pois = await GoogleMapsPlatformService.instance.searchNearbyPlaces(
+        location: currentPos,
+        category: cat,
+      );
+    } catch (e) {
+      debugPrint('[Nearby Search Notice]: $e');
+      if (mounted) {
+        showLuxSnack(context, 'Nearby ${cat.name} search unavailable', variant: LuxSnackVariant.info);
+      }
+    }
 
     final Set<gm.Marker> newMarkers = {};
     for (final poi in pois) {
@@ -542,7 +618,7 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
     _mapController.future.then((c) {
       c.animateCamera(gm.CameraUpdate.newCameraPosition(
         gm.CameraPosition(
-          target: gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+          target: gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
           zoom: _currentZoom,
           bearing: _vehicleHeading ?? 0.0,
           tilt: 45.0,
@@ -687,10 +763,9 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
   Widget build(BuildContext context) {
     final allMarkers = <gm.Marker>{
       // 1. Live Rider Vehicle Marker
-      if (_currentPosition != null)
-        gm.Marker(
-          markerId: const gm.MarkerId('vehicle'),
-          position: gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+      gm.Marker(
+        markerId: const gm.MarkerId('vehicle'),
+        position: gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
         rotation: _vehicleHeading ?? 0.0,
         icon: gm.BitmapDescriptor.defaultMarkerWithHue(gm.BitmapDescriptor.hueCyan),
         anchor: const Offset(0.5, 0.5),
@@ -765,30 +840,19 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
       body: Stack(
         children: [
           // 1. Map: Google Maps (Native and Web)
-          if (_currentPosition == null)
-            const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_searching_rounded, color: RoadOSColors.cyberCyan, size: 48),
-                  SizedBox(height: 16),
-                  Text('Acquiring GPS Signal...', style: TextStyle(color: RoadOSColors.platinumWhite, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            )
-          else
-            gm.GoogleMap(
-              mapType: _selectedTileTheme == MapTileTheme.satellite ? gm.MapType.satellite : gm.MapType.normal,
-              style: _activeMapStyle,
-              initialCameraPosition: gm.CameraPosition(
-                target: gm.LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                zoom: _currentZoom,
-              ),
-              onMapCreated: (gm.GoogleMapController controller) {
-                if (!_mapController.isCompleted) {
-                  _mapController.complete(controller);
-                }
-              },
+          gm.GoogleMap(
+            mapType: _selectedTileTheme == MapTileTheme.satellite ? gm.MapType.satellite : gm.MapType.normal,
+            style: _activeMapStyle,
+            initialCameraPosition: gm.CameraPosition(
+              target: gm.LatLng(_currentPosition.latitude, _currentPosition.longitude),
+              zoom: _currentZoom,
+            ),
+            onMapCreated: (gm.GoogleMapController controller) {
+              debugPrint('[RideOS GoogleMap]: onMapCreated controller received!');
+              if (!_mapController.isCompleted) {
+                _mapController.complete(controller);
+              }
+            },
               myLocationEnabled: false,
               myLocationButtonEnabled: false,
               compassEnabled: true,
@@ -806,7 +870,20 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                 if (_isPinDropMode) {
                   LuxAudioHapticsService.heavyImpact();
                   setState(() => _manualDroppedPin = LatLng(point.latitude, point.longitude));
-                  final pinPlace = await GoogleMapsPlatformService.instance.reverseGeocode(LatLng(point.latitude, point.longitude));
+                  PlaceSearchResultEntity pinPlace;
+                  try {
+                    pinPlace = await GoogleMapsPlatformService.instance.reverseGeocode(LatLng(point.latitude, point.longitude));
+                  } catch (_) {
+                    pinPlace = PlaceSearchResultEntity(
+                      id: 'pin_${point.latitude}_${point.longitude}',
+                      title: 'Dropped Pin (${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)})',
+                      subtitle: 'Selected Point in Odisha',
+                      category: 'DROPPED_PIN',
+                      latitude: point.latitude,
+                      longitude: point.longitude,
+                      distanceKm: 0.0,
+                    );
+                  }
                   if (mounted) {
                     _calculateAndDrawRoute(pinPlace);
                   }

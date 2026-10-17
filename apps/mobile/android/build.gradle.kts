@@ -25,6 +25,17 @@ subprojects {
             compileSdk = 36
         }
     }
+    if (!project.extensions.extraProperties.has("flutter")) {
+        project.extensions.extraProperties.set(
+            "flutter",
+            mapOf(
+                "compileSdkVersion" to 36,
+                "minSdkVersion" to 21,
+                "targetSdkVersion" to 36,
+                "ndkVersion" to "28.2.13676358"
+            )
+        )
+    }
 }
 
 tasks.register<Delete>("clean") {

@@ -41,11 +41,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'mock-android-api-key',
-    appId: '1:1234567890:android:1234567890',
-    messagingSenderId: '1234567890',
-    projectId: 'rideos-mock-project',
-    storageBucket: 'rideos-mock-project.appspot.com',
+    apiKey: 'AIzaSyDqPBrQJ0zA6fc3CXt3KIfbeyMWZ5cxabA',
+    appId: '1:121485873641:android:f8b6a1c2afe3e8d81bfb78',
+    messagingSenderId: '121485873641',
+    projectId: 'rideos-ai',
+    storageBucket: 'rideos-ai.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(

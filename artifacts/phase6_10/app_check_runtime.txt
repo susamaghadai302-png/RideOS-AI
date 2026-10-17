@@ -1,1 +1,0 @@
-App Check Runtime: Verified successfully on physical device RMX3940. AndroidProvider.playIntegrity initialized.

@@ -16,7 +16,18 @@ export class OsrmRoutingProvider implements IMapRoutingProvider {
   ): Promise<RouteResult> {
     const allPoints = [origin, ...waypoints, destination];
     const coordsString = allPoints.map((p) => `${p.lng},${p.lat}`).join(';');
-    const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson&steps=true`;
+    const rawBaseUrl = process.env.OSRM_BASE_URL || process.env.ROUTING_API_BASE_URL;
+    let baseUrl = rawBaseUrl;
+    if (!baseUrl) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(
+          'OSRM routing provider is unconfigured in production. Explicit OSRM_BASE_URL or ROUTING_API_BASE_URL is required to protect rider safety.',
+        );
+      }
+      baseUrl = 'https://router.project-osrm.org/route/v1/driving';
+    }
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const url = `${cleanBaseUrl}/${coordsString}?overview=full&geometries=geojson&steps=true`;
 
     try {
       this.logger.log(`[OSRM] Requesting live route from ${origin.lat},${origin.lng} to ${destination.lat},${destination.lng}`);

@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { NavigationService } from './navigation.service';
 import { CalculateRouteDto, GeoPointDto } from './dto/calculate-route.dto';
 import { ReportHazardDto } from './dto/report-hazard.dto';
@@ -9,6 +10,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class NavigationController {
   constructor(private readonly navigationService: NavigationService) {}
 
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Post('route')
   async calculateRoute(@Body() dto: CalculateRouteDto) {
     return this.navigationService.calculateRoute(dto);

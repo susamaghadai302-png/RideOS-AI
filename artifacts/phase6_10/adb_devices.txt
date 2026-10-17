@@ -1,3 +1,0 @@
-List of devices attached
-adb-4LWCCIPNMNN7QCLZ-VWpYR6 (2)._adb-tls-connect._tcp	device
-

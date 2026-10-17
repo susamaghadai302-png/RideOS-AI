@@ -7,15 +7,15 @@ import android.view.Display
 import android.view.WindowManager
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.libraries.navigation.NavigationViewForAuto
 
 class AaosMapPresentation(
     outerContext: Context,
     display: Display
 ) : Presentation(outerContext, display) {
 
-    private lateinit var navigationView: NavigationViewForAuto
+    private lateinit var mapView: MapView
     private var googleMap: GoogleMap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,13 +24,13 @@ class AaosMapPresentation(
         // Ensure standard presentation window parameters
         window?.setType(WindowManager.LayoutParams.TYPE_PRIVATE_PRESENTATION)
         
-        // Initialize the Native Google Navigation View for Android Automotive
-        navigationView = NavigationViewForAuto(context)
-        setContentView(navigationView)
+        // Initialize the Native Google MapView for Android Automotive
+        mapView = MapView(context)
+        setContentView(mapView)
         
-        navigationView.onCreate(savedInstanceState)
+        mapView.onCreate(savedInstanceState)
         
-        navigationView.getMapAsync { map ->
+        mapView.getMapAsync { map ->
             googleMap = map
             
             // Automotive-safe constraints
@@ -47,7 +47,7 @@ class AaosMapPresentation(
     }
     
     // Lifecycle forwarding
-    fun onResume() = navigationView.onResume()
-    fun onPause() = navigationView.onPause()
-    fun onDestroy() = navigationView.onDestroy()
+    fun onResume() = mapView.onResume()
+    fun onPause() = mapView.onPause()
+    fun onDestroy() = mapView.onDestroy()
 }

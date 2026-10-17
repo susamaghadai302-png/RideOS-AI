@@ -3,6 +3,7 @@ import 'package:rideos_mobile/core/design_system/roados_tokens.dart';
 
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -20,6 +21,69 @@ enum RouteOptionType {
   const RouteOptionType(this.title, this.metrics, this.badge, this.accentColor);
 }
 
+/// Routing environment modes
+enum RoutingEnvironment {
+  development,
+  testing,
+  production,
+}
+
+/// Explicit exception thrown when no valid, reliable routing provider is available
+class RoutingUnavailableException implements Exception {
+  final String message;
+  final String? details;
+  final String sourceProvider;
+
+  const RoutingUnavailableException({
+    required this.message,
+    this.details,
+    this.sourceProvider = 'ROUTING_UNAVAILABLE',
+  });
+
+  @override
+  String toString() => 'RoutingUnavailableException: $message${details != null ? " ($details)" : ""}';
+}
+
+/// Client-side application routing request metrics & cost guardrails
+class RoutingMetrics {
+  int totalRequests = 0;
+  int successRequests = 0;
+  int failedRequests = 0;
+  int throttledRequests = 0;
+  int cacheHits = 0;
+  int deduplicatedRequests = 0;
+  int cancelledRequests = 0;
+  int dailyRequestCount = 0;
+  DateTime dailyWindowStart = DateTime.now();
+
+  /// Maximum daily client route computations to prevent accidental quota exhaustion
+  int dailyRequestCap = 500;
+
+  bool get isDailyCapReached => dailyRequestCount >= dailyRequestCap;
+
+  void recordRequest() {
+    final now = DateTime.now();
+    if (now.difference(dailyWindowStart).inHours >= 24) {
+      dailyWindowStart = now;
+      dailyRequestCount = 0;
+    }
+    totalRequests++;
+    dailyRequestCount++;
+  }
+
+  void reset() {
+    totalRequests = 0;
+    successRequests = 0;
+    failedRequests = 0;
+    throttledRequests = 0;
+    cacheHits = 0;
+    deduplicatedRequests = 0;
+    cancelledRequests = 0;
+    dailyRequestCount = 0;
+    dailyWindowStart = DateTime.now();
+  }
+}
+
 class RouteCalculationResult {
   final String id;
   final String routeName;
@@ -32,6 +96,8 @@ class RouteCalculationResult {
   final bool isLiveNetworkRoute;
   final RouteOptionType routeType;
   final Color routeColor;
+  final String sourceProvider;
+  final String attribution;
 
   const RouteCalculationResult({
     required this.id,
@@ -45,6 +111,8 @@ class RouteCalculationResult {
     this.isLiveNetworkRoute = true,
     this.routeType = RouteOptionType.fastestHighway,
     this.routeColor = RoadOSColors.cyberCyan,
+    this.sourceProvider = 'OSRM_COMMUNITY_FALLBACK',
+    this.attribution = 'Route data © OpenStreetMap contributors',
   });
 }
 
@@ -78,19 +146,125 @@ class RouteStepManeuver {
   });
 }
 
+class _CachedRouteEntry {
+  final MultiRouteCalculationResult result;
+  final DateTime cachedAt;
+  _CachedRouteEntry(this.result, this.cachedAt);
+  bool isExpired(Duration ttl) => DateTime.now().difference(cachedAt) > ttl;
+}
+
 class RoadOsRoutingEngine {
   static final RoadOsRoutingEngine instance = RoadOsRoutingEngine._internal();
   RoadOsRoutingEngine._internal();
 
+  static const String defaultOsrmBaseUrl = 'https://router.project-osrm.org/route/v1/driving';
+
+  // Environment mode (auto-detected: release builds default to production mode)
+  static RoutingEnvironment environment = kReleaseMode ? RoutingEnvironment.production : RoutingEnvironment.development;
+
+  static String _activeBaseUrl = const String.fromEnvironment('ROUTING_API_BASE_URL', defaultValue: '');
+  static String get activeBaseUrl => _activeBaseUrl;
+  static set activeBaseUrl(String url) => _activeBaseUrl = url.trim();
+
+  /// Allow explicit opt-in for demo server in release builds (e.g. for developer preview builds)
+  static bool allowDemoServerInRelease = false;
+
+  /// Returns the effective base URL or null if no reliable endpoint is available in the current environment
+  static String? get effectiveBaseUrl {
+    if (_activeBaseUrl.isNotEmpty) {
+      if (environment == RoutingEnvironment.production &&
+          !allowDemoServerInRelease &&
+          _activeBaseUrl.contains('project-osrm.org')) {
+        return null;
+      }
+      return _activeBaseUrl;
+    }
+    // In production mode, public demo server is strictly forbidden by default to protect rider safety
+    if (environment == RoutingEnvironment.production && !allowDemoServerInRelease) {
+      return null;
+    }
+    return defaultOsrmBaseUrl;
+  }
+
+  static bool get isDemoServer {
+    final url = effectiveBaseUrl;
+    return url == null || url.contains('project-osrm.org');
+  }
+
+  /// Minimum request intervals:
+  /// - Public OSRM demo server: 1000 ms (enforces OSRM published usage policy: max 1 request/sec)
+  /// - Dedicated / self-hosted / proxy endpoint: 200 ms
+  static const Duration minDemoRequestInterval = Duration(milliseconds: 1000);
+  static const Duration minCustomRequestInterval = Duration(milliseconds: 200);
+
+  static Duration get minRequestInterval =>
+      isDemoServer ? minDemoRequestInterval : minCustomRequestInterval;
+
+  /// Helper to configure provider settings programmatically
+  static void configure({
+    String? baseUrl,
+    RoutingEnvironment? env,
+    bool? allowDemoInRelease,
+  }) {
+    if (baseUrl != null) _activeBaseUrl = baseUrl.trim();
+    if (env != null) environment = env;
+    if (allowDemoInRelease != null) allowDemoServerInRelease = allowDemoInRelease;
+  }
+
   final Dio _dio = Dio(
     BaseOptions(
-      connectTimeout: const Duration(seconds: 6),
-      receiveTimeout: const Duration(seconds: 6),
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
       headers: {
         'User-Agent': 'RideOS-Pro-Mobile/1.0 (motorcycle-intelligence)',
       },
     ),
   );
+
+  // In-memory route cache with TTL and bounded capacity
+  final Map<String, _CachedRouteEntry> _cache = {};
+  static const Duration cacheTtl = Duration(minutes: 10);
+  static const int maxCacheEntries = 30;
+
+  // In-flight request coalescing to deduplicate concurrent identical route queries
+  final Map<String, Future<MultiRouteCalculationResult>> _inFlightRequests = {};
+
+  // Active cancellation token for user cancellations or destination updates
+  CancelToken? _activeCancelToken;
+
+  final RoutingMetrics metrics = RoutingMetrics();
+
+  DateTime? _lastRequestTime;
+
+  /// Allows injecting a custom adapter for isolated unit testing
+  void setMockAdapter(HttpClientAdapter adapter) {
+    _dio.httpClientAdapter = adapter;
+  }
+
+  /// Cancels any active in-flight HTTP requests (e.g. when user changes destination or leaves screen)
+  void cancelActiveRequests() {
+    if (_activeCancelToken != null && !_activeCancelToken!.isCancelled) {
+      _activeCancelToken!.cancel('Cancelled by client');
+      metrics.cancelledRequests++;
+    }
+    _activeCancelToken = CancelToken();
+  }
+
+  /// Clears in-memory route cache (e.g. for testing or explicit reroute refreshes)
+  void clearCache() => _cache.clear();
+
+  String _buildCacheKey(LatLng start, LatLng dest, List<LatLng>? waypoints, RouteOptionType opt) {
+    final sb = StringBuffer();
+    sb.write('${start.latitude.toStringAsFixed(4)},${start.longitude.toStringAsFixed(4)}->');
+    if (waypoints != null) {
+      for (final w in waypoints) {
+        sb.write('${w.latitude.toStringAsFixed(4)},${w.longitude.toStringAsFixed(4)}|');
+      }
+    }
+    sb.write('${dest.latitude.toStringAsFixed(4)},${dest.longitude.toStringAsFixed(4)}:');
+    sb.write(opt.name);
+    return sb.toString();
+  }
 
   /// Calculates primary route and all available alternative routes
   Future<MultiRouteCalculationResult> calculateMultiRoutes({
@@ -98,9 +272,91 @@ class RoadOsRoutingEngine {
     required LatLng destination,
     List<LatLng>? waypoints,
     RouteOptionType selectedOption = RouteOptionType.fastestHighway,
+    bool forceRefresh = false,
+    CancelToken? cancelToken,
   }) async {
+    // 1. Verify routing provider availability for current environment
+    final baseUrl = effectiveBaseUrl;
+    if (baseUrl == null) {
+      metrics.failedRequests++;
+      throw const RoutingUnavailableException(
+        message: 'No reliable routing endpoint configured for production.',
+        details: 'Production mode strictly requires an explicitly configured, reliable routing provider or backend proxy (ROUTING_API_BASE_URL). The public OSRM demo server is disabled in release builds to protect rider safety.',
+        sourceProvider: 'ROUTING_UNAVAILABLE',
+      );
+    }
+
+    // 2. Client application daily quota limit check (Cost & Resource Abuse Protection)
+    if (metrics.isDailyCapReached) {
+      metrics.failedRequests++;
+      throw const RoutingUnavailableException(
+        message: 'Daily client routing limit reached (Cost & Quota Protection).',
+        details: 'Max 500 route calculations per day reached. Client throttled to prevent resource exhaustion.',
+        sourceProvider: 'LIMIT_EXCEEDED',
+      );
+    }
+
+    final cacheKey = _buildCacheKey(start, destination, waypoints, selectedOption);
+
+    // 3. In-memory route cache lookup
+    if (!forceRefresh && _cache.containsKey(cacheKey)) {
+      final cached = _cache[cacheKey]!;
+      if (!cached.isExpired(cacheTtl)) {
+        metrics.cacheHits++;
+        return cached.result;
+      } else {
+        _cache.remove(cacheKey);
+      }
+    }
+
+    // 4. Request coalescing: reuse identical in-flight request
+    if (_inFlightRequests.containsKey(cacheKey)) {
+      metrics.deduplicatedRequests++;
+      return await _inFlightRequests[cacheKey]!;
+    }
+
+    // 5. Execute calculation and coalesce future
+    final executionFuture = _executeCalculation(
+      cacheKey: cacheKey,
+      baseUrl: baseUrl,
+      start: start,
+      destination: destination,
+      waypoints: waypoints,
+      selectedOption: selectedOption,
+      cancelToken: cancelToken,
+    );
+
+    _inFlightRequests[cacheKey] = executionFuture;
     try {
-      // Build coordinates string including any intermediate waypoints
+      final result = await executionFuture;
+      return result;
+    } finally {
+      _inFlightRequests.remove(cacheKey);
+    }
+  }
+
+  Future<MultiRouteCalculationResult> _executeCalculation({
+    required String cacheKey,
+    required String baseUrl,
+    required LatLng start,
+    required LatLng destination,
+    List<LatLng>? waypoints,
+    required RouteOptionType selectedOption,
+    CancelToken? cancelToken,
+  }) async {
+    // Respect provider rate limit interval
+    final interval = minRequestInterval;
+    if (_lastRequestTime != null) {
+      final elapsed = DateTime.now().difference(_lastRequestTime!);
+      if (elapsed < interval) {
+        metrics.throttledRequests++;
+        await Future.delayed(interval - elapsed);
+      }
+    }
+    _lastRequestTime = DateTime.now();
+    metrics.recordRequest();
+
+    try {
       final List<LatLng> pointSequence = [start];
       if (waypoints != null && waypoints.isNotEmpty) {
         pointSequence.addAll(waypoints);
@@ -111,14 +367,24 @@ class RoadOsRoutingEngine {
           .map((p) => '${p.longitude.toStringAsFixed(6)},${p.latitude.toStringAsFixed(6)}')
           .join(';');
 
-      // Query OSRM Driving Engine with alternatives enabled
-      final url = 'https://router.project-osrm.org/route/v1/driving/$coordsString?overview=full&geometries=geojson&steps=true&alternatives=true';
-      final response = await _dio.get(url);
+      final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+      final url = '$cleanBaseUrl/$coordsString?overview=full&geometries=geojson&steps=true&alternatives=true';
+
+      final activeToken = cancelToken ?? _activeCancelToken;
+      final response = await _dio.get(url, cancelToken: activeToken);
 
       if (response.statusCode == 200 && response.data != null) {
         final routesData = response.data['routes'] as List? ?? [];
         if (routesData.isNotEmpty) {
           final List<RouteCalculationResult> calculatedRoutes = [];
+
+          final isPublicDemo = cleanBaseUrl == defaultOsrmBaseUrl;
+          final providerIdentity = isPublicDemo
+              ? 'OSRM_COMMUNITY_DEMO_DEV'
+              : 'CUSTOM_ROUTING_ENDPOINT';
+          final attributionNotice = isPublicDemo
+              ? 'Route data © OpenStreetMap contributors | OSRM Demo Server (Dev/Test only)'
+              : 'Route data via RideOS Dedicated Routing Cluster';
 
           for (int i = 0; i < routesData.length; i++) {
             final r = routesData[i];
@@ -171,10 +437,6 @@ class RoadOsRoutingEngine {
               }
             }
 
-            if (steps.isEmpty) {
-              // Real provider returned no steps
-            }
-
             final eta = DateTime.now().add(Duration(minutes: durationMinutes));
             final etaString = '${eta.hour.toString().padLeft(2, '0')}:${eta.minute.toString().padLeft(2, '0')}';
 
@@ -195,6 +457,8 @@ class RoadOsRoutingEngine {
                 isLiveNetworkRoute: true,
                 routeType: optionType,
                 routeColor: optionType.accentColor,
+                sourceProvider: providerIdentity,
+                attribution: attributionNotice,
               ),
             );
           }
@@ -206,19 +470,62 @@ class RoadOsRoutingEngine {
             );
             final alternatives = calculatedRoutes.where((r) => r.id != active.id).toList();
 
-            return MultiRouteCalculationResult(
+            final multiResult = MultiRouteCalculationResult(
               activeRoute: active,
               alternativeRoutes: alternatives,
               allRoutes: calculatedRoutes,
             );
+
+            // Evict oldest if cache is full
+            if (_cache.length >= maxCacheEntries) {
+              _cache.remove(_cache.keys.first);
+            }
+            _cache[cacheKey] = _CachedRouteEntry(multiResult, DateTime.now());
+
+            metrics.successRequests++;
+            return multiResult;
           }
         }
       }
+    } on DioException catch (dioErr) {
+      metrics.failedRequests++;
+      if (dioErr.type == DioExceptionType.cancel) {
+        metrics.cancelledRequests++;
+        throw StateError('Route calculation was cancelled');
+      }
+      if (dioErr.response?.statusCode == 429) {
+        throw const RoutingUnavailableException(
+          message: 'Routing provider rate limit exceeded (HTTP 429).',
+          details: 'The public demo server usage policy allows max 1 request/second. Please throttle requests or configure a dedicated endpoint.',
+          sourceProvider: 'OSRM_RATE_LIMITED',
+        );
+      }
+      if (dioErr.response != null && (dioErr.response!.statusCode ?? 0) >= 500) {
+        throw RoutingUnavailableException(
+          message: 'Routing provider server error (${dioErr.response?.statusCode}).',
+          details: 'Remote routing cluster returned an internal server error.',
+          sourceProvider: 'ROUTING_SERVER_ERROR',
+        );
+      }
+      if (dioErr.type == DioExceptionType.connectionTimeout || dioErr.type == DioExceptionType.receiveTimeout) {
+        throw const RoutingUnavailableException(
+          message: 'Routing request timed out.',
+          details: 'Network latency exceeded connection threshold.',
+          sourceProvider: 'ROUTING_TIMEOUT',
+        );
+      }
+      rethrow;
     } catch (e) {
-      debugPrint('[OSRM Multi-Route Routing Notice]: $e');
+      metrics.failedRequests++;
+      debugPrint('[Routing Multi-Route Notice]: $e');
+      rethrow;
     }
 
-    throw StateError('Routing providers unavailable');
+    metrics.failedRequests++;
+    throw const RoutingUnavailableException(
+      message: 'No routes returned by provider.',
+      sourceProvider: 'NO_ROUTES_FOUND',
+    );
   }
 
   /// Calculates a single road route

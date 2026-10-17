@@ -55,6 +55,7 @@ class _ScooterModeScreenState extends ConsumerState<ScooterModeScreen> {
   final Set<gm.Marker> _markers = {};
   int _currentStepIndex = 0;
   int _offRouteCount = 0;
+  bool _isRecalculating = false;
 
   @override
   void initState() {
@@ -113,7 +114,15 @@ class _ScooterModeScreenState extends ConsumerState<ScooterModeScreen> {
         ))));
         if (_isNavigating && _activeRoute != null) {
           final off = RoadOsRoutingEngine.instance.isOffRoute(_currentPosition, _activeRoute!.polylinePoints, thresholdMeters: 40);
-          if (off) { _offRouteCount++; if (_offRouteCount >= 2) { _offRouteCount = 0; _recalculate(); } } else { _offRouteCount = 0; }
+          if (off) {
+            _offRouteCount++;
+            if (_offRouteCount >= 2 && !_isRecalculating) {
+              _offRouteCount = 0;
+              _recalculate();
+            }
+          } else {
+            _offRouteCount = 0;
+          }
           _advanceSteps();
           _checkArrival();
         }
@@ -144,12 +153,22 @@ class _ScooterModeScreenState extends ConsumerState<ScooterModeScreen> {
   }
 
   Future<void> _calculateRoute(PlaceSearchResultEntity dest) async {
+    if (_isRecalculating) return;
+    _isRecalculating = true;
     setState(() { _destination = dest; _isNavigating = false; _currentStepIndex = 0; });
     try {
-      final multi = await GoogleMapsPlatformService.instance.calculateDirections(
-        origin: _currentPosition, destination: LatLng((dest.latitude ?? 0.0), (dest.longitude ?? 0.0)),
-        waypoints: [], selectedOption: RouteOptionType.fastestHighway,
-      );
+      MultiRouteCalculationResult? multi;
+      try {
+        multi = await GoogleMapsPlatformService.instance.calculateDirections(
+          origin: _currentPosition, destination: LatLng((dest.latitude ?? 0.0), (dest.longitude ?? 0.0)),
+          waypoints: [], selectedOption: RouteOptionType.fastestHighway,
+        );
+      } catch (_) {
+        multi = await RoadOsRoutingEngine.instance.calculateMultiRoutes(
+          start: _currentPosition,
+          destination: LatLng((dest.latitude ?? 0.0), (dest.longitude ?? 0.0)),
+        );
+      }
       if (!mounted) return;
       final best = multi.activeRoute;
       setState(() {
@@ -164,7 +183,12 @@ class _ScooterModeScreenState extends ConsumerState<ScooterModeScreen> {
       });
       _voice.speak(best.steps.isNotEmpty ? best.steps.first.instruction : 'Route ready. Start riding.');
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Route error: $e'), backgroundColor: Colors.red.shade900));
+      if (mounted) {
+        final errorMsg = e is RoutingUnavailableException ? e.message : 'Route error: $e';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg), backgroundColor: Colors.red.shade900));
+      }
+    } finally {
+      _isRecalculating = false;
     }
   }
 

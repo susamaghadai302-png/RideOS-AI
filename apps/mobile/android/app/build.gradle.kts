@@ -35,6 +35,11 @@ if (resolvedMapsKey.isEmpty()) {
     }
 }
 
+if (resolvedMapsKey.isEmpty()) {
+    resolvedMapsKey = (System.getenv("ANDROID_GOOGLE_MAPS_API_KEY")
+        ?: System.getenv("GOOGLE_MAPS_API_KEY") ?: "").trim()
+}
+
 val googleMapsApiKey: String = resolvedMapsKey
 
 // Read release signing credentials securely from key.properties (gitignored file)
@@ -117,16 +122,11 @@ dependencies {
     implementation("androidx.car.app:app-projected:1.7.0")
     implementation("androidx.car.app:app-automotive:1.7.0")
     
-    // Official Google Navigation SDK (includes MapView and NavigationViewForAuto)
-    // Used specifically to provide a real geographic map surface on the vehicle DHU
-    implementation("com.google.android.libraries.navigation:navigation:7.9.0")
+    // Official Google Play Services Maps SDK (provides standard MapView and vector tiles)
+    implementation("com.google.android.gms:play-services-maps:19.0.0")
 }
 
 configurations.all {
-    // Navigation SDK internally bundles maps. Exclude standalone play-services-maps
-    // to prevent Duplicate Class errors with google_maps_flutter.
-    exclude(group = "com.google.android.gms", module = "play-services-maps")
-    
     // Fix AGP 8+ namespace collision between cronet-api and cronet-fallback
     exclude(group = "org.chromium.net", module = "cronet-fallback")
 }

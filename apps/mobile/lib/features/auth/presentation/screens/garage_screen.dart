@@ -300,8 +300,8 @@ static Widget _buildDialogTextField(String label, TextEditingController ctrl, Ic
                           LuxAudioHapticsService.alertVibrate();
                           context.read<SosBloc>().add(
                                 const TriggerSosEvent(
-                                  lat: 37.7749,
-                                  lng: -122.4194,
+                                  lat: 20.2961,
+                                  lng: 85.8245,
                                   triggerType: 'MANUAL',
                                   impactForceG: 5.2,
                                 ),
