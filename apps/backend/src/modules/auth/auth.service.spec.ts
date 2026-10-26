@@ -115,10 +115,12 @@ describe('AuthService', () => {
 
     const result = await service.loginWithAppleOAuth({
       identityToken: 'valid-signed-apple-identity-token',
+      email: 'attacker-controlled@example.com',
     });
 
     expect(result).toBeDefined();
     expect(result.rider.email).toBe('apple.rider@privaterelay.appleid.com');
+    expect(result.rider.email).not.toBe('attacker-controlled@example.com');
     expect(result.tokens.accessToken).toBe('mock-jwt-token');
   });
 
