@@ -143,8 +143,22 @@ class UniversalVehicleProfile {
     this.thumbnailUrl,
   });
 
-  String get fullName => '$brand $model ($variant $modelYear)';
-  bool get isElectric => fuelType.toLowerCase() == 'electric' || vehicleType.toLowerCase().contains('electric');
+  String get fullName {
+    final baseName = [brand.trim(), model.trim()]
+        .where((part) => part.isNotEmpty)
+        .join(' ');
+    final variantAndYear = [
+      if (variant.trim().isNotEmpty) variant.trim(),
+      if (modelYear > 0) modelYear.toString(),
+    ].join(' ');
+    return variantAndYear.isEmpty
+        ? baseName
+        : '$baseName ($variantAndYear)';
+  }
+
+  bool get isElectric =>
+      fuelType.toLowerCase() == 'electric' ||
+      vehicleType.toLowerCase().contains('electric');
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -173,9 +187,9 @@ class UniversalVehicleProfile {
         generation: json['generation'] ?? '',
         model: json['model'] ?? '',
         variant: json['variant'] ?? 'Standard',
-        modelYear: json['modelYear'] ?? 2024,
+        modelYear: json['modelYear'] ?? 0,
         vehicleType: json['vehicleType'] ?? 'Motorcycle',
-        fuelType: json['fuelType'] ?? 'Petrol',
+        fuelType: json['fuelType'] ?? 'Unknown',
         displaySystem: DisplaySystem.fromJson(json['displaySystem'] ?? {}),
         connectivity: ConnectivityProfile.fromJson(json['connectivity'] ?? {}),
         capabilities: VehicleCapabilities.fromJson(json['capabilities'] ?? {}),
