@@ -1,0 +1,86 @@
+name: RideOS AI — Android Emulator Smoke Test
+
+on:
+  push:
+    branches:
+      - main
+      - automation/**
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/android-emulator-smoke.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/android-emulator-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rideos-android-emulator-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-emulator-smoke:
+    name: Android Emulator — App Launch Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.5"
+          channel: stable
+          cache: true
+
+      - name: Install mobile dependencies
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Enable KVM for Android Emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Boot Android emulator and run app launch integration test
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7_pro
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          emulator-boot-timeout: 600
+          script: |
+            cd apps/mobile
+            flutter devices
+            flutter test integration_test/integration_setup_test.dart --device-id emulator-5554 --timeout 2m
+
+      - name: Capture focused Android diagnostics on failure
+        if: failure()
+        run: |
+          adb devices -l || true
+          adb shell dumpsys activity activities 2>/dev/null | grep -E 'mResumedActivity|topResumedActivity' || true
+          adb logcat -d -t 1200 2>/dev/null | grep -E 'FATAL EXCEPTION|AndroidRuntime|RideOS|Flutter|Firebase' | tail -n 160 || true
+
+      - name: Record smoke-test scope
+        if: always()
+        run: |
+          echo "This workflow validates app launch/integration on an Android emulator."
+          echo "It does not claim physical motorcycle ECU, OBD-II, BLE peripheral, or Play Integrity production validation."
+          echo "No APK artifact is uploaded by this workflow, avoiding GitHub Actions artifact-storage quota failures."
