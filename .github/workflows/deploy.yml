@@ -43,6 +43,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
@@ -121,7 +123,7 @@ jobs:
               adb logcat -d -t 600 | tail -n 160
               exit 1
             fi
-            if adb logcat -d -t 600 | grep -E 'FATAL EXCEPTION|Fatal signal|Process: ai\\.rideos\\.app'; then
+            if adb logcat -d -t 600 | grep -E 'FATAL EXCEPTION|Fatal signal|Process: ai[.]rideos[.]app'; then
               echo "::error::Fatal Android runtime failure detected during the release APK smoke test."
               exit 1
             fi
