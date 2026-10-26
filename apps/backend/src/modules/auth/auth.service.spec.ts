@@ -226,7 +226,7 @@ describe('AuthService', () => {
   });
 
   it('rate-limits the OTP request endpoint to three requests per minute', () => {
-    const handler = AuthController.prototype.requestOtp as Function;
+    const handler = AuthController.prototype.requestOtp;
 
     expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(3);
     expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(60_000);
