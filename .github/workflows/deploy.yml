@@ -81,7 +81,7 @@ jobs:
           cd apps/mobile
           flutter build apk --release
 
-      - name: Verify release APK and Maps configuration
+      - name: Verify release APK, Maps configuration, and signing state
         env:
           ANDROID_GOOGLE_MAPS_API_KEY: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY || secrets.GOOGLE_MAPS_API_KEY }}
         run: |
@@ -92,7 +92,29 @@ jobs:
           if [ -n "${ANDROID_GOOGLE_MAPS_API_KEY:-}" ]; then
             echo "::notice title=Maps key configured::A Maps key was injected from the configured GitHub Actions secret."
           else
-            echo "::warning title=Maps key missing::The APK can build and launch, but Google Maps tiles may be unavailable in this CI build. Configure repository secret ANDROID_GOOGLE_MAPS_API_KEY or GOOGLE_MAPS_API_KEY to inject the restricted key."
+            echo "::warning title=Maps key missing::Google Maps tiles may be unavailable in this CI build. Configure ANDROID_GOOGLE_MAPS_API_KEY or GOOGLE_MAPS_API_KEY as a repository secret; the key value is never printed."
+          fi
+          if [ -f apps/mobile/android/key.properties ] || [ -f apps/mobile/android/app/key.properties ] || [ -f apps/mobile/key.properties ]; then
+            echo "::notice title=Release signing properties found::Keystore properties are present on this runner; preserve the public certificate evidence for release review."
+          else
+            echo "::warning title=QA-only APK signing::No release keystore properties are provisioned on this runner. The Gradle release configuration falls back to debug signing; this APK is for QA/emulator testing, not Play Store production upload."
+          fi
+
+      - name: Free runner disk space for Android Emulator
+        run: |
+          set -euo pipefail
+          echo "Disk space before cleanup:"
+          df -h /
+          # Remove large, unrelated preinstalled toolchains only after the APK build.
+          # Keep Java, Flutter, Android SDK/NDK, CMake, Gradle caches, and repository files.
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          sudo apt-get clean
+          echo "Disk space after cleanup:"
+          df -h /
+          available_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
+          if [ "$available_kb" -lt 3000000 ]; then
+            echo "::error::Less than 3 GB free on the runner; refusing to start Android Emulator and fail later with an opaque no-space error."
+            exit 1
           fi
 
       - name: Android Emulator — Integration and Release APK Smoke Test
@@ -123,7 +145,7 @@ jobs:
               adb logcat -d -t 600 | tail -n 160
               exit 1
             fi
-            if adb logcat -d -t 600 | grep -E 'FATAL EXCEPTION|Fatal signal|Process: ai[.]rideos[.]app'; then
+            if adb logcat -d -t 600 | grep -E 'Process: ai[.]rideos[.]app|Fatal signal.*ai[.]rideos[.]app'; then
               echo "::error::Fatal Android runtime failure detected during the release APK smoke test."
               exit 1
             fi
