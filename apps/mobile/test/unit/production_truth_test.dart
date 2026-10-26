@@ -10,6 +10,7 @@ import 'package:rideos_mobile/core/vehicle_connectivity/adapters/bluetooth_class
 import 'package:rideos_mobile/core/vehicle_connectivity/models/vehicle_capabilities.dart';
 import 'package:rideos_mobile/core/vehicle_protocols/generic_ble_adapter.dart';
 import 'package:rideos_mobile/core/vehicle_identification/services/vin_identification_engine.dart';
+import 'package:rideos_mobile/core/vehicle_catalog/models/vehicle_catalog_models.dart';
 
 void main() {
   group('Production Truth Gate Tests', () {
@@ -95,10 +96,17 @@ void main() {
       expect(result.decodedDetails?.modelYear, isNull);
     });
 
-    test('Vehicle Profile returns null for fuelType and year when missing', () {
-      // Assuming UniversalVehicleProfile constructor allows nulls
-      // If we don't have direct access, we just rely on previous tests passing if the class structure changed.
-      // We will skip this specific test if the model isn't imported, but the file was fixed.
+    test('Unknown vehicle metadata is not silently fabricated as 2024/Petrol', () {
+      final profile = UniversalVehicleProfile.fromJson({
+        'id': 'unknown-metadata-test',
+        'brand': 'Test Brand',
+        'model': 'Urban',
+        'variant': 'Standard',
+      });
+
+      expect(profile.modelYear, 0, reason: '0 represents an unknown model year.');
+      expect(profile.fuelType, 'Unknown');
+      expect(profile.fullName, 'Test Brand Urban (Standard)');
     });
   });
 }
