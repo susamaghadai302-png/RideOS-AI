@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
+import 'core/config/production_firebase_guard.dart';
 import 'core/design_system/theme_engine.dart';
 import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
@@ -49,19 +50,9 @@ void main() async {
 
   try {
     final options = DefaultFirebaseOptions.currentPlatform;
+    ProductionFirebaseGuard.validate(options, releaseMode: kReleaseMode);
 
-    // RIDEOS AI - FAIL CLOSED SECURITY GATE
-    // Prevent mock configurations from passing production release constraints.
-    if (kReleaseMode &&
-        (options.projectId == 'rideos-mock-project' ||
-            options.appId.contains('1234567890'))) {
-      throw UnsupportedError(
-          'Production deployment blocked: Detected mock Firebase configuration in release build.');
-    }
-
-    await Firebase.initializeApp(
-      options: options,
-    );
+    await Firebase.initializeApp(options: options);
     await FirebaseAppCheck.instance.activate(
       providerAndroid: kReleaseMode
           ? const AndroidPlayIntegrityProvider()
@@ -69,7 +60,18 @@ void main() async {
       providerApple: const AppleDeviceCheckProvider(),
     );
   } catch (e) {
-    debugPrint('[Firebase Init Warning]: $e');
+    if (kReleaseMode) {
+      // Never continue into the application after production Firebase/App Check
+      // bootstrap fails. Avoid logging exception details that could disclose
+      // configuration data.
+      debugPrint(
+        '[Fatal Production Bootstrap Guard]: Firebase/App Check initialization failed (${e.runtimeType}).',
+      );
+      runApp(const _ProductionBootstrapFailureApp());
+      return;
+    }
+
+    debugPrint('[Firebase Init Warning]: ${e.runtimeType}');
   }
 
   // 0. Restore persisted theme preference before first frame
@@ -311,6 +313,60 @@ class _RideOSAppState extends State<RideOSApp> {
                   : const AuthGate(),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Minimal fail-closed screen shown when required release security services
+/// cannot be initialized. No authenticated or vehicle-related UI is mounted.
+class _ProductionBootstrapFailureApp extends StatelessWidget {
+  const _ProductionBootstrapFailureApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Color(0xFF04060C),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.gpp_bad_rounded,
+                    color: Color(0xFFFF5D73),
+                    size: 52,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'RideOS could not start securely',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Required security services are unavailable. The app has stopped startup to protect your account and vehicle data. Please update the app or contact support.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFFCFD5E2),
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
