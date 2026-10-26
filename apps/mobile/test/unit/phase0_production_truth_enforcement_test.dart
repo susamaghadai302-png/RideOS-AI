@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rideos_mobile/core/config/production_firebase_guard.dart';
-import 'package:rideos_mobile/features/obd_tpms/core/services/obd_full_telemetry_service.dart';
 import 'package:rideos_mobile/core/vehicle_health/services/predictive_vehicle_health_engine.dart';
 import 'package:rideos_mobile/core/vehicle_identification/services/smart_scan_orchestrator.dart';
+import 'package:rideos_mobile/features/obd_tpms/core/services/obd_full_telemetry_service.dart';
 
 Future<String> _readProductionDartSource() async {
   Directory? sourceRoot;
@@ -99,11 +99,10 @@ void main() {
     });
 
     test('production Firebase/App Check startup failures stop release startup', () async {
-      final mainSource = await File(
-        'lib/main.dart',
-      ).exists()
-          ? await File('lib/main.dart').readAsString()
-          : await File('apps/mobile/lib/main.dart').readAsString();
+      final mainPath = File('lib/main.dart').existsSync()
+          ? 'lib/main.dart'
+          : 'apps/mobile/lib/main.dart';
+      final mainSource = await File(mainPath).readAsString();
 
       expect(mainSource, contains('if (kReleaseMode)'));
       expect(mainSource, contains('_ProductionBootstrapFailureApp()'));
