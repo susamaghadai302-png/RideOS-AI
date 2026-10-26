@@ -38,6 +38,12 @@ export class OAuthVerifierService {
     }
 
     const trimmedToken = idToken.trim();
+    const configuredAudience =
+      this.configService.get<string>('GOOGLE_CLIENT_ID') || process.env.GOOGLE_CLIENT_ID;
+    if (!configuredAudience?.trim()) {
+      throw new UnauthorizedException('Google OAuth client ID is not configured');
+    }
+    const expectedAudience = configuredAudience.trim();
 
     // 1. Try cryptographic JWKS verification first
     try {
@@ -46,10 +52,16 @@ export class OAuthVerifierService {
         const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
         const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
 
-        // Verify standard claims
+        // Verify standard claims before trusting any profile data.
+        if (header.alg !== 'RS256') {
+          throw new UnauthorizedException('Unsupported Google ID token signing algorithm');
+        }
         const nowSec = Math.floor(Date.now() / 1000);
-        if (payload.exp && payload.exp < nowSec) {
-          throw new UnauthorizedException('Google ID token has expired');
+        if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp) || payload.exp <= nowSec) {
+          throw new UnauthorizedException('Google ID token is expired or missing an expiry');
+        }
+        if (typeof payload.sub !== 'string' || payload.sub.trim().length === 0) {
+          throw new UnauthorizedException('Google ID token is missing the subject claim');
         }
 
         const validIssuers = ['accounts.google.com', 'https://accounts.google.com'];
@@ -57,10 +69,8 @@ export class OAuthVerifierService {
           throw new UnauthorizedException(`Invalid Google token issuer: ${payload.iss}`);
         }
 
-        const configuredAudience =
-          this.configService.get<string>('GOOGLE_CLIENT_ID') || process.env.GOOGLE_CLIENT_ID;
-        if (configuredAudience && payload.aud !== configuredAudience) {
-          throw new UnauthorizedException(`Google token audience mismatch: ${payload.aud}`);
+        if (payload.aud !== expectedAudience) {
+          throw new UnauthorizedException('Google token audience mismatch');
         }
 
         // Fetch Google JWKS
@@ -70,8 +80,11 @@ export class OAuthVerifierService {
         if (matchingKey) {
           const isValid = this.verifyJwtSignature(parts[0], parts[1], parts[2], matchingKey);
           if (isValid) {
-            if (!payload.email) {
+            if (!payload.email || typeof payload.email !== 'string') {
               throw new UnauthorizedException('Google ID token payload does not contain an email claim');
+            }
+            if (payload.email_verified !== true && payload.email_verified !== 'true') {
+              throw new UnauthorizedException('Google ID token email is not verified');
             }
             return {
               email: payload.email.trim().toLowerCase(),
@@ -105,10 +118,14 @@ export class OAuthVerifierService {
         throw new UnauthorizedException('Google token validation response is missing verified email');
       }
 
-      const configuredAudience =
-        this.configService.get<string>('GOOGLE_CLIENT_ID') || process.env.GOOGLE_CLIENT_ID;
-      if (configuredAudience && data.aud !== configuredAudience) {
-        throw new UnauthorizedException(`Google token audience mismatch: ${data.aud}`);
+      if (data.aud !== expectedAudience) {
+        throw new UnauthorizedException('Google token audience mismatch');
+      }
+      if (data.email_verified !== true && data.email_verified !== 'true') {
+        throw new UnauthorizedException('Google OAuth response email is not verified');
+      }
+      if (typeof (data.sub || data.user_id) !== 'string' || !(data.sub || data.user_id).trim()) {
+        throw new UnauthorizedException('Google OAuth response is missing the subject claim');
       }
 
       return {
@@ -132,6 +149,12 @@ export class OAuthVerifierService {
     }
 
     const trimmedToken = identityToken.trim();
+    const configuredAudience =
+      this.configService.get<string>('APPLE_CLIENT_ID') || process.env.APPLE_CLIENT_ID;
+    if (!configuredAudience?.trim()) {
+      throw new UnauthorizedException('Apple OAuth client ID is not configured');
+    }
+    const expectedAudience = configuredAudience.trim();
     const parts = trimmedToken.split('.');
     if (parts.length !== 3) {
       throw new BadRequestException('Malformed Apple identity token JWT');
@@ -146,20 +169,26 @@ export class OAuthVerifierService {
       throw new BadRequestException('Invalid Base64URL encoding in Apple identity token');
     }
 
-    // 1. Verify claims
+    // 1. Verify standard claims before trusting the identity or email.
+    if (header.alg !== 'RS256') {
+      throw new UnauthorizedException('Unsupported Apple identity token signing algorithm');
+    }
     const nowSec = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < nowSec) {
-      throw new UnauthorizedException('Apple identity token has expired');
+    if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp) || payload.exp <= nowSec) {
+      throw new UnauthorizedException('Apple identity token is expired or missing an expiry');
     }
 
     if (payload.iss !== 'https://appleid.apple.com') {
       throw new UnauthorizedException(`Invalid Apple identity token issuer: ${payload.iss}`);
     }
-
-    const configuredAudience =
-      this.configService.get<string>('APPLE_CLIENT_ID') || process.env.APPLE_CLIENT_ID;
-    if (configuredAudience && payload.aud !== configuredAudience) {
-      throw new UnauthorizedException(`Apple token audience mismatch: ${payload.aud}`);
+    if (typeof payload.sub !== 'string' || payload.sub.trim().length === 0) {
+      throw new UnauthorizedException('Apple identity token is missing the subject claim');
+    }
+    if (payload.aud !== expectedAudience) {
+      throw new UnauthorizedException('Apple token audience mismatch');
+    }
+    if (payload.email && payload.email_verified !== true && payload.email_verified !== 'true') {
+      throw new UnauthorizedException('Apple identity token email is not verified');
     }
 
     // 2. Verify signature with Apple JWKS
