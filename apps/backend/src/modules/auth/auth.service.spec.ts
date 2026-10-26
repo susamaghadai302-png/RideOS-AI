@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
 import { Rider } from '../riders/schemas/rider.schema';
 import { OAuthVerifierService } from './services/oauth-verifier.service';
 import { SmsOtpService } from './services/sms-otp.service';
@@ -189,6 +190,46 @@ describe('AuthService', () => {
 
     // 3. One-time passkey should be consumed
     await expect(service.verifyOtp(testPhone, actualCode)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('should reject expired SMS OTP records', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+    try {
+      const testPhone = '+15550197777';
+      await service.requestOtp(testPhone);
+
+      jest.advanceTimersByTime(5 * 60 * 1000 + 1);
+
+      await expect(
+        service.verifyOtp(testPhone, '000000'),
+      ).rejects.toThrow(UnauthorizedException);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('should invalidate an SMS OTP after three incorrect verification attempts', async () => {
+    const testPhone = '+15550196666';
+    await service.requestOtp(testPhone);
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await expect(
+        service.verifyOtp(testPhone, '000000'),
+      ).rejects.toThrow(UnauthorizedException);
+    }
+
+    await expect(
+      service.verifyOtp(testPhone, '000000'),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rate-limits the OTP request endpoint to three requests per minute', () => {
+    const handler = AuthController.prototype.requestOtp as Function;
+
+    expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(3);
+    expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(60_000);
   });
 
   it('should reject invalid SMS OTP code', async () => {
