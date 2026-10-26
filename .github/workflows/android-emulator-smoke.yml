@@ -73,10 +73,11 @@ jobs:
 
       - name: Capture focused Android diagnostics on failure
         if: failure()
+        timeout-minutes: 1
         run: |
-          adb devices -l || true
-          adb shell dumpsys activity activities 2>/dev/null | grep -E 'mResumedActivity|topResumedActivity' || true
-          adb logcat -d -t 1200 2>/dev/null | grep -E 'FATAL EXCEPTION|AndroidRuntime|RideOS|Flutter|Firebase' | tail -n 160 || true
+          timeout 8s adb devices -l || true
+          timeout 8s adb shell dumpsys activity activities 2>/dev/null | grep -E 'mResumedActivity|topResumedActivity' || true
+          timeout 12s adb logcat -d -t 1200 2>/dev/null | grep -E 'FATAL EXCEPTION|AndroidRuntime|RideOS|Flutter|Firebase' | tail -n 160 || true
 
       - name: Record smoke-test scope
         if: always()
