@@ -62,13 +62,30 @@ export class SmsOtpService {
         });
 
         if (!response.ok) {
-          const errData = await response.text();
-          this.logger.error(`[Twilio SMS] Delivery failed (${response.status}): ${errData}`);
-        } else {
-          this.logger.log(`[Twilio SMS] Successfully delivered verification OTP to ${normalizedPhone} (Ref: ${otpRef})`);
+          this.otpStore.delete(normalizedPhone);
+          this.logger.error(
+            `[Twilio SMS] Delivery failed with HTTP ${response.status}.`,
+          );
+          throw new ServiceUnavailableException(
+            'SMS delivery failed. Please try again later.',
+          );
         }
-      } catch (err: any) {
-        this.logger.error(`[Twilio SMS] Request exception: ${err.message}`);
+
+        this.logger.log(
+          `[Twilio SMS] Successfully delivered verification OTP (Ref: ${otpRef})`,
+        );
+      } catch (err: unknown) {
+        this.otpStore.delete(normalizedPhone);
+        if (err instanceof ServiceUnavailableException) {
+          throw err;
+        }
+
+        this.logger.error(
+          `[Twilio SMS] Request failed (${err instanceof Error ? err.name : 'UnknownError'}).`,
+        );
+        throw new ServiceUnavailableException(
+          'SMS delivery failed. Please try again later.',
+        );
       }
     } else {
       const environment = this.configService.get<string>('NODE_ENV') || process.env.NODE_ENV || 'development';
