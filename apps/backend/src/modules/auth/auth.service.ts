@@ -105,7 +105,8 @@ export class AuthService {
     }
 
     const verified = await this.oauthVerifier.verifyAppleIdentityToken(payload.identityToken);
-    const email = (payload.email?.trim().toLowerCase() || verified.email).trim().toLowerCase();
+    // Identity email comes only from the cryptographically verified token; never trust client-supplied email.
+    const email = verified.email.trim().toLowerCase();
     const fullName = payload.fullName?.trim() || verified.fullName || 'Unknown';
 
     let rider = await this.riderModel.findOne({ email });
