@@ -133,7 +133,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
           pre-emulator-launch-script: |
-            set -euo pipefail
+            set -eu
             avd_config="${ANDROID_AVD_HOME:-$HOME/.android/avd}/test.avd/config.ini"
             if [ ! -f "$avd_config" ]; then
               echo "::error::Android AVD config not found before emulator launch: $avd_config"
@@ -152,7 +152,7 @@ jobs:
               exit 1
             fi
           script: |
-            set -euo pipefail
+            set -eu
             cd apps/mobile
             if ! flutter test integration_test/integration_setup_test.dart -d emulator-5554 --reporter expanded; then
               echo "::error::RideOS integration launch test failed on the Android emulator."
