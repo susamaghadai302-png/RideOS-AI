@@ -17,13 +17,15 @@ if [[ ! -s "$apk" ]]; then
   exit 1
 fi
 
+adb -s "${device}" uninstall ai.rideos.app.test >/dev/null 2>&1 || true
 adb -s "${device}" uninstall ai.rideos.app >/dev/null 2>&1 || true
 adb -s "${device}" install -r "$apk"
 adb -s "${device}" logcat -c
-adb -s "${device}" shell monkey -p ai.rideos.app -c android.intent.category.LAUNCHER 1
+adb -s "${device}" shell am start -n ai.rideos.app/.MainActivity || adb -s "${device}" shell monkey -p ai.rideos.app -c android.intent.category.LAUNCHER 1
 sleep 15
 
 pid="$(adb -s "${device}" shell pidof ai.rideos.app 2>/dev/null || true)"
+echo "Discovered running release APK process ID: ${pid:-none}"
 if [[ -z "$pid" ]]; then
   echo "::error::Release APK did not remain running on the Android emulator."
   adb -s "${device}" logcat -d -t 800 | tail -n 200 || true

@@ -108,17 +108,31 @@ jobs:
           set -euo pipefail
           echo "Disk space before cleanup:"
           df -h /
-          # Remove large, unrelated preinstalled toolchains only after the APK build.
-          # Keep Java, Flutter, Android SDK/NDK, CMake, Gradle caches, and repository files.
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/vcpkg /usr/local/share/chromium /usr/share/swift /usr/local/share/powershell /home/runner/.cache
+          # Remove large, unrelated preinstalled toolchains and unused NDK after release APK build.
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/vcpkg /usr/local/share/chromium /usr/share/swift /usr/local/share/powershell /home/runner/.cache /usr/local/lib/android/sdk/ndk
           sudo apt-get clean
+          # Enable 4GB swap space to ensure 7GB RAM + 4GB SWAP = 11GB total virtual memory, preventing runner OOM shutdown
+          if [ ! -f /swapfile ]; then
+            sudo fallocate -l 4G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          fi
+          echo "Memory and swap after configuration:"
+          free -h
           echo "Disk space after cleanup:"
           df -h /
           available_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
-          if [ "$available_kb" -lt 12000000 ]; then
-            echo "::error::Less than 12 GB free after cleanup; Android API 35 emulator needs additional space for the system image and userdata partition."
+          if [ "$available_kb" -lt 10000000 ]; then
+            echo "::error::Less than 10 GB free after cleanup; Android API 35 emulator needs space for the system image and userdata partition."
             exit 1
           fi
+
+      - name: Prebuild integration test debug APK
+        run: |
+          set -euo pipefail
+          cd apps/mobile
+          flutter build apk --debug
 
       - name: Enable KVM for Android Emulator
         shell: bash
