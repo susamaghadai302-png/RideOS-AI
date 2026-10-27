@@ -110,13 +110,13 @@ jobs:
           df -h /
           # Remove large, unrelated preinstalled toolchains only after the APK build.
           # Keep Java, Flutter, Android SDK/NDK, CMake, Gradle caches, and repository files.
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/vcpkg /usr/local/share/chromium /usr/share/swift /usr/local/share/powershell /home/runner/.cache
           sudo apt-get clean
           echo "Disk space after cleanup:"
           df -h /
           available_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
-          if [ "$available_kb" -lt 3000000 ]; then
-            echo "::error::Less than 3 GB free on the runner; refusing to start Android Emulator and fail later with an opaque no-space error."
+          if [ "$available_kb" -lt 12000000 ]; then
+            echo "::error::Less than 12 GB free after cleanup; Android API 35 emulator needs additional space for the system image and userdata partition."
             exit 1
           fi
 
@@ -132,6 +132,25 @@ jobs:
           emulator-boot-timeout: 300
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
+          pre-emulator-launch-script: |
+            set -euo pipefail
+            avd_config="${ANDROID_AVD_HOME:-$HOME/.android/avd}/test.avd/config.ini"
+            if [ ! -f "$avd_config" ]; then
+              echo "::error::Android AVD config not found before emulator launch: $avd_config"
+              exit 1
+            fi
+            # The runner appends this key to config.ini. Remove duplicate values so
+            # the configured 4 GB userdata partition actually takes effect.
+            sed -i '/^[[:space:]]*disk\.dataPartition\.size[[:space:]]*=/d' "$avd_config"
+            printf '\ndisk.dataPartition.size=4096M\n' >> "$avd_config"
+            echo "Normalized AVD userdata partition to 4096M."
+            echo "Disk space after Android system-image installation:"
+            df -h /
+            available_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
+            if [ "$available_kb" -lt 8000000 ]; then
+              echo "::error::Less than 8 GB free immediately before emulator launch; refusing a guaranteed userdata-space failure."
+              exit 1
+            fi
           script: |
             set -euo pipefail
             cd apps/mobile
