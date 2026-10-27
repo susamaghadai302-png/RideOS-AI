@@ -120,6 +120,22 @@ jobs:
             exit 1
           fi
 
+      - name: Enable KVM for Android Emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -e /dev/kvm ]; then
+            echo "::error::/dev/kvm is not exposed on this runner. Android Emulator smoke tests require KVM access."
+            exit 1
+          fi
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          sudo chmod 0666 /dev/kvm
+          test -r /dev/kvm
+          test -w /dev/kvm
+          ls -l /dev/kvm
+
       - name: Android Emulator — Integration and Release APK Smoke Test
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
@@ -130,50 +146,10 @@ jobs:
           disk-size: 4096M
           ram-size: 2048M
           emulator-boot-timeout: 600
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          pre-emulator-launch-script: |
-            set -eu
-            avd_config="${ANDROID_AVD_HOME:-$HOME/.android/avd}/test.avd/config.ini"
-            if [ ! -f "$avd_config" ]; then
-              echo "::error::Android AVD config not found before emulator launch: $avd_config"
-              exit 1
-            fi
-            # The runner appends this key to config.ini. Remove duplicate values so
-            # the configured 4 GB userdata partition actually takes effect.
-            sed -i '/^[[:space:]]*disk\.dataPartition\.size[[:space:]]*=/d' "$avd_config"
-            printf '\ndisk.dataPartition.size=4096M\n' >> "$avd_config"
-            echo "Normalized AVD userdata partition to 4096M."
-            echo "Disk space after Android system-image installation:"
-            df -h /
-            available_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
-            if [ "$available_kb" -lt 8000000 ]; then
-              echo "::error::Less than 8 GB free immediately before emulator launch; refusing a guaranteed userdata-space failure."
-              exit 1
-            fi
-          script: |
-            set -eu
-            cd apps/mobile
-            if ! flutter test integration_test/integration_setup_test.dart -d emulator-5554 --reporter expanded; then
-              echo "::error::RideOS integration launch test failed on the Android emulator."
-              adb logcat -d -t 300 | tail -n 120
-              exit 1
-            fi
-            adb uninstall ai.rideos.app >/dev/null 2>&1 || true
-            adb install -r build/app/outputs/flutter-apk/app-release.apk
-            adb logcat -c
-            adb shell monkey -p ai.rideos.app -c android.intent.category.LAUNCHER 1
-            sleep 15
-            if ! adb shell pidof ai.rideos.app >/dev/null 2>&1; then
-              echo "::error::Release APK did not remain running on the Android emulator."
-              adb logcat -d -t 600 | tail -n 160
-              exit 1
-            fi
-            if adb logcat -d -t 600 | grep -E 'Process: ai[.]rideos[.]app|Fatal signal.*ai[.]rideos[.]app'; then
-              echo "::error::Fatal Android runtime failure detected during the release APK smoke test."
-              exit 1
-            fi
-            echo "::notice title=Android emulator smoke test::Integration launch test passed; release APK installed and launched on Android API 35."
+          disable-linux-hw-accel: false
+          script: bash .github/scripts/android-emulator-smoke.sh
 
       - name: Report APK delivery policy
         if: github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/heads/release/')
@@ -185,10 +161,11 @@ jobs:
           startsWith(github.ref, 'refs/tags/v') ||
           startsWith(github.ref, 'refs/heads/release/') ||
           github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true)
+          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          RELEASE_TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           apk="apps/mobile/build/app/outputs/flutter-apk/app-release.apk"
@@ -207,7 +184,7 @@ jobs:
           else
             gh release create "$tag" "$apk" \
               --repo "$GH_REPO" \
-              --target "$GITHUB_SHA" \
+              --target "$RELEASE_TARGET_SHA" \
               --title "RideOS-AI Android APK $tag" \
               --notes "Automated QA APK. Source commit: $GITHUB_SHA. This is a private test build, not a statement of Google Play production readiness." \
               "${prerelease_args[@]}"
