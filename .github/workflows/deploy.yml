@@ -82,7 +82,11 @@ jobs:
           ANDROID_GOOGLE_MAPS_API_KEY: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY || secrets.GOOGLE_MAPS_API_KEY }}
         run: |
           cd apps/mobile
-          flutter build apk --release
+          dart_define_args=()
+          if [ -n "${ANDROID_GOOGLE_MAPS_API_KEY:-}" ]; then
+            dart_define_args+=(--dart-define="ANDROID_GOOGLE_MAPS_API_KEY=$ANDROID_GOOGLE_MAPS_API_KEY" --dart-define="GOOGLE_MAPS_API_KEY=$ANDROID_GOOGLE_MAPS_API_KEY")
+          fi
+          flutter build apk --release "${dart_define_args[@]}"
 
       - name: Verify release APK, Maps configuration, and signing state
         env:
@@ -129,10 +133,16 @@ jobs:
           fi
 
       - name: Prebuild integration test debug APK
+        env:
+          ANDROID_GOOGLE_MAPS_API_KEY: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY || secrets.GOOGLE_MAPS_API_KEY }}
         run: |
           set -euo pipefail
           cd apps/mobile
-          flutter build apk --debug
+          dart_define_args=()
+          if [ -n "${ANDROID_GOOGLE_MAPS_API_KEY:-}" ]; then
+            dart_define_args+=(--dart-define="ANDROID_GOOGLE_MAPS_API_KEY=$ANDROID_GOOGLE_MAPS_API_KEY" --dart-define="GOOGLE_MAPS_API_KEY=$ANDROID_GOOGLE_MAPS_API_KEY")
+          fi
+          flutter build apk --debug "${dart_define_args[@]}"
 
       - name: Enable KVM for Android Emulator
         shell: bash
