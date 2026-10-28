@@ -5,7 +5,7 @@
 **Package Identifier**: `ai.rideos.app`
 **Minimum Android SDK**: API 29 (Android 10)
 **Target Android SDK**: API 35 / compileSdk 37 (Android 15/16)
-**Target Commit**: `89671b229af3040776e4da72719fff64fd0c2297`
+**Target Commit**: `335d6709f1d3227da5bc02cdaf751e06495c8967`
 **Branch**: `automation/android-emulator-apk-delivery`
 
 ---
@@ -16,14 +16,15 @@
 | :--- | :--- |
 | **Filename** | `app-release.apk` |
 | **Output Path** | `apps/mobile/build/app/outputs/flutter-apk/app-release.apk` |
-| **Binary Size** | ~108.6 MB (`108,570,960 bytes`) |
-| **SHA-256 Checksum** | `44f8f9713d0b66682d7433044fe4eb79a65730abed040796d3ba68a517bb7b61` |
+| **Binary Size** | ~108.6 MB (`108,603,784 bytes`) |
+| **SHA-256 Checksum** | `868ed2224b0e6d1eac2e8184f1ac4fb0d3fb3ba539f20b5bd61fd7427ba09add` |
 | **Checksum Provenance** | Verified independently via direct byte-stream `shasum -a 256` and GitHub API release digest |
 | **Signing Classification** | **QA / Testing Build (Debug-signed fallback)** |
 | **Play Store Readiness** | **Non-Production** (QA testing only; not for Google Play Store upload) |
-| **Verified Process ID** | `PID 4621` on Android API 35 Emulator (`emulator-5554`) |
-| **GitHub Release Tag** | `ci-apk-40559158294` |
-| **Workflow Run** | [Run 40559158294](https://github.com/susamaghadai302-png/RideOS-AI/actions/runs/40559158294) (Status: `success`) |
+| **Google Maps Status** | **Injected & Configured** (Built with `ANDROID_GOOGLE_MAPS_API_KEY` repository secret) |
+| **Verified Process ID** | `PID 4953` on Android API 35 Emulator (`emulator-5554`) |
+| **GitHub Release Tag** | `ci-apk-40742440466` |
+| **Workflow Run** | [Run 40742440466](https://github.com/susamaghadai302-png/RideOS-AI/actions/runs/40742440466) (Status: `success`) |
 
 > [!NOTE]
 > **APK Size Breakdown**: The universal APK includes compiled `.so` native libraries for three CPU architectures (ARM64, ARMv7, and x86_64), five multi-dex files, and high-fidelity 3D motorcycle models (`assets/models/*.glb`). When distributed through Google Play as an `.aab` (Android App Bundle), device-specific splits automatically reduce the user download footprint to ~35–40 MB.
@@ -48,17 +49,17 @@ The verified release APK is published through GitHub Releases:
 
 1. **Direct GitHub Release Page**:
    ```
-   https://github.com/susamaghadai302-png/RideOS-AI/releases/tag/ci-apk-40559158294
+   https://github.com/susamaghadai302-png/RideOS-AI/releases/tag/ci-apk-40742440466
    ```
 2. **Direct Asset Download Link**:
    ```
-   https://github.com/susamaghadai302-png/RideOS-AI/releases/download/ci-apk-40559158294/app-release.apk
+   https://github.com/susamaghadai302-png/RideOS-AI/releases/download/ci-apk-40742440466/app-release.apk
    ```
-3. **Release Tag**: `ci-apk-40559158294`
+3. **Release Tag**: `ci-apk-40742440466`
 4. **Asset Name**: `app-release.apk`
 5. **Download via GitHub CLI**:
    ```bash
-   gh release download ci-apk-40559158294 -p "app-release.apk" --repo susamaghadai302-png/RideOS-AI
+   gh release download ci-apk-40742440466 -p "app-release.apk" --repo susamaghadai302-png/RideOS-AI
    ```
 
 ---

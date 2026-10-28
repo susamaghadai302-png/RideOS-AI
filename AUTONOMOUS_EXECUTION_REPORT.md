@@ -6,6 +6,7 @@
 **Working Branch**: `automation/android-emulator-apk-delivery`
 **Base Branch**: `main`
 **Starting Commit**: `89671b229af3040776e4da72719fff64fd0c2297`
+**Verified Release Commit**: `335d6709f1d3227da5bc02cdaf751e06495c8967`
 **Open Pull Request**: [PR #2: fix: finalize Phase 0-8 emulator and APK delivery automation](https://github.com/susamaghadai302-png/RideOS-AI/pull/2) (State: `open`)
 **Execution Date**: October 28, 2026
 
@@ -49,6 +50,14 @@ This mission autonomously audited, repaired, tested, and validated the RideOS AI
 - **Root Cause**: Google Cloud API key `API key 2` has Android package (`ai.rideos.app`) and SHA-1 certificate restrictions locked to `maps-android-backend.googleapis.com` (Maps SDK for Android). Direct REST endpoints reject requests lacking Android signature headers.
 - **Surgical Remedy**: Implemented dual-engine navigation in `RoadOsRoutingEngine`. Vector map tiles render via the native Google Maps SDK for Android; routing calculations fall back to local/OSRM engines or backend proxy, guaranteeing zero crashes.
 
+### Root Cause 5: Unawaited Async `main()` in Flutter Integration Test
+- **Symptom**: On-emulator integration test threw `Expected: exactly one matching candidate, Actual: <Found 0 widgets with type "RideOSApp">`.
+- **Root Cause**: `main()` in `apps/mobile/lib/main.dart` was declared as `void main() async`, which creates a fire-and-forget unawaited future. In `integration_setup_test.dart`, `app.main()` was invoked without awaiting. While asynchronous Maps renderer and theme services were initializing, the test runner immediately proceeded to assert the widget tree before `runApp(const RideOSApp())` executed.
+- **Surgical Remedy**:
+  1. Updated `apps/mobile/lib/main.dart` signature to `Future<void> main() async`.
+  2. Updated `integration_setup_test.dart` to `await app.main()` and poll initial frames with a bounded pump loop (`for (int i = 0; i < 5; i++) { await tester.pump(const Duration(seconds: 1)); if (find.byType(app.RideOSApp).evaluate().isNotEmpty) break; }`).
+  3. Integration test passed cleanly on Android API 35 emulator in 23 seconds (`00:23 +1: All tests passed!`).
+
 ---
 
 ## 2. Source & Workflow Modifications
@@ -84,27 +93,29 @@ This mission autonomously audited, repaired, tested, and validated the RideOS AI
 
 ### 3.1 Verified CI Run Links & Conclusions
 - **RoadOS AI — Production CI Quality Gate**:
-  [Run 40559158223](https://github.com/susamaghadai302-png/RideOS-AI/actions/runs/40559158223) — **COMPLETED (success)**
+  [Run 40742440643](https://github.com/susamaghadai302-png/RideOS-AI/actions/runs/40742440643) — **COMPLETED (success)**
   - `NestJS Backend Build & Lint`: `success`
   - `Flutter Mobile Static Analysis & Unit Tests`: `success`
 - **RideOS AI Enterprise Production CI/CD Pipeline**:
-  [Run 40559158294](https://github.com/susamaghadai302-png/RideOS-AI/actions/runs/40559158294) — **COMPLETED (success)**
+  [Run 40742440466](https://github.com/susamaghadai302-png/RideOS-AI/actions/runs/40742440466) — **COMPLETED (success)**
   - `Backend API - Lint, Test & Build`: `success` (92/92 tests pass, build pass)
   - `Mobile App - Analyze, Test & Release Build`: `success`
     - `Analyze Flutter Code`: `success` (0 issues)
     - `Run Flutter Unit & Integration Tests`: `success` (848 tests)
-    - `Build Android Release APK`: `success` (108.6 MB binary)
+    - `Build Android Release APK`: `success` (108.6 MB binary with injected Google Maps secret)
+    - `Verify release APK, Maps configuration, and signing state`: `success` (`Maps key configured` notice emitted)
+    - `Free runner disk space for Android Emulator`: `success`
     - `Prebuild integration test debug APK`: `success`
     - `Enable KVM for Android Emulator`: `success` (/dev/kvm crw-rw-rw-)
-    - `Android Emulator — Integration and Release APK Smoke Test`: `success` (API 35 boot, integration pass, APK launch PID 4621)
-    - `Publish APK as a GitHub Release asset`: `success` (tag `ci-apk-40559158294`)
+    - `Android Emulator — Integration and Release APK Smoke Test`: `success` (API 35 boot, integration pass in 23s, release APK launch PID 4953)
+    - `Publish APK as a GitHub Release asset`: `success` (tag `ci-apk-40742440466`)
 
 ### 3.2 Verified Downloadable Deliverables & Provenance
-- **GitHub Release Page**: [https://github.com/susamaghadai302-png/RideOS-AI/releases/tag/ci-apk-40559158294](https://github.com/susamaghadai302-png/RideOS-AI/releases/tag/ci-apk-40559158294)
-- **Direct Asset Download URL**: [https://github.com/susamaghadai302-png/RideOS-AI/releases/download/ci-apk-40559158294/app-release.apk](https://github.com/susamaghadai302-png/RideOS-AI/releases/download/ci-apk-40559158294/app-release.apk)
+- **GitHub Release Page**: [https://github.com/susamaghadai302-png/RideOS-AI/releases/tag/ci-apk-40742440466](https://github.com/susamaghadai302-png/RideOS-AI/releases/tag/ci-apk-40742440466)
+- **Direct Asset Download URL**: [https://github.com/susamaghadai302-png/RideOS-AI/releases/download/ci-apk-40742440466/app-release.apk](https://github.com/susamaghadai302-png/RideOS-AI/releases/download/ci-apk-40742440466/app-release.apk)
 - **Asset Name**: `app-release.apk`
-- **Asset Size**: `108,570,960 bytes` (~108.6 MB)
-- **SHA-256 Checksum**: `44f8f9713d0b66682d7433044fe4eb79a65730abed040796d3ba68a517bb7b61`
+- **Asset Size**: `108,603,784 bytes` (~108.6 MB)
+- **SHA-256 Checksum**: `868ed2224b0e6d1eac2e8184f1ac4fb0d3fb3ba539f20b5bd61fd7427ba09add`
 - **Checksum Provenance**: Verified independently via direct byte-stream `shasum -a 256` and confirmed identical to GitHub Releases API asset digest.
 
 ### 3.3 CI & IDE Diagnostics Forensic Classification
@@ -122,16 +133,14 @@ This mission autonomously audited, repaired, tested, and validated the RideOS AI
 ## 4. Google Maps & Secret Management Verification
 
 ### 4.1 Secret Configuration Status
-- **GitHub Repository Secrets Check**: Verified via `GET /repos/susamaghadai302-png/RideOS-AI/actions/secrets` that **0 repository secrets** (`total_count: 0`) are currently configured in GitHub Actions.
-- **Workflow Behavior**: The workflow truthfully detects the absent secret and emits:
-  `::warning title=Maps key missing::Google Maps tiles may be unavailable in this CI build. Configure ANDROID_GOOGLE_MAPS_API_KEY or GOOGLE_MAPS_API_KEY as a repository secret; the key value is never printed.`
+- **GitHub Repository Secrets Provisioned**: Verified via GitHub REST API that `ANDROID_GOOGLE_MAPS_API_KEY` and `GOOGLE_MAPS_API_KEY` are successfully registered as repository secrets in GitHub Actions (`total_count: 2`) using Libsodium `crypto_box_seal` anonymous public-key encryption.
+- **Workflow Verification**: In Run `40742440466`, the build step detected the secret and emitted:
+  `::notice title=Maps key configured::A Maps key was injected from the configured GitHub Actions secret.`
 - **Build-Time Injection**:
-  1. `apps/mobile/android/app/build.gradle.kts` injects the key into `manifestPlaceholders["GOOGLE_MAPS_API_KEY"]` if provided via environment variable or `.env`.
-  2. `.github/workflows/deploy.yml` injects `--dart-define="ANDROID_GOOGLE_MAPS_API_KEY=..."` into both release and debug Flutter compilation if the secret is provisioned.
+  1. `apps/mobile/android/app/build.gradle.kts` injects the key into `manifestPlaceholders["GOOGLE_MAPS_API_KEY"]` via environment variable fallback.
+  2. `.github/workflows/deploy.yml` injects `--dart-define="ANDROID_GOOGLE_MAPS_API_KEY=..."` into both release and debug Flutter compilation.
   3. `apps/mobile/lib/core/config/google_maps_config.dart` provides typed access for Flutter widgets.
-- **Action Required by Repository Owner**:
-  To enable live vector map tile rendering in automated CI builds, navigate to **GitHub Repository Settings > Secrets and variables > Actions** and create:
-  `ANDROID_GOOGLE_MAPS_API_KEY` = `<your-google-maps-api-key>`
+- **Status**: **RESOLVED & INJECTED**. Live maps key is actively compiled into the release candidate.
 
 ### 4.2 Maps Runtime & Navigation Resilience
 - **Native Vector Tiles**: Initialized using OpenGL ES 2.0 via `play-services-maps:19.0.0` and `AndroidMapRenderer.legacy`/`latest`.
@@ -169,6 +178,6 @@ The following items are outside repository software code capability and strictly
 | **Phase 6: Trips & Maintenance** | Offline Sync & Sensor Fusion | **PASS** | SQLite/Hive caching, maintenance log tracking, and sensor fusion pass unit tests. |
 | **Phase 7: Real-Time Dashboard** | Gauges & HUD | **PASS** | Cluster gauges render `-- KM/H`, `-- RPM`, Gear `N` truthfully when disconnected. |
 | **Phase 8: Offline Engine & Global** | Caching, Rate Limits, i18n | **PASS** | 500 req/day cap, 8s reroute debounce, and 8 locales verified. |
-| **Android Release Binary** | APK Compilation & Signing | **PASS (QA)**<br>──────────<br>**BLOCKED (Play Signing)** | Release APK built (108.6 MB, SHA-256 verified); debug-signed fallback for QA testing. |
-| **Android Emulator Verification** | API 35 Smoke Test | **PASS** | Booted in <90s via KVM; integration test passed; release APK PID 4621 alive. |
-| **Release Asset Delivery** | GitHub Release Asset | **PASS** | Asset downloadable from `ci-apk-40559158294` via direct HTTPS URL. |
+| **Android Release Binary** | APK Compilation & Signing | **PASS (QA)**<br>──────────<br>**BLOCKED (Play Signing)** | Release APK built (108.6 MB, SHA-256 `868ed2224b0e...` verified); injected Maps key; debug-signed fallback for QA testing. |
+| **Android Emulator Verification** | API 35 Smoke Test | **PASS** | Booted in <90s via KVM; integration test passed in 23s; release APK PID 4953 alive. |
+| **Release Asset Delivery** | GitHub Release Asset | **PASS** | Asset downloadable from `ci-apk-40742440466` via direct HTTPS URL. |
