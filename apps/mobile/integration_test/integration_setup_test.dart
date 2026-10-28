@@ -7,16 +7,22 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('end-to-end test', () {
-    testWidgets('verify app launches', timeout: const Timeout(Duration(minutes: 3)), (tester) async {
+    testWidgets('verify app launches',
+        timeout: const Timeout(Duration(minutes: 3)), (tester) async {
       final originalErrorWidgetBuilder = ErrorWidget.builder;
       final originalOnError = FlutterError.onError;
 
-      app.main();
-      
+      await app.main();
+
       // Allow the app to mount initial widgets and render the initial frames
       await tester.pump();
-      await tester.pump(const Duration(seconds: 3));
-      
+      for (int i = 0; i < 5; i++) {
+        await tester.pump(const Duration(seconds: 1));
+        if (find.byType(app.RideOSApp).evaluate().isNotEmpty) {
+          break;
+        }
+      }
+
       expect(find.byType(app.RideOSApp), findsOneWidget);
 
       ErrorWidget.builder = originalErrorWidgetBuilder;
