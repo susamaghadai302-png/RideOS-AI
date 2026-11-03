@@ -6,11 +6,13 @@ on:
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ main ]
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
 
 jobs:
   backend_ci:
     name: Backend API - Lint, Test & Build
+    if: github.event_name != 'pull_request' || github.event.action != 'closed' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,9 +40,14 @@ jobs:
 
   mobile_ci:
     name: Mobile App - Analyze, Test & Release Build
+    if: github.event_name != 'pull_request' || github.event.action != 'closed' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
@@ -71,19 +78,140 @@ jobs:
           flutter test
 
       - name: Build Android Release APK
+        env:
+          ANDROID_GOOGLE_MAPS_API_KEY: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY || secrets.GOOGLE_MAPS_API_KEY }}
         run: |
           cd apps/mobile
-          flutter build apk --release
+          dart_define_args=()
+          if [ -n "${ANDROID_GOOGLE_MAPS_API_KEY:-}" ]; then
+            dart_define_args+=(--dart-define="ANDROID_GOOGLE_MAPS_API_KEY=$ANDROID_GOOGLE_MAPS_API_KEY" --dart-define="GOOGLE_MAPS_API_KEY=$ANDROID_GOOGLE_MAPS_API_KEY")
+          fi
+          flutter build apk --release "${dart_define_args[@]}"
 
-      - name: Report Artifact Publishing Status
-        if: "!startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/heads/release/') && github.event_name != 'workflow_dispatch'"
+      - name: Verify release APK, Maps configuration, and signing state
+        env:
+          ANDROID_GOOGLE_MAPS_API_KEY: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY || secrets.GOOGLE_MAPS_API_KEY }}
         run: |
-          echo "::notice title=Artifact Publishing Skipped::APK artifact publishing is reserved for tagged releases (v*.*.*), release/* branches, or manual workflow dispatch. Routine CI release build verified successfully."
+          set -euo pipefail
+          apk="apps/mobile/build/app/outputs/flutter-apk/app-release.apk"
+          test -s "$apk"
+          ls -lh "$apk"
+          if [ -n "${ANDROID_GOOGLE_MAPS_API_KEY:-}" ]; then
+            echo "::notice title=Maps key configured::A Maps key was injected from the configured GitHub Actions secret."
+          else
+            echo "::warning title=Maps key missing::Google Maps tiles may be unavailable in this CI build. Configure ANDROID_GOOGLE_MAPS_API_KEY or GOOGLE_MAPS_API_KEY as a repository secret; the key value is never printed."
+          fi
+          if [ -f apps/mobile/android/key.properties ] || [ -f apps/mobile/android/app/key.properties ] || [ -f apps/mobile/key.properties ]; then
+            echo "::notice title=Release signing properties found::Keystore properties are present on this runner; preserve the public certificate evidence for release review."
+          else
+            echo "::warning title=QA-only APK signing::No release keystore properties are provisioned on this runner. The Gradle release configuration falls back to debug signing; this APK is for QA/emulator testing, not Play Store production upload."
+          fi
 
-      - name: Upload APK Artifact
-        if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release/') || github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
+      - name: Free runner disk space for Android Emulator
+        run: |
+          set -euo pipefail
+          echo "Disk space before cleanup:"
+          df -h /
+          # Remove large, unrelated preinstalled toolchains and unused NDK after release APK build.
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/share/vcpkg /usr/local/share/chromium /usr/share/swift /usr/local/share/powershell /home/runner/.cache /usr/local/lib/android/sdk/ndk
+          sudo apt-get clean
+          # Enable 4GB swap space to ensure 7GB RAM + 4GB SWAP = 11GB total virtual memory, preventing runner OOM shutdown
+          if [ ! -f /swapfile ]; then
+            sudo fallocate -l 4G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          fi
+          echo "Memory and swap after configuration:"
+          free -h
+          echo "Disk space after cleanup:"
+          df -h /
+          available_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
+          if [ "$available_kb" -lt 10000000 ]; then
+            echo "::error::Less than 10 GB free after cleanup; Android API 35 emulator needs space for the system image and userdata partition."
+            exit 1
+          fi
+
+      - name: Prebuild integration test debug APK
+        env:
+          ANDROID_GOOGLE_MAPS_API_KEY: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY || secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          set -euo pipefail
+          cd apps/mobile
+          dart_define_args=()
+          if [ -n "${ANDROID_GOOGLE_MAPS_API_KEY:-}" ]; then
+            dart_define_args+=(--dart-define="ANDROID_GOOGLE_MAPS_API_KEY=$ANDROID_GOOGLE_MAPS_API_KEY" --dart-define="GOOGLE_MAPS_API_KEY=$ANDROID_GOOGLE_MAPS_API_KEY")
+          fi
+          flutter build apk --debug "${dart_define_args[@]}"
+
+      - name: Enable KVM for Android Emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -e /dev/kvm ]; then
+            echo "::error::/dev/kvm is not exposed on this runner. Android Emulator smoke tests require KVM access."
+            exit 1
+          fi
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          sudo chmod 0666 /dev/kvm
+          test -r /dev/kvm
+          test -w /dev/kvm
+          ls -l /dev/kvm
+
+      - name: Android Emulator — Integration and Release APK Smoke Test
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
-          name: release-apk
-          path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 1
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disk-size: 4096M
+          ram-size: 2048M
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          disable-linux-hw-accel: false
+          script: bash .github/scripts/android-emulator-smoke.sh
+
+      - name: Report APK delivery policy
+        if: github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/heads/release/')
+        run: |
+          echo "::notice title=APK delivery policy::GitHub Actions artifact uploads are disabled to avoid storage quota failures. Selected QA builds are published as private GitHub Release assets."
+
+      - name: Publish APK as a GitHub Release asset
+        if: |
+          startsWith(github.ref, 'refs/tags/v') ||
+          startsWith(github.ref, 'refs/heads/release/') ||
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          apk="apps/mobile/build/app/outputs/flutter-apk/app-release.apk"
+          test -s "$apk"
+
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tag="$GITHUB_REF_NAME"
+            prerelease_args=()
+          else
+            tag="ci-apk-$GITHUB_RUN_ID"
+            prerelease_args=(--prerelease)
+          fi
+
+          if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release upload "$tag" "$apk" --repo "$GH_REPO" --clobber
+          else
+            gh release create "$tag" "$apk" \
+              --repo "$GH_REPO" \
+              --target "$RELEASE_TARGET_SHA" \
+              --title "RideOS-AI Android APK $tag" \
+              --notes "Automated QA APK. Source commit: $GITHUB_SHA. This is a private test build, not a statement of Google Play production readiness." \
+              "${prerelease_args[@]}"
+          fi
+
+          echo "::notice title=APK published::Private release asset URL: $GITHUB_SERVER_URL/$GH_REPO/releases/tag/$tag"

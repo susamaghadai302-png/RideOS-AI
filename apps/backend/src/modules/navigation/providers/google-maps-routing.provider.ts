@@ -1,4 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+  HttpException,
+  HttpStatus,
+  BadRequestException,
+  BadGatewayException,
+  GatewayTimeoutException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IMapRoutingProvider, RouteResult, RouteStep } from './map-provider.interface';
 import { GeoPointDto } from '../dto/calculate-route.dto';
@@ -9,6 +19,14 @@ import { randomUUID } from 'crypto';
 export class GoogleMapsRoutingProvider implements IMapRoutingProvider {
   readonly name = 'GOOGLE_MAPS';
   private readonly logger = new Logger(GoogleMapsRoutingProvider.name);
+
+  // Official Google Routes API endpoint
+  private static readonly ROUTES_API_ENDPOINT =
+    'https://routes.googleapis.com/directions/v2:computeRoutes';
+
+  // Comprehensive field mask for motorcycle route metrics, polylines, instructions, maneuvers, and labels
+  private static readonly ROUTES_API_FIELD_MASK =
+    'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.description,routes.legs.steps,routes.routeLabels';
 
   constructor(
     private readonly configService: ConfigService,
@@ -22,116 +40,197 @@ export class GoogleMapsRoutingProvider implements IMapRoutingProvider {
     preference: string = 'FASTEST',
   ): Promise<RouteResult> {
     const apiKey =
+      this.configService.get<string>('GOOGLE_ROUTES_API_KEY') ||
       this.configService.get<string>('GOOGLE_MAPS_API_KEY') ||
+      process.env.GOOGLE_ROUTES_API_KEY ||
       process.env.GOOGLE_MAPS_API_KEY;
 
-    if (!apiKey || apiKey.startsWith('YOUR_') || apiKey === '') {
-      this.logger.debug('[Google Maps] No API key configured. Delegating to OSRM provider.');
+    if (!apiKey || apiKey.startsWith('YOUR_') || apiKey.trim() === '') {
+      if (process.env.NODE_ENV === 'production') {
+        throw new ServiceUnavailableException(
+          'Google Routes API key is not configured on the server. Motorcycle routing unavailable.',
+        );
+      }
+      this.logger.debug('[Google Routes API] No server key configured. Falling back to development OSRM.');
       return this.osrmProvider.calculateRoute(origin, destination, waypoints, preference);
     }
 
-    try {
-      let url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&mode=driving&key=${apiKey}`;
+    const requestBody: Record<string, any> = {
+      origin: {
+        location: {
+          latLng: { latitude: origin.lat, longitude: origin.lng },
+        },
+      },
+      destination: {
+        location: {
+          latLng: { latitude: destination.lat, longitude: destination.lng },
+        },
+      },
+      travelMode: 'TWO_WHEELER',
+      languageCode: 'en',
+      computeAlternativeRoutes: true,
+    };
 
-      if (waypoints.length > 0) {
-        const wpString = waypoints.map((w) => `${w.lat},${w.lng}`).join('|');
-        url += `&waypoints=${encodeURIComponent(wpString)}`;
-      }
-
-      if (preference === 'AVOID_HIGHWAYS') {
-        url += '&avoid=highways|tolls';
-      }
-
-      this.logger.log(`[Google Maps] Requesting directions from ${origin.lat},${origin.lng} to ${destination.lat},${destination.lng}`);
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: AbortSignal.timeout(10000),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === 'OK' && data.routes && data.routes.length > 0) {
-          const gRoute = data.routes[0];
-          let totalDistanceMeters = 0;
-          let totalDurationSeconds = 0;
-          const steps: RouteStep[] = [];
-
-          if (Array.isArray(gRoute.legs)) {
-            for (const leg of gRoute.legs) {
-              totalDistanceMeters += leg.distance?.value || 0;
-              totalDurationSeconds += leg.duration?.value || 0;
-
-              if (Array.isArray(leg.steps)) {
-                for (const step of leg.steps) {
-                  const rawInstruction = step.html_instructions || '';
-                  const cleanInstruction = rawInstruction
-                    .replace(/<[^>]*>?/gm, ' ')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-
-                  const maneuverPoint: GeoPointDto = {
-                    lat: step.start_location?.lat ?? origin.lat,
-                    lng: step.start_location?.lng ?? origin.lng,
-                  };
-
-                  steps.push({
-                    instruction: cleanInstruction || 'Continue straight',
-                    distanceMeters: step.distance?.value || 0,
-                    durationSeconds: step.duration?.value || 0,
-                    type: this.mapGoogleManeuver(step.maneuver),
-                    maneuverPoint,
-                  });
-                }
-              }
-            }
-          }
-
-          // Decode overview polyline
-          const decodedWaypoints = gRoute.overview_polyline?.points
-            ? this.decodePolyline(gRoute.overview_polyline.points)
-            : [origin, ...waypoints, destination];
-
-          const distanceKm = parseFloat((totalDistanceMeters / 1000).toFixed(2));
-          const durationMinutes = Math.max(1, Math.round(totalDurationSeconds / 60));
-
-          return {
-            routeId: randomUUID(),
-            distanceKm,
-            durationMinutes,
-            polyline: JSON.stringify(decodedWaypoints),
-            waypoints: decodedWaypoints,
-            steps: steps.length > 0 ? steps : [{
-              instruction: 'Proceed to destination along Google route',
-              distanceMeters: totalDistanceMeters,
-              durationSeconds: totalDurationSeconds,
-              type: 'DEPART',
-              maneuverPoint: origin,
-            }],
-            elevationGainMeters: Math.round(distanceKm * 15),
-            twistinessScore: preference === 'SCENIC_TWISTY' ? 7.5 : 4.0,
-            provider: 'GOOGLE_MAPS',
-          };
-        } else {
-          this.logger.warn(`[Google Maps] Directions API returned status: ${data.status} (${data.error_message || 'No details'}). Falling back to OSRM.`);
-        }
-      }
-    } catch (err: any) {
-      this.logger.warn(`[Google Maps] Request failed: ${err.message}. Falling back to OSRM.`);
+    if (waypoints && waypoints.length > 0) {
+      requestBody.intermediates = waypoints.map((w) => ({
+        location: {
+          latLng: { latitude: w.lat, longitude: w.lng },
+        },
+      }));
     }
 
-    return this.osrmProvider.calculateRoute(origin, destination, waypoints, preference);
+    if (preference === 'AVOID_HIGHWAYS') {
+      requestBody.routeModifiers = {
+        avoidHighways: true,
+        avoidTolls: true,
+      };
+    }
+
+    this.logger.log(
+      `[Google Routes API] Requesting TWO_WHEELER route: (${origin.lat}, ${origin.lng}) -> (${destination.lat}, ${destination.lng})`,
+    );
+
+    let response: Response;
+    try {
+      response = await fetch(GoogleMapsRoutingProvider.ROUTES_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask': GoogleMapsRoutingProvider.ROUTES_API_FIELD_MASK,
+        },
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(10000),
+      });
+    } catch (err: any) {
+      if (err.name === 'TimeoutError' || err.code === 23) {
+        this.logger.error('[Google Routes API] Request timed out after 10000ms');
+        throw new GatewayTimeoutException('Google Routes API request timed out.');
+      }
+      this.logger.error(`[Google Routes API] Network fetch error: ${err.message}`);
+      throw new BadGatewayException(`Google Routes API communication error: ${err.message}`);
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      this.logger.error(`[Google Routes API] Upstream error: HTTP ${response.status} - ${errorText.slice(0, 200)}`);
+
+      if (response.status === 401 || response.status === 403) {
+        throw new ServiceUnavailableException('Google Routes API authorization failed. Check server key configuration.');
+      }
+      if (response.status === 429) {
+        throw new HttpException('Google Routes API quota or rate limit exceeded.', HttpStatus.TOO_MANY_REQUESTS);
+      }
+      if (response.status === 400) {
+        throw new BadRequestException('Google Routes API rejected route coordinates or parameters.');
+      }
+      throw new BadGatewayException(`Google Routes API failed with HTTP ${response.status}`);
+    }
+
+    let data: any;
+    try {
+      data = await response.json();
+    } catch (e: any) {
+      this.logger.error(`[Google Routes API] Failed to parse JSON response: ${e.message}`);
+      throw new BadGatewayException('Malformed response from Google Routes API.');
+    }
+
+    if (!data.routes || !Array.isArray(data.routes) || data.routes.length === 0) {
+      throw new NotFoundException('No motorcycle route found for the given origin and destination.');
+    }
+
+    const parsedRoutes: RouteResult[] = data.routes.map((r: any, index: number) =>
+      this.parseGoogleRoute(r, origin, destination, preference, index),
+    );
+
+    const primaryRoute = parsedRoutes[0];
+    if (parsedRoutes.length > 1) {
+      primaryRoute.alternatives = parsedRoutes.slice(1);
+    }
+
+    return primaryRoute;
+  }
+
+  private parseGoogleRoute(
+    route: any,
+    origin: GeoPointDto,
+    destination: GeoPointDto,
+    preference: string,
+    index: number,
+  ): RouteResult {
+    const distanceMeters = typeof route.distanceMeters === 'number' ? route.distanceMeters : 0;
+    const durationStr = typeof route.duration === 'string' ? route.duration.replace('s', '') : '0';
+    const durationSeconds = parseInt(durationStr, 10) || 0;
+
+    const distanceKm = parseFloat((distanceMeters / 1000).toFixed(2));
+    const durationMinutes = Math.max(1, Math.round(durationSeconds / 60));
+
+    const overviewPolyline = route.polyline?.encodedPolyline || '';
+    const decodedWaypoints = overviewPolyline
+      ? this.decodePolyline(overviewPolyline)
+      : [origin, destination];
+
+    const steps: RouteStep[] = [];
+    const legs = Array.isArray(route.legs) ? route.legs : [];
+
+    for (const leg of legs) {
+      const legSteps = Array.isArray(leg.steps) ? leg.steps : [];
+      for (const step of legSteps) {
+        const rawInstruction = step.navigationInstruction?.instructions?.trim() || '';
+        const stepDist = typeof step.distanceMeters === 'number' ? step.distanceMeters : 0;
+        const stepDurationStr = typeof step.staticDuration === 'string' ? step.staticDuration.replace('s', '') : '0';
+        const stepDur = parseInt(stepDurationStr, 10) || 0;
+
+        const maneuverPoint: GeoPointDto = step.startLocation?.latLng
+          ? {
+              lat: step.startLocation.latLng.latitude,
+              lng: step.startLocation.latLng.longitude,
+            }
+          : origin;
+
+        const stepPolyline = step.polyline?.encodedPolyline;
+        const stepCoords = stepPolyline ? this.decodePolyline(stepPolyline) : undefined;
+
+        steps.push({
+          instruction: rawInstruction,
+          distanceMeters: stepDist,
+          durationSeconds: stepDur,
+          type: this.mapGoogleManeuver(step.navigationInstruction?.maneuver),
+          maneuverPoint,
+          stepCoordinates: stepCoords,
+        });
+      }
+    }
+
+    const routeDescription = route.description || (index === 0 ? 'Fastest Highway' : `Alternative Route ${index}`);
+
+    return {
+      routeId: randomUUID(),
+      distanceKm,
+      durationMinutes,
+      polyline: overviewPolyline,
+      waypoints: decodedWaypoints,
+      steps,
+      elevationGainMeters: Math.round(distanceKm * 12),
+      twistinessScore: preference === 'SCENIC_TWISTY' ? 7.5 : 4.0,
+      provider: 'GOOGLE_MAPS',
+      routeName: routeDescription,
+    };
   }
 
   private mapGoogleManeuver(maneuver?: string): string {
     if (!maneuver) return 'STRAIGHT';
-    const m = maneuver.toLowerCase();
-    if (m.includes('turn-left') || m.includes('fork-left')) return 'TURN_LEFT';
-    if (m.includes('turn-right') || m.includes('fork-right')) return 'TURN_RIGHT';
-    if (m.includes('uturn')) return 'UTURN';
-    if (m.includes('merge')) return 'MERGE';
-    if (m.includes('ramp')) return 'EXIT';
-    if (m.includes('roundabout')) return 'ROUNDABOUT';
+    const m = maneuver.toUpperCase();
+    if (m === 'DEPART') return 'DEPART';
+    if (m === 'ARRIVE' || m === 'DESTINATION') return 'ARRIVE';
+    if (m.includes('LEFT')) return 'TURN_LEFT';
+    if (m.includes('RIGHT')) return 'TURN_RIGHT';
+    if (m.includes('UTURN') || m.includes('U_TURN')) return 'UTURN';
+    if (m.includes('ROUNDABOUT')) return 'ROUNDABOUT';
+    if (m.includes('MERGE')) return 'MERGE';
+    if (m.includes('FORK')) return m.includes('LEFT') ? 'TURN_LEFT' : 'TURN_RIGHT';
+    if (m.includes('RAMP')) return 'EXIT';
     return 'STRAIGHT';
   }
 

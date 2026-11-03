@@ -44,7 +44,7 @@ import 'features/voice_assistant/presentation/bloc/voice_bloc.dart';
 import 'core/carplay/carplay_state_bridge.dart';
 import 'dart:io' show Platform;
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
@@ -80,7 +80,8 @@ void main() async {
   if (mapsImplementation is GoogleMapsFlutterAndroid) {
     mapsImplementation.useAndroidViewSurface = false;
     try {
-      final renderer = await mapsImplementation.initializeWithRenderer(AndroidMapRenderer.latest);
+      final renderer = await mapsImplementation
+          .initializeWithRenderer(AndroidMapRenderer.latest);
       debugPrint('[Maps SDK Init Success]: Initialized renderer $renderer');
     } catch (e) {
       debugPrint('[Maps SDK Init Warning]: $e');

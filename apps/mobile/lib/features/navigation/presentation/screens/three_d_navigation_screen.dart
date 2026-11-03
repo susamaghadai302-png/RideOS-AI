@@ -1621,6 +1621,27 @@ class _ThreeDNavigationScreenState extends State<ThreeDNavigationScreen> with Ti
                         '${_selectedRouteOption.title} | Live Road Corridor',
                         style: TextStyle(color: _selectedRouteOption.accentColor, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
+                      if (_activeRouteDistanceKm != null) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            const Icon(Icons.two_wheeler_rounded, size: 12, color: RoadOSColors.cyberCyan),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Motorcycle route: obey local rules & ride according to road conditions.',
+                                style: TextStyle(
+                                  color: RoadOSColors.cyberCyan.withValues(alpha: 0.85),
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

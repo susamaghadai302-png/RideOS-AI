@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/config/google_maps_config.dart';
+import '../../../../core/storage/token_storage.dart';
+import '../../../../core/utils/constants.dart';
 import '../../domain/entities/poi_entity.dart';
 import '../../../navigation/domain/entities/place_search_entity.dart';
 import 'road_os_routing_engine.dart';
@@ -14,6 +16,13 @@ class GoogleMapsPlatformService {
   static GoogleMapsPlatformService get instance => _instance;
 
   final Dio _dio;
+
+  Dio get dio => _dio;
+
+  /// Injects a custom HTTP adapter for isolated unit testing
+  void setMockAdapter(HttpClientAdapter adapter) {
+    _dio.httpClientAdapter = adapter;
+  }
 
   GoogleMapsPlatformService._internal()
       : _dio = Dio(
@@ -230,7 +239,7 @@ class GoogleMapsPlatformService {
     throw StateError('Nearby Search failed or API key missing.');
   }
 
-  /// 4. Google Directions API with Traffic & Multi-Alternative Routes
+  /// 4. Authenticated Backend & Google Routes API TWO_WHEELER
   Future<MultiRouteCalculationResult> calculateDirections({
     required LatLng origin,
     required LatLng destination,
@@ -238,6 +247,66 @@ class GoogleMapsPlatformService {
     RouteOptionType selectedOption = RouteOptionType.fastestHighway,
     String language = 'en',
   }) async {
+    // 1. Primary Architecture: Authenticated RideOS Backend Navigation Gateway
+    try {
+      String? token;
+      try {
+        token = await TokenStorage().getAccessToken();
+      } catch (_) {
+        // Secure storage may not be initialized in non-widget unit tests
+      }
+      final headers = <String, dynamic>{
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      final payload = <String, dynamic>{
+        'origin': {'lat': origin.latitude, 'lng': origin.longitude},
+        'destination': {'lat': destination.latitude, 'lng': destination.longitude},
+        if (waypoints != null && waypoints.isNotEmpty)
+          'waypoints': waypoints.map((w) => {'lat': w.latitude, 'lng': w.longitude}).toList(),
+        'preference': selectedOption == RouteOptionType.alternative ? 'FASTEST' : 'FASTEST',
+        'provider': 'GOOGLE_MAPS',
+      };
+
+      final response = await _dio.post(
+        '${ApiConstants.baseUrl}/navigation/route',
+        data: payload,
+        options: Options(
+          headers: headers,
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) {
+          final primaryRoute = _parseBackendRouteResult(data, 0, RouteOptionType.fastestHighway);
+          final alts = <RouteCalculationResult>[];
+          if (data['alternatives'] is List) {
+            final rawAlts = data['alternatives'] as List;
+            for (int i = 0; i < rawAlts.length; i++) {
+              if (rawAlts[i] is Map<String, dynamic>) {
+                alts.add(_parseBackendRouteResult(rawAlts[i] as Map<String, dynamic>, i + 1, RouteOptionType.alternative));
+              }
+            }
+          }
+          return MultiRouteCalculationResult(
+            activeRoute: primaryRoute,
+            alternativeRoutes: alts,
+            allRoutes: [primaryRoute, ...alts],
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[Backend Navigation Notice]: RideOS backend route calculation unavailable ($e). Checking direct client fallback.');
+    }
+
+    // 2. Direct Google Routes API Client Fallback (Development / Configured API Key)
     if (GoogleMapsConfig.hasValidApiKey) {
       try {
         final data = <String, dynamic>{
@@ -302,7 +371,7 @@ class GoogleMapsPlatformService {
             for (final leg in legs) {
               final steps = leg['steps'] as List? ?? [];
               for (final step in steps) {
-                final htmlInstr = step['navigationInstruction']?['instructions']?.toString() ?? 'Continue';
+                final htmlInstr = step['navigationInstruction']?['instructions']?.toString() ?? '';
                 final cleanInstr = _stripHtmlTags(htmlInstr);
                 final maneuver = step['navigationInstruction']?['maneuver']?.toString() ?? 'straight';
                 final stepDist = (step['distanceMeters'] as num?)?.toDouble() ?? 0;
@@ -360,7 +429,71 @@ class GoogleMapsPlatformService {
       }
     }
 
-    throw StateError('Google Maps routing is unavailable. Configure the Maps API key and verify the Directions provider.');
+    throw StateError('Google Maps routing is unavailable. Configure the backend routing service or client Maps API key.');
+  }
+
+  RouteCalculationResult _parseBackendRouteResult(
+    Map<String, dynamic> data,
+    int index,
+    RouteOptionType defaultType,
+  ) {
+    final distanceKm = (data['distanceKm'] as num?)?.toDouble() ?? 0.0;
+    final durationMinutes = (data['durationMinutes'] as num?)?.toInt() ?? 1;
+    final overviewPolyline = data['polyline']?.toString() ?? '';
+    final routeName = data['routeName']?.toString() ?? (index == 0 ? 'Fastest Highway' : 'Alternative Route $index');
+
+    List<LatLng> polylinePoints = [];
+    if (overviewPolyline.isNotEmpty && !overviewPolyline.startsWith('[')) {
+      polylinePoints = decodePolyline(overviewPolyline);
+    } else if (data['waypoints'] is List) {
+      polylinePoints = (data['waypoints'] as List).map((p) {
+        return LatLng((p['lat'] as num).toDouble(), (p['lng'] as num).toDouble());
+      }).toList();
+    }
+
+    final stepsList = <RouteStepManeuver>[];
+    if (data['steps'] is List) {
+      for (final s in data['steps'] as List) {
+        if (s is Map<String, dynamic>) {
+          final instruction = s['instruction']?.toString() ?? '';
+          final distMeters = (s['distanceMeters'] as num?)?.toDouble() ?? 0.0;
+          final durSecs = (s['durationSeconds'] as num?)?.toInt() ?? 0;
+          final type = s['type']?.toString() ?? 'straight';
+
+          List<LatLng> stepCoords = [];
+          if (s['stepCoordinates'] is List) {
+            stepCoords = (s['stepCoordinates'] as List).map((c) {
+              return LatLng((c['lat'] as num).toDouble(), (c['lng'] as num).toDouble());
+            }).toList();
+          }
+
+          stepsList.add(
+            RouteStepManeuver(
+              instruction: instruction,
+              roadName: routeName,
+              distanceMeters: distMeters,
+              durationSeconds: durSecs,
+              iconType: _mapManeuverIcon(type),
+              stepCoordinates: stepCoords,
+            ),
+          );
+        }
+      }
+    }
+
+    final etaTime = _formatEta(DateTime.now().add(Duration(minutes: durationMinutes)));
+
+    return RouteCalculationResult(
+      id: data['routeId']?.toString() ?? 'backend-route-$index',
+      routeName: 'via $routeName',
+      distanceKm: double.parse(distanceKm.toStringAsFixed(1)),
+      durationMinutes: durationMinutes,
+      estimatedArrival: etaTime,
+      polylinePoints: polylinePoints,
+      steps: stepsList,
+      routeType: defaultType,
+      sourceProvider: data['provider']?.toString() ?? 'GOOGLE_MAPS',
+    );
   }
 
   /// 5. Google Geocoding / Reverse Geocoding API
@@ -421,29 +554,35 @@ class GoogleMapsPlatformService {
     int lat = 0;
     int lng = 0;
 
-    while (index < len) {
-      int b;
-      int shift = 0;
-      int result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
+    try {
+      while (index < len) {
+        int b;
+        int shift = 0;
+        int result = 0;
+        do {
+          if (index >= len) break;
+          b = encoded.codeUnitAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20);
+        int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+        lat += dlat;
 
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
+        shift = 0;
+        result = 0;
+        do {
+          if (index >= len) break;
+          b = encoded.codeUnitAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20);
+        int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+        lng += dlng;
 
-      points.add(LatLng(lat / 1E5, lng / 1E5));
+        points.add(LatLng(lat / 1E5, lng / 1E5));
+      }
+    } catch (_) {
+      // In case of truncated or invalid input, return decoded points up to failure point
     }
     return points;
   }
@@ -463,28 +602,14 @@ class GoogleMapsPlatformService {
   }
 
   static String _mapManeuverIcon(String maneuver) {
-    switch (maneuver.toLowerCase()) {
-      case 'turn-left':
-      case 'turn-slight-left':
-      case 'turn-sharp-left':
-      case 'ramp-left':
-      case 'fork-left':
-        return 'left';
-      case 'turn-right':
-      case 'turn-slight-right':
-      case 'turn-sharp-right':
-      case 'ramp-right':
-      case 'fork-right':
-        return 'right';
-      case 'uturn-left':
-      case 'uturn-right':
-        return 'u_turn';
-      case 'roundabout-left':
-      case 'roundabout-right':
-        return 'roundabout';
-      default:
-        return 'straight';
-    }
+    final m = maneuver.toLowerCase().replaceAll('_', '-');
+    if (m.contains('depart')) return 'straight';
+    if (m.contains('arrive') || m.contains('destination')) return 'arrive';
+    if (m.contains('left')) return 'left';
+    if (m.contains('right')) return 'right';
+    if (m.contains('uturn') || m.contains('u-turn')) return 'u_turn';
+    if (m.contains('roundabout')) return 'roundabout';
+    return 'straight';
   }
 
   static String _mapGooglePlaceType(List<String> types) {

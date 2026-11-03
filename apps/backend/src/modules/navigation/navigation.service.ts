@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CalculateRouteDto, GeoPointDto } from './dto/calculate-route.dto';
@@ -20,21 +21,29 @@ export class NavigationService {
     private readonly googleMapsProvider: GoogleMapsRoutingProvider,
     private readonly scenicService: ScenicRoutingService,
     private readonly recalculationService: RouteRecalculationService,
+    private readonly configService: ConfigService,
   ) {}
 
   async calculateRoute(dto: CalculateRouteDto): Promise<RouteResult> {
-    let provider = this.osrmProvider;
+    const hasGoogleKey = Boolean(
+      this.configService.get<string>('GOOGLE_ROUTES_API_KEY') ||
+      this.configService.get<string>('GOOGLE_MAPS_API_KEY') ||
+      process.env.GOOGLE_ROUTES_API_KEY ||
+      process.env.GOOGLE_MAPS_API_KEY,
+    );
+
+    let provider: any = this.osrmProvider;
     if (dto.provider === 'MAPBOX') {
-      provider = this.mapboxProvider as any;
-    } else if (dto.provider === 'GOOGLE_MAPS') {
-      provider = this.googleMapsProvider as any;
+      provider = this.mapboxProvider;
+    } else if (dto.provider === 'GOOGLE_MAPS' || (!dto.provider && hasGoogleKey)) {
+      provider = this.googleMapsProvider;
     }
 
     const baseRoute = await provider.calculateRoute(
       dto.origin,
       dto.destination,
       dto.waypoints || [],
-      dto.preference || 'SCENIC_TWISTY',
+      dto.preference || 'FASTEST',
     );
 
     return this.scenicService.applyMotorcycleOptimization(baseRoute);
