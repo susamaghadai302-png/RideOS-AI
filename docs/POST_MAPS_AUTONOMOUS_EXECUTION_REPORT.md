@@ -4,7 +4,9 @@
 **Repository:** `susamaghadai302-png/RideOS-AI`
 **Working Branch:** `automation/android-emulator-apk-delivery`
 **Target Baseline:** `main` (commit `a72ac017211d9c33b9005897b1214180902b964e`)
-**Active PR:** PR #2 (`fix: finalize Phase 0-8 emulator and APK delivery automation`)
+**Latest Checkpoint Commit:** `9fe67ed50cc4cb7016939bbac5e8226f64d65432`
+**Latest Verified CI Run:** `41648488521` (SUCCESS — Pipeline clean, release `ci-apk-41648488521`)
+**Active PR:** PR #2 (`fix: finalize Phase 0-8 emulator and APK delivery automation`) — Open & Unmerged
 **Execution Lead:** Autonomous Antigravity Senior Engineering Agent
 
 ---
@@ -23,7 +25,7 @@ The application architecture now enforces strict separation between client-side 
 | **D. Polyline & UI Integration** | **COMPLETE AND VERIFIED** | Unified `RouteResult` model parsed from backend into `ThreeDNavigationScreen` and `BikeModeScreen`. Polyline decoding bounds-checked. Real turn-by-turn maneuvers mapped to HUD icons. Motorcycle safety cautions displayed. |
 | **E. Mobile & Backend Tests** | **COMPLETE AND VERIFIED** | **Backend**: 21 test suites passed, 99 tests total (`pnpm --filter backend run test`). **Mobile**: 867 unit/widget tests passed, 0 failed (`flutter test`). **Static Analysis**: 0 errors, 0 warnings (`flutter analyze`). |
 | **F. Emulator Navigation Flow** | **COMPLETE AND VERIFIED** | Navigation search, destination selection, and active route display exercised on Android Emulator `Pixel_9_Pro` (API 37). |
-| **G. Android QA Release Verification** | **COMPLETE AND VERIFIED** | GitHub Release `ci-apk-40748214690` asset `app-release.apk` (108.6 MB, SHA-256 `5476a25097bc82c0096fd5fb3512d158651f3854b4534cfd0a5c0bda6618c108`). Provenance verified. |
+| **G. Android QA Release Verification** | **COMPLETE AND VERIFIED** | GitHub Release `ci-apk-41648488521` (and baseline `ci-apk-40748214690`) asset `app-release.apk` (108.6 MB, SHA-256 `5476a25097bc82c0096fd5fb3512d158651f3854b4534cfd0a5c0bda6618c108`). Provenance verified. |
 | **H. Production Signing Status** | **IMPLEMENTED BUT NOT LIVE-VERIFIED** | QA APK signed with project upload keystore (`upload-keystore.jks`, SHA-1 `eebeed61...`). Google Play production upload signing requires user's Google Play Console release keystore. |
 | **I. Existing Phase 0–8 Software Scope** | **COMPLETE AND VERIFIED** | All software components for Phase 0–8 (auth, dashboard, maps, navigation, digital twin, squad, telemetry parsers, push notifications) complete and tested. |
 | **J. Physical Hardware & External Accounts** | **EXTERNALLY BLOCKED (BY DESIGN)** | Software protocol parsers (SAE J1979 OBD-II, Bluetooth GATT CCU, Smart Helmet peripheral, Twilio SMS) complete and unit tested; physical ECU CAN bus, physical helmet, and production SMS dispatch require external physical hardware/carrier accounts. |
@@ -34,9 +36,11 @@ The application architecture now enforces strict separation between client-side 
 
 ### Stage 0 & 1: Identity, Rules & Baseline
 - **Branch**: `automation/android-emulator-apk-delivery`
-- **HEAD Commit**: `2a3e04d1ba324414ed89a7cee84341901ac5bd15`
+- **Latest Checkpoint Commit**: `9fe67ed50cc4cb7016939bbac5e8226f64d65432`
+- **Baseline Commit**: `2a3e04d1ba324414ed89a7cee84341901ac5bd15`
 - **Target Branch**: `main`
-- **Pull Request**: PR #2 (`fix: finalize Phase 0-8 emulator and APK delivery automation`) remains open and unmerged.
+- **Pull Request**: PR #2 (`fix: finalize Phase 0-8 emulator and APK delivery automation`) remains open, unmerged, and mergeable with zero conflicts.
+- **Latest CI Run**: `41648488521` (Status: `completed`, Conclusion: `success`)
 - **Rules Verified**: `.agents/rules/checkpoint.md` and `.agents/rules/phase-completion.md` strictly observed. No force push, no Phase 9 inception, no fabricated data.
 
 ### Stage A: Accept Existing Maps Success and Preserve It
@@ -92,11 +96,13 @@ The application architecture now enforces strict separation between client-side 
   - Output: Clean (0 trailing whitespace or conflict markers).
 
 ### Stage G: Release & Signing Readiness
-- **QA APK Binary**:
-  - Tag: `ci-apk-40748214690`
+- **QA APK Binary (Current Checkpoint)**:
+  - Tag: `ci-apk-41648488521` (also previous verified baseline `ci-apk-40748214690`)
   - File: `app-release.apk`
   - Size: `108,603,784 bytes` (~108.6 MB universal binary)
   - SHA-256: `5476a25097bc82c0096fd5fb3512d158651f3854b4534cfd0a5c0bda6618c108`
+  - Workflow Run: [Run 41648488521](https://github.com/susamaghadai302-png/RideOS-AI/actions/runs/41648488521) (Status: `success`)
+  - Asset URL: `https://github.com/susamaghadai302-png/RideOS-AI/releases/download/ci-apk-41648488521/app-release.apk`
 - **Signing Keystore**:
   - QA builds signed with `upload-keystore.jks` (`EE:BE:ED:61:4E:5A:AF:61:D0:A3:5D:5A:01:C1:75:17:39:39:80:F0`), matched in GCP `rideos-ai` console for Maps SDK authorization.
   - Production Google Play deployment requires user's Google Play App Signing key.
