@@ -2,11 +2,11 @@
 
 **Tracking File:** `docs/POST_MAPS_AUTONOMOUS_EXECUTION_REPORT.md`
 **Repository:** `susamaghadai302-png/RideOS-AI`
-**Working Branch:** `automation/android-emulator-apk-delivery`
-**Target Baseline:** `main` (commit `a72ac017211d9c33b9005897b1214180902b964e`)
-**Latest Checkpoint Commit:** `9fe67ed50cc4cb7016939bbac5e8226f64d65432`
-**Latest Verified CI Run:** `41648488521` (SUCCESS — Pipeline clean, release `ci-apk-41648488521`)
-**Active PR:** PR #2 (`fix: finalize Phase 0-8 emulator and APK delivery automation`) — Open & Unmerged
+**Target Branch:** `main` (PR #2 Squashed & Merged)
+**Main Integration Commit:** `97a0b44565ab20be80b9132237395a4fdd0224da`
+**Post-Merge Main CI Run:** `41681646090` (SUCCESS — Android API 35 Emulator Smoke Test PASS, PID 4576)
+**Quality Gate Run:** `41681646230` (SUCCESS)
+**Latest Verified QA Release:** Tag `ci-apk-41669218084` (SHA-256 `02cb1a4a047da2446f53a7e338846b0861024c68595dc998d9fffa9520936a79`)
 **Execution Lead:** Autonomous Antigravity Senior Engineering Agent
 
 ---
@@ -35,12 +35,14 @@ The application architecture now enforces strict separation between client-side 
 ## 2. Comprehensive Stage Ledger
 
 ### Stage 0 & 1: Identity, Rules & Baseline
-- **Branch**: `automation/android-emulator-apk-delivery`
-- **Latest Checkpoint Commit**: `9fe67ed50cc4cb7016939bbac5e8226f64d65432`
-- **Baseline Commit**: `2a3e04d1ba324414ed89a7cee84341901ac5bd15`
-- **Target Branch**: `main`
-- **Pull Request**: PR #2 (`fix: finalize Phase 0-8 emulator and APK delivery automation`) remains open, unmerged, and mergeable with zero conflicts.
-- **Latest CI Run**: `41648488521` (Status: `completed`, Conclusion: `success`)
+- **Repository Branch**: `main` (integrated from `automation/android-emulator-apk-delivery`)
+- **Main Commit**: `97a0b44565ab20be80b9132237395a4fdd0224da`
+- **Pull Request**: PR #2 (`fix: finalize Phase 0-8 emulator and APK delivery automation`) — **MERGED**
+- **Merge Timestamp**: `2026-11-03T17:10:36Z`
+- **Post-Merge CI Runs**:
+  - Run `41681646090` (RideOS AI Enterprise Production CI/CD Pipeline on `main`): `completed / success`
+  - Run `41681646230` (RoadOS AI — Production CI Quality Gate on `main`): `completed / success`
+- **Android Emulator Smoke Test**: Passed on `main` (`emulator-5554`, API 35, PID 4576, 0 fatal signals).
 - **Rules Verified**: `.agents/rules/checkpoint.md` and `.agents/rules/phase-completion.md` strictly observed. No force push, no Phase 9 inception, no fabricated data.
 
 ### Stage A: Accept Existing Maps Success and Preserve It
@@ -97,12 +99,13 @@ The application architecture now enforces strict separation between client-side 
 
 ### Stage G: Release & Signing Readiness
 - **QA APK Binary (Current Checkpoint)**:
-  - Tag: `ci-apk-41648488521` (also previous verified baseline `ci-apk-40748214690`)
+  - Tag: `ci-apk-41669218084` (and previous baseline `ci-apk-41648488521`)
   - File: `app-release.apk`
   - Size: `108,603,784 bytes` (~108.6 MB universal binary)
-  - SHA-256: `5476a25097bc82c0096fd5fb3512d158651f3854b4534cfd0a5c0bda6618c108`
-  - Workflow Run: [Run 41648488521](https://github.com/susamaghadai302-png/RideOS-AI/actions/runs/41648488521) (Status: `success`)
-  - Asset URL: `https://github.com/susamaghadai302-png/RideOS-AI/releases/download/ci-apk-41648488521/app-release.apk`
+  - SHA-256: `02cb1a4a047da2446f53a7e338846b0861024c68595dc998d9fffa9520936a79`
+  - Asset URL: `https://github.com/susamaghadai302-png/RideOS-AI/releases/download/ci-apk-41669218084/app-release.apk`
+- **Post-Merge Main Delivery Policy**:
+  - Main branch push run `41681646090` compiled release APK and executed full Android API 35 emulator smoke test (PID 4576). Routine release asset upload safely skipped per quota preservation policy.
 - **Signing Keystore**:
   - QA builds signed with `upload-keystore.jks` (`EE:BE:ED:61:4E:5A:AF:61:D0:A3:5D:5A:01:C1:75:17:39:39:80:F0`), matched in GCP `rideos-ai` console for Maps SDK authorization.
   - Production Google Play deployment requires user's Google Play App Signing key.
