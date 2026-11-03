@@ -14,6 +14,7 @@ git add .
 # 3. Filter out unwanted artifacts dynamically
 # (Secrets/envs are ideally in .gitignore, but we double-check)
 git reset HEAD -- .env .env.* credentials* tokens* keys* *.patch *.log *.txt scripts/validate.sh >/dev/null 2>&1 || true
+git add .env*.example apps/*/.env*.example >/dev/null 2>&1 || true
 
 # 4. Check if we actually have changes
 if git diff --cached --quiet; then

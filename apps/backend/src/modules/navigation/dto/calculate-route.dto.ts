@@ -1,11 +1,15 @@
-import { IsNumber, IsOptional, IsArray, ValidateNested, IsEnum, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsArray, ValidateNested, IsEnum, Min, Max, ArrayMaxSize } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class GeoPointDto {
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   lat: number;
 
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   lng: number;
 }
 
@@ -20,6 +24,7 @@ export class CalculateRouteDto {
 
   @IsArray()
   @IsOptional()
+  @ArrayMaxSize(25)
   @ValidateNested({ each: true })
   @Type(() => GeoPointDto)
   waypoints?: GeoPointDto[];

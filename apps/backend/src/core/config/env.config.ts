@@ -29,6 +29,7 @@ export const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().default('super_secret_rideos_refresh_key_2026'),
   GEMINI_API_KEY: z.string().optional(),
   GOOGLE_MAPS_API_KEY: z.string().optional(),
+  GOOGLE_ROUTES_API_KEY: z.string().optional(),
   MAPBOX_ACCESS_TOKEN: z.string().optional(),
   OSRM_BASE_URL: z.string().optional(),
   ROUTING_API_BASE_URL: z.string().optional(),

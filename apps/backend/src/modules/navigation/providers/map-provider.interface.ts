@@ -6,6 +6,7 @@ export interface RouteStep {
   durationSeconds: number;
   type: string; // TURN_LEFT, TURN_RIGHT, STRAIGHT, ARRIVE, etc.
   maneuverPoint: GeoPointDto;
+  stepCoordinates?: GeoPointDto[];
 }
 
 export interface RouteResult {
@@ -18,6 +19,8 @@ export interface RouteResult {
   elevationGainMeters: number;
   twistinessScore: number; // 0.0 to 10.0 score for motorcycle routing
   provider: 'OSRM' | 'MAPBOX' | 'GOOGLE_MAPS';
+  routeName?: string;
+  alternatives?: RouteResult[];
 }
 
 export interface IMapRoutingProvider {

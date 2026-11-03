@@ -315,7 +315,20 @@ class _BikeModeScreenState extends ConsumerState<BikeModeScreen> {
           ]),
           const SizedBox(height: 12),
           Container(height: 1, color: Colors.white.withValues(alpha: 0.06)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          Row(children: [
+            const Icon(Icons.two_wheeler_rounded, size: 12, color: RoadOSColors.neonViolet),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                'Motorcycle navigation: obey signs & road conditions',
+                style: GoogleFonts.outfit(color: RoadOSColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ]),
+          const SizedBox(height: 8),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             _metricRow('ETA', route.estimatedArrival, Icons.schedule_rounded),
             _metricRow('DIST', '${route.distanceKm.toStringAsFixed(1)} km', Icons.straighten_rounded),
