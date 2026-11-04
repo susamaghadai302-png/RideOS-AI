@@ -14,7 +14,8 @@ export class DiagnosticsController {
     @Param('vehicleId') vehicleId: string,
     @Body() submitScanDto: SubmitDiagnosticScanDto,
   ) {
-    return this.diagnosticsService.submitScan((req.user as any).sub, vehicleId, submitScanDto);
+    const userId = (req.user as any)?.userId || (req.user as any)?.sub;
+    return this.diagnosticsService.submitScan(userId, vehicleId, submitScanDto);
   }
 
   @Get('scans')
@@ -22,7 +23,8 @@ export class DiagnosticsController {
     @Request() req,
     @Param('vehicleId') vehicleId: string,
   ) {
-    return this.diagnosticsService.getScansForVehicle((req.user as any).sub, vehicleId);
+    const userId = (req.user as any)?.userId || (req.user as any)?.sub;
+    return this.diagnosticsService.getScansForVehicle(userId, vehicleId);
   }
 
   @Post('dtcs/clear')
@@ -32,6 +34,7 @@ export class DiagnosticsController {
     @Param('vehicleId') vehicleId: string,
     @Body() body: { transportType: string; protocol: string; speedPayload: string; clearAckPayload: string },
   ) {
-    return this.diagnosticsService.clearDtcs((req.user as any).sub, vehicleId, body.transportType, body.protocol, body.speedPayload, body.clearAckPayload);
+    const userId = (req.user as any)?.userId || (req.user as any)?.sub;
+    return this.diagnosticsService.clearDtcs(userId, vehicleId, body.transportType, body.protocol, body.speedPayload, body.clearAckPayload);
   }
 }

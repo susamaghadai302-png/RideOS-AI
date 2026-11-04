@@ -1,5 +1,9 @@
+import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/bluetooth/bluetooth_engine.dart';
+import '../../../vehicle/presentation/bloc/vehicle_bloc.dart';
+import '../../../vehicle/presentation/bloc/vehicle_event.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_state.dart';
 import 'auth_loading_screen.dart';
@@ -35,6 +39,13 @@ class _AuthGateState extends State<AuthGate> {
         // so the root screen is clean.
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+
+        if (state is UnauthenticatedState) {
+          try {
+            context.read<VehicleBloc>().add(const DisconnectAndPurgeVehicleEvent());
+          } catch (_) {}
+          unawaited(BluetoothEngine().disconnect());
         }
       },
       builder: (context, state) {

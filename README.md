@@ -34,7 +34,7 @@ graph TD
    - Standardized schema for speed, RPM, battery bus voltage, fuel level, gear, coolant temperature, lean angle, and DTC fault codes.
    - Strict truthful state policy: missing or offline sensors report `Unavailable` rather than synthetic fallback values.
 3. **3D Virtual Garage Studio**:
-   - Photorealistic motorcycle GLB assets (`yamaha_r1m.glb`, `ducati_panigale.glb`, `bmw_m1000rr.glb`).
+   - Photorealistic motorcycle GLB assets (`bmw_m1000rr.glb`, `bmw_s1000rr.glb`, `ducati_panigale.glb`) with studio fallback badges (`yamaha_r1m.png`, `suzuki_burgman.png`, `generic_bike.png`, `generic_scooter.png`).
    - Adaptive graphics quality (`Auto`, `High Fidelity 60FPS`, `Performance`).
 4. **Precision Navigation & Active Ride Recording**:
    - Turn-by-turn guidance ribbon, POI search, and voice guidance synthesizer.
@@ -116,10 +116,14 @@ flutter run
 
 ### Run Automated Tests
 ```bash
-# Run backend test suite
+# Run the complete automated validation pipeline
+./scripts/validate.sh
+
+# Or run individual test suites:
+# Backend (102 tests across 22 suites)
 pnpm --filter backend test
 
-# Run the full Flutter test suite
+# Flutter Mobile & Web (871 tests across 60+ suites)
 cd apps/mobile && flutter test
 ```
 

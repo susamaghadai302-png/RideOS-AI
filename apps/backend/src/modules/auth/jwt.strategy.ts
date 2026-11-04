@@ -13,10 +13,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; email: string }) {
-    if (!payload.sub || !payload.email) {
+  async validate(payload: { sub: string; email?: string }) {
+    if (!payload.sub) {
       throw new UnauthorizedException('Invalid JWT payload');
     }
-    return { userId: payload.sub, email: payload.email };
+    return { userId: payload.sub, sub: payload.sub, email: payload.email || '' };
   }
 }

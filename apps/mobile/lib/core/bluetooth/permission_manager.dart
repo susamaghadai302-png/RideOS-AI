@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionManager {
@@ -8,6 +9,7 @@ class PermissionManager {
 
   /// Requests all necessary Bluetooth and Location permissions for Android/iOS
   Future<bool> requestBluetoothPermissions() async {
+    if (kIsWeb) return true;
     if (Platform.isAndroid) {
       // For Android 12+ (API 31+)
       Map<Permission, PermissionStatus> statuses = await [
@@ -28,11 +30,12 @@ class PermissionManager {
       return status.isGranted;
     }
     
-    // Web or other platforms assume true (handled by browser APIs)
+    // Other platforms assume true
     return true;
   }
 
   Future<bool> hasPermissions() async {
+    if (kIsWeb) return true;
     if (Platform.isAndroid) {
       final scan = await Permission.bluetoothScan.isGranted;
       final connect = await Permission.bluetoothConnect.isGranted;

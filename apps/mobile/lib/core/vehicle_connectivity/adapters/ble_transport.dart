@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import 'dart:io';
@@ -16,7 +17,7 @@ class BleTransport implements UartTransport {
 
   @override
   Future<bool> connect(String macAddress) async {
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
       return false; // Skip real BLE in unit tests to avoid unhandled unsupported platform errors from flutter_blue_plus
     }
     try {

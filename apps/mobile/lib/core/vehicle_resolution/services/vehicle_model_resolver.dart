@@ -58,7 +58,7 @@ class VehicleModelResolver {
             ? ModelResolutionStatus.identityConflict
             : ModelResolutionStatus.identityUncertain,
         modelPath: '',
-        thumbnailPath: 'assets/garage/generic_bike.png',
+        thumbnailPath: _resolveSpecificThumbnail(identity),
         isExact: false,
       );
     }
@@ -107,12 +107,13 @@ class VehicleModelResolver {
   }
 
   String _resolveSpecificThumbnail(VehicleIdentity identity) {
-    final lower = '${identity.make} ${identity.model}'.toLowerCase();
+    final lower = '${identity.make} ${identity.model} ${identity.variant}'.toLowerCase();
     if (lower.contains('r1m') || lower.contains('r1')) return 'assets/garage/yamaha_r1m.png';
     if (lower.contains('mt-09') || lower.contains('mt09')) return 'assets/garage/yamaha_mt09_sp.png';
     if (lower.contains('panigale') || lower.contains('v4')) return 'assets/garage/ducati_panigale.png';
     if (lower.contains('m 1000') || lower.contains('m1000') || lower.contains('s 1000')) return 'assets/garage/bmw_m1000rr.png';
     if (lower.contains('burgman')) return 'assets/garage/suzuki_burgman.png';
+    if (lower.contains('scooter') || lower.contains('ev_scooter') || lower.contains('activa') || lower.contains('aerox')) return 'assets/garage/generic_scooter.png';
     if (lower.contains('obd')) return 'assets/garage/generic_obd.png';
     return 'assets/garage/generic_bike.png';
   }
