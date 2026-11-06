@@ -1,4 +1,4 @@
-import { IsString, IsOptional, ValidateNested, IsBoolean, IsNumber } from 'class-validator';
+import { IsString, IsOptional, ValidateNested, IsBoolean, IsNumber, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class RiderContextDto {
@@ -21,6 +21,10 @@ export class RiderContextDto {
   @IsOptional()
   @IsString()
   bikeModel?: string;
+
+  @IsOptional()
+  @IsString()
+  riderName?: string;
 }
 
 export class TelemetryContextDto {
@@ -45,6 +49,10 @@ export class TelemetryContextDto {
   fuelLevelPct?: number;
 
   @IsOptional()
+  @IsNumber()
+  leanAngleDeg?: number;
+
+  @IsOptional()
   @IsBoolean()
   isSimulated?: boolean;
 }
@@ -52,6 +60,18 @@ export class TelemetryContextDto {
 export class AiQueryDto {
   @IsString()
   prompt: string;
+
+  @IsOptional()
+  @IsString()
+  conversationId?: string;
+
+  @IsOptional()
+  @IsIn(['en', 'hi', 'hinglish', 'or'])
+  language?: 'en' | 'hi' | 'hinglish' | 'or';
+
+  @IsOptional()
+  @IsBoolean()
+  includeMemories?: boolean;
 
   @IsOptional()
   @ValidateNested()

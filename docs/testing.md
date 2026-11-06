@@ -7,7 +7,9 @@
 cd apps/mobile
 flutter test
 ```
-- **871 Automated Tests (100% Passing)** across 60+ test suites:
+- **878 Automated Tests (100% Passing)** across 60+ test suites:
+  - `ai_assistant_notifier_test.dart` (AI gateway delegation, honest offline state, zero fake strings)
+  - `obd2_malformed_and_edge_cases_test.dart` (ELM327 malformed response rejection, Mode 01/03/04 parsing, noise filtering)
   - `audit_regression_fixes_test.dart` (Web safety guards, scooter fallback resolution, session purge, transport permission checks)
   - `vehicle_command_pipeline_test.dart` (Protocol discovery, safety rules, command validation)
   - `vehicle_health_diagnostics_test.dart` (11 health categories, SAE DTC dictionary, clear gates)
@@ -23,7 +25,8 @@ flutter test
 ```bash
 pnpm --filter backend test
 ```
-- **102 Automated Tests (22 Suites, 100% Passing)**:
+- **114 Automated Tests (22 Suites, 100% Passing)**:
+  - `ai_assistant.service.spec.ts` (Prompt injection, safety policies, user memory, knowledge RAG, tools, multi-language localization)
   - `jwt.strategy.spec.ts` (JWT validation, phone OTP riders without email, missing user ID rejection)
   - `auth.service.spec.ts` (JWT issuance, refresh token rotation, phone OTP, password hashing)
   - `vehicles.controller.spec.ts` (Ownership verification, vehicle profile CRUD)

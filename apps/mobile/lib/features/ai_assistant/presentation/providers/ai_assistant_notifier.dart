@@ -1,11 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'ai_assistant_state.dart';
+import '../../../../core/contracts/ai_models.dart';
+import '../../../../core/contracts/ai_provider_gateway.dart';
+import '../../../../core/di/service_locator.dart';
 import '../../domain/entities/ai_message_entity.dart';
+import 'ai_assistant_state.dart';
 
 class AiAssistantNotifier extends StateNotifier<AiAssistantState> {
-  AiAssistantNotifier() : super(const AiAssistantState());
+  final AIProviderGateway _gateway;
 
-  Future<void> sendQuery(String prompt) async {
+  AiAssistantNotifier({AIProviderGateway? gateway})
+      : _gateway = gateway ?? getIt<AIProviderGateway>(),
+        super(const AiAssistantState());
+
+  Future<void> sendQuery(String prompt, [Map<String, dynamic>? telemetry]) async {
     final userMsg = AiMessageEntity(
       id: 'msg-${DateTime.now().millisecondsSinceEpoch}',
       text: prompt,
@@ -18,28 +25,41 @@ class AiAssistantNotifier extends StateNotifier<AiAssistantState> {
       isProcessing: true,
     );
 
-    await Future.delayed(const Duration(milliseconds: 600));
+    try {
+      final request = AIRequest(
+        requestId: 'req-${DateTime.now().millisecondsSinceEpoch}',
+        prompt: prompt,
+        timestamp: DateTime.now(),
+        context: AIConsumerContext(telemetryData: telemetry),
+      );
 
-    String replyText = 'Rideo Pro: Keep your eyes on the road. Enjoy the twisties!';
-    String? action;
+      final response = await _gateway.processQuery(request);
 
-    if (prompt.toLowerCase().contains('fuel') || prompt.toLowerCase().contains('gas')) {
-      replyText = 'Nearest station: Shell High Octane in 4.2 km along current route.';
-      action = 'NAVIGATE_FUEL';
+      final aiMsg = AiMessageEntity(
+        id: 'ai-${DateTime.now().millisecondsSinceEpoch}',
+        text: response.text,
+        isUser: false,
+        suggestedAction: response.suggestedActionPayload,
+        timestamp: DateTime.now(),
+      );
+
+      state = state.copyWith(
+        messages: [...state.messages, aiMsg],
+        isProcessing: false,
+      );
+    } catch (_) {
+      final fallbackMsg = AiMessageEntity(
+        id: 'fallback-${DateTime.now().millisecondsSinceEpoch}',
+        text: 'AI Assistant temporarily running in offline mode (DATA_UNAVAILABLE). Please verify connection.',
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+
+      state = state.copyWith(
+        messages: [...state.messages, fallbackMsg],
+        isProcessing: false,
+      );
     }
-
-    final aiMsg = AiMessageEntity(
-      id: 'ai-${DateTime.now().millisecondsSinceEpoch}',
-      text: replyText,
-      isUser: false,
-      suggestedAction: action,
-      timestamp: DateTime.now(),
-    );
-
-    state = state.copyWith(
-      messages: [...state.messages, aiMsg],
-      isProcessing: false,
-    );
   }
 }
 
