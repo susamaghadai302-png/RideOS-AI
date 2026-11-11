@@ -16,7 +16,7 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>RideOS Pro - Motorcycle Intelligence</title>
+  <title>RideOS AI — Next-Generation Connected Motorcycle Operating System</title>
   <link rel="manifest" href="manifest.json">
   <!-- RideOS Web Bluetooth Bridge (macOS Chrome/Edge Web Bluetooth) -->
   <script src="web_bluetooth_bridge.js"></script>
@@ -25,48 +25,91 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <!-- Google Maps Configuration Injection -->
-  <script>window.__RIDEOS_GOOGLE_MAPS_API_KEY__ = "AIzaSyDr4U2-3KPMoGKtzs3TSKUHsSyTPQZsY0g";</script>
-  <!-- Google Maps JS API (Dynamic loader for RideOS Web) -->
+  <!-- Google Maps JS API (Asynchronous dynamic loader for RideOS Web) -->
   <script>
     (function() {
+      window.__gmaps_status__ = 'uninitialized';
+      window.__gmaps_error__ = null;
+
+      // Authentic Google Maps authentication failure handler
+      window.gm_authFailure = function() {
+        console.error('[RideOS Maps] Google Maps authentication failed. Key may lack authorization or referrer restrictions mismatch.');
+        window.__gmaps_status__ = 'auth_failed';
+        window.__gmaps_error__ = 'Google Maps authentication failed (HTTP Referrer or Key restriction mismatch).';
+        window.dispatchEvent(new CustomEvent('rideos-maps-error', { detail: { error: window.__gmaps_error__ } }));
+      };
+
       function loadMapsScript(key) {
         if (window.__gmaps_loaded__) return;
-        window.__gmaps_loaded__ = true;
-        var script = document.createElement('script');
-        if (key && key !== 'YOUR_ACTUAL_GOOGLE_MAPS_API_KEY_HERE' && key !== 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
-          script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places,geometry';
-        } else {
-          script.src = 'https://maps.googleapis.com/maps/api/js?libraries=places,geometry';
+        if (!key || key.trim() === '' || key.startsWith('YOUR_')) {
+          console.warn('[RideOS Maps] No valid Google Maps API key provided. Interactive map rendering disabled.');
+          window.__gmaps_status__ = 'unconfigured';
+          window.__gmaps_error__ = 'Google Maps API key not configured.';
+          return;
         }
-        script.async = false;
+
+        window.__gmaps_loaded__ = true;
+        window.__gmaps_status__ = 'loading';
+
+        var script = document.createElement('script');
+        script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key.trim()) + '&libraries=places,geometry';
+        script.async = true;
+        script.defer = true;
+        script.onload = function() {
+          console.log('[RideOS Maps] Google Maps JavaScript SDK loaded successfully.');
+          window.__gmaps_status__ = 'ready';
+          window.dispatchEvent(new CustomEvent('rideos-maps-ready'));
+        };
+        script.onerror = function(err) {
+          console.error('[RideOS Maps] Failed to load Google Maps SDK script.', err);
+          window.__gmaps_status__ = 'load_error';
+          window.__gmaps_error__ = 'Failed to load Google Maps SDK from maps.googleapis.com';
+          window.dispatchEvent(new CustomEvent('rideos-maps-error', { detail: { error: window.__gmaps_error__ } }));
+        };
         document.head.appendChild(script);
       }
 
+      // Check runtime sources for API key:
+      // 1. window.__RIDEOS_GOOGLE_MAPS_API_KEY__ (injected via deployment environment)
+      // 2. URL search parameter 'maps_key'
+      // 3. sessionStorage / localStorage
       var urlParams = new URLSearchParams(window.location.search);
-      var apiKey = window.__RIDEOS_GOOGLE_MAPS_API_KEY__ || 
-                   urlParams.get('maps_key') || 
-                   localStorage.getItem('RIDEOS_GOOGLE_MAPS_API_KEY') || 
+      var apiKey = window.__RIDEOS_GOOGLE_MAPS_API_KEY__ ||
+                   urlParams.get('maps_key') ||
+                   sessionStorage.getItem('RIDEOS_GOOGLE_MAPS_API_KEY') ||
+                   localStorage.getItem('RIDEOS_GOOGLE_MAPS_API_KEY') ||
                    '';
 
-      if (apiKey && apiKey !== 'YOUR_ACTUAL_GOOGLE_MAPS_API_KEY_HERE' && apiKey !== 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+      if (apiKey && apiKey.trim() !== '' && !apiKey.startsWith('YOUR_')) {
         loadMapsScript(apiKey);
       } else {
-        // Fetch client key from RideOS backend API dynamically
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'http://localhost:3000/api/v1/maps/client-key', false); // synchronous check
-        try {
-          xhr.send();
-          if (xhr.status === 200) {
-            var data = JSON.parse(xhr.responseText);
-            if (data && data.apiKey) {
-              window.__RIDEOS_GOOGLE_MAPS_API_KEY__ = data.apiKey;
-              loadMapsScript(data.apiKey);
-              return;
-            }
+        // Asynchronously query authorized client key from RideOS backend
+        var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        var apiBase = isLocal ? 'http://localhost:3000/api/v1' : 'https://api.rideos.ai/api/v1';
+
+        fetch(apiBase + '/maps/client-key', {
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(3000)
+        })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          var contentType = res.headers.get('content-type') || '';
+          if (!contentType.includes('application/json')) throw new Error('Non-JSON response');
+          return res.json();
+        })
+        .then(function(data) {
+          if (data && data.apiKey && data.apiKey.trim() !== '') {
+            window.__RIDEOS_GOOGLE_MAPS_API_KEY__ = data.apiKey;
+            loadMapsScript(data.apiKey);
+          } else {
+            console.warn('[RideOS Maps] Backend returned empty Maps API key.');
+            window.__gmaps_status__ = 'unconfigured';
           }
-        } catch (e) {}
-        loadMapsScript('');
+        })
+        .catch(function(err) {
+          console.warn('[RideOS Maps] Asynchronous key resolution skipped: ' + err.message);
+          window.__gmaps_status__ = 'unconfigured';
+        });
       }
     })();
   </script>

@@ -1,7 +1,6 @@
-import 'dart:io' show Platform;
 import 'package:rideos_mobile/core/design_system/lux_components.dart' hide RoadOSButton, RoadOSCard;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -129,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _onAppleSignIn() async {
     if (_socialLoading) return;
 
-    if (kIsWeb || Platform.isAndroid) {
+    if (kIsWeb || defaultTargetPlatform == TargetPlatform.android) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Apple Sign-In is only available on iOS devices. Please sign in with email & password.'),
