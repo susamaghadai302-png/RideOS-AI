@@ -43,9 +43,13 @@ import 'core/contracts/voice_gateway.dart';
 import 'core/router/app_router.dart';
 import 'features/voice_assistant/presentation/bloc/voice_bloc.dart';
 import 'core/carplay/carplay_state_bridge.dart';
+import 'package:flutter_web_plugins/url_strategy.dart' show usePathUrlStrategy;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
 
   try {
     final options = DefaultFirebaseOptions.currentPlatform;
@@ -304,7 +308,6 @@ class _RideOSAppState extends State<RideOSApp> {
                 builder: (context, child) {
                   return GlobalCallOverlay(child: child!);
                 },
-                initialRoute: AppRouter.root,
                 onGenerateRoute: AppRouter.onGenerateRoute,
               );
             }

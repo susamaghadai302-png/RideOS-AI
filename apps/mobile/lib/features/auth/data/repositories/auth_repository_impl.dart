@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:local_auth/local_auth.dart';
 import '../../../../core/storage/token_storage.dart';
 import '../../domain/entities/rider_entity.dart';
@@ -109,6 +110,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<RiderEntity> getProfile() async {
+    if (kIsWeb) {
+      final token = await tokenStorage.getAccessToken();
+      if (token == null || token.trim().isEmpty) {
+        throw Exception('No active session found. Please sign in with email/password.');
+      }
+    }
     return await remoteDatasource.getProfile();
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
@@ -11,6 +12,7 @@ import '../../features/auth/presentation/screens/phone_otp_auth_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/landing/presentation/screens/web_landing_screen.dart';
 import '../../features/shell/presentation/screens/roados_app_shell.dart';
+import '../utils/platform_web_helper.dart';
 
 class AppRouter {
   // Public Route Paths
@@ -199,6 +201,8 @@ class ProtectedRoute extends StatelessWidget {
           previous is AuthenticatedState && current is! AuthenticatedState,
       listener: (context, state) {
         if (state is UnauthenticatedState || state is AuthFailureState) {
+          PlatformWebHelper.replaceUrl(AppRouter.login);
+          SystemNavigator.routeInformationUpdated(uri: Uri.parse(AppRouter.login));
           Navigator.of(context).pushNamedAndRemoveUntil(
             AppRouter.login,
             (route) => false,
@@ -212,6 +216,8 @@ class ProtectedRoute extends StatelessWidget {
 
         if (state is UnauthenticatedState || state is AuthFailureState) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
+            PlatformWebHelper.replaceUrl(AppRouter.login);
+            SystemNavigator.routeInformationUpdated(uri: Uri.parse(AppRouter.login));
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pushReplacementNamed(AppRouter.login);
             } else {

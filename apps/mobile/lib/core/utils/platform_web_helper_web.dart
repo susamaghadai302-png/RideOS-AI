@@ -26,4 +26,10 @@ class PlatformWebHelperImpl {
       html.window.speechSynthesis?.cancel();
     } catch (_) {}
   }
+
+  static void replaceUrl(String path) {
+    try {
+      html.window.history.replaceState(null, '', path);
+    } catch (_) {}
+  }
 }
