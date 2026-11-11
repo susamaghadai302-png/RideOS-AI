@@ -11,6 +11,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AiAssistantService } from './ai_assistant.service';
 import { AiQueryDto } from './dto/ai-query.dto';
@@ -23,9 +24,17 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class AiAssistantController {
   constructor(private readonly aiService: AiAssistantService) {}
 
+  private getRiderId(req: any): string {
+    const riderId = req.user?.userId || req.user?.sub;
+    if (!riderId) {
+      throw new UnauthorizedException('Rider identity could not be verified from token');
+    }
+    return riderId;
+  }
+
   @Post('query')
   async queryAssistant(@Body() dto: AiQueryDto, @Req() req: any) {
-    const riderId = req.user?.userId || req.user?.sub || 'anonymous-rider';
+    const riderId = this.getRiderId(req);
     return this.aiService.processQuery(dto, riderId);
   }
 
@@ -40,19 +49,19 @@ export class AiAssistantController {
 
   @Get('conversations')
   async getConversations(@Req() req: any) {
-    const riderId = req.user?.userId || req.user?.sub || 'anonymous-rider';
+    const riderId = this.getRiderId(req);
     return this.aiService.getConversations(riderId);
   }
 
   @Get('conversations/:id')
   async getConversation(@Param('id') conversationId: string, @Req() req: any) {
-    const riderId = req.user?.userId || req.user?.sub || 'anonymous-rider';
+    const riderId = this.getRiderId(req);
     return this.aiService.getConversation(riderId, conversationId);
   }
 
   @Delete('conversations/:id')
   async deleteConversation(@Param('id') conversationId: string, @Req() req: any) {
-    const riderId = req.user?.userId || req.user?.sub || 'anonymous-rider';
+    const riderId = this.getRiderId(req);
     return this.aiService.deleteConversation(riderId, conversationId);
   }
 
@@ -62,13 +71,13 @@ export class AiAssistantController {
 
   @Get('memories')
   async getMemories(@Req() req: any) {
-    const riderId = req.user?.userId || req.user?.sub || 'anonymous-rider';
+    const riderId = this.getRiderId(req);
     return this.aiService.getMemories(riderId);
   }
 
   @Post('memories')
   async createMemory(@Body() dto: CreateMemoryDto, @Req() req: any) {
-    const riderId = req.user?.userId || req.user?.sub || 'anonymous-rider';
+    const riderId = this.getRiderId(req);
     return this.aiService.createOrUpdateMemory(riderId, dto);
   }
 
@@ -78,20 +87,20 @@ export class AiAssistantController {
     @Body() dto: UpdateMemoryDto,
     @Req() req: any,
   ) {
-    const riderId = req.user?.userId || req.user?.sub || 'anonymous-rider';
+    const riderId = this.getRiderId(req);
     return this.aiService.updateMemory(riderId, memoryId, dto);
   }
 
   @Delete('memories/:id')
   async deleteMemory(@Param('id') memoryId: string, @Req() req: any) {
-    const riderId = req.user?.userId || req.user?.sub || 'anonymous-rider';
+    const riderId = this.getRiderId(req);
     return this.aiService.deleteMemory(riderId, memoryId);
   }
 
   @Delete('memories')
   @HttpCode(HttpStatus.OK)
   async clearAllMemories(@Req() req: any) {
-    const riderId = req.user?.userId || req.user?.sub || 'anonymous-rider';
+    const riderId = this.getRiderId(req);
     return this.aiService.clearAllMemories(riderId);
   }
 
@@ -113,12 +122,14 @@ export class AiAssistantController {
   }
 
   @Post('knowledge')
-  async createKnowledge(@Body() dto: CreateKnowledgeDto) {
+  async createKnowledge(@Body() dto: CreateKnowledgeDto, @Req() req: any) {
+    this.getRiderId(req);
     return this.aiService.createKnowledgeDoc(dto);
   }
 
   @Delete('knowledge/:id')
-  async deleteKnowledge(@Param('id') docId: string) {
+  async deleteKnowledge(@Param('id') docId: string, @Req() req: any) {
+    this.getRiderId(req);
     return this.aiService.deleteKnowledgeDoc(docId);
   }
 }

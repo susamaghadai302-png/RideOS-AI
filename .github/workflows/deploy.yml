@@ -8,6 +8,12 @@ on:
     branches: [ main ]
     types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publish approved release asset to GitHub Releases'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   backend_ci:
@@ -176,16 +182,14 @@ jobs:
           script: bash .github/scripts/android-emulator-smoke.sh
 
       - name: Report APK delivery policy
-        if: github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/tags/v') && !startsWith(github.ref, 'refs/heads/release/')
+        if: "!startsWith(github.ref, 'refs/tags/v') && (github.event_name != 'workflow_dispatch' || github.event.inputs.publish_release != 'true')"
         run: |
-          echo "::notice title=APK delivery policy::GitHub Actions artifact uploads are disabled to avoid storage quota failures. Selected QA builds are published as private GitHub Release assets."
+          echo "::notice title=APK delivery policy::Automated QA builds are not published as public releases. Production/QA release assets are published only for explicit version tags (refs/tags/v*.*.*) or approved manual release dispatches."
 
       - name: Publish APK as a GitHub Release asset
         if: |
           startsWith(github.ref, 'refs/tags/v') ||
-          startsWith(github.ref, 'refs/heads/release/') ||
-          github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_release == 'true')
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}

@@ -120,3 +120,38 @@ Per our strict **Truthful State Policy**, the following items require physical v
 2. **Physical Smart Helmet HUD**: Pairing with a BLE smart helmet display.
 3. **Cellular Emergency SOS & SMS**: Sending live SMS alerts via Twilio carrier SIM.
 4. **Google Play Console Release Submission**: Uploading the signed `app-release.aab` to Google Play Console (requires developer account access).
+
+---
+
+## 6. Pre-Merge Final Review & Publication Safety Ledger
+
+- **Review Date**: November 11, 2026
+- **Branch**: `release/phase9-final-completion`
+- **Scope**: All 49 changed files, CI/CD pipeline triggers, Android emulator launch scripts, Kotlin 2.3.20 compatibility, and AI API security & data isolation.
+
+### Key Pre-Merge Audit Findings & Remediation
+
+1. **GitHub Actions QA APK Public Prerelease Elimination**:
+   - *Issue*: Pushing to `release/*` or running same-repo PRs automatically triggered the `Publish APK as a GitHub Release asset` step in `.github/workflows/deploy.yml`, generating publicly downloadable GitHub prereleases (`ci-apk-<run_id>`) containing debug-signed QA builds.
+   - *Fix*: Restricted publication strictly to approved events: either official release tags (`refs/tags/v*.*.*`) or manual `workflow_dispatch` with `publish_release: true`. Regular feature branch pushes and pull requests now build and smoke-test APKs without creating public release assets.
+
+2. **Android Emulator Explicit Activity Launch Component Correction**:
+   - *Issue*: In `.github/scripts/android-emulator-smoke.sh`, `am start -n ai.rideos.app/.MainActivity` failed with `Error: Activity class {ai.rideos.app/ai.rideos.app.MainActivity} does not exist`, triggering monkey fallback.
+   - *Root Cause*: The app's namespace is `com.example.rideos_mobile` while `applicationId` is `ai.rideos.app`.
+   - *Fix*: Corrected explicit component to `ai.rideos.app/com.example.rideos_mobile.MainActivity` while preserving launcher fallback (`monkey -p ai.rideos.app -c android.intent.category.LAUNCHER 1`).
+
+3. **Kotlin 2.3.20 Upgrade & Plugin Compatibility**:
+   - *Audit*: Flutter 3.47.5 emitted deprecation warnings for Kotlin 2.2.20 (`Warning: Flutter support for your project's Kotlin version (2.2.20) will soon be dropped. Please upgrade your Kotlin version to a version of at least 2.3.20 soon`).
+   - *Remediation*: Upgraded `org.jetbrains.kotlin.android` to `2.3.20` in `apps/mobile/android/settings.gradle.kts`.
+   - *Verification*: `assembleDebug` compiled cleanly (136.3s); all 8 plugins (`bluetooth_classic`, `firebase_*`, `flutter_tts`, etc.) resolved and compiled; all 878 Flutter tests passed.
+
+4. **AI Assistant Authentication & Strict Data Isolation Hardening**:
+   - *Audit*: `AiAssistantController` previously defaulted missing JWT user identity to `'anonymous-rider'`, creating a potential data leakage vector across unauthenticated requests.
+   - *Remediation*: Introduced `getRiderId(req)` helper that strictly enforces `req.user?.userId || req.user?.sub`, throwing `UnauthorizedException` if missing. All conversation, memory, and knowledge management endpoints now enforce strict account isolation.
+   - *Verification*: Added 6 unit tests in `apps/backend/src/modules/ai_assistant/ai_assistant.controller.spec.ts`, expanding the backend test suite from 114 to 120 passing tests across 23 test suites.
+
+5. **Monorepo Full Validation**:
+   - Monorepo packages: 16 of 16 built cleanly via `pnpm run build:packages`.
+   - Backend API: `tsc --noEmit` clean, `nest build` clean, 120 Jest unit tests passed.
+   - Flutter Mobile: `flutter analyze` 0 issues, 878 tests passed.
+   - Scripts: `./scripts/validate.sh` executed to completion with code 0.
