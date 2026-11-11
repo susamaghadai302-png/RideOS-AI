@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,9 +34,7 @@ class ApiConfig {
     if (uri.host == 'localhost' || uri.host == '127.0.0.1') {
       return kDefaultWebBaseUrl;
     }
-    if (uri.origin.isNotEmpty && !uri.origin.startsWith('file://')) {
-      return '${uri.origin}/api/v1';
-    }
+    // Never fall through to the static hosting origin (which serves the Flutter SPA)
     return 'https://api.rideos.ai/api/v1';
   }
 
@@ -143,18 +142,103 @@ class ApiConfig {
     }
   }
 
-  /// Pings a candidate URL's health endpoint
-  static Future<HealthCheckResult> testHealth(String candidateBaseUrl) async {
+  /// Pings a candidate URL's health endpoint with strict validation of status code,
+  /// Content-Type, HTML fallback rejection, and healthy JSON payload structure.
+  static Future<HealthCheckResult> testHealth(
+    String candidateBaseUrl, {
+    http.Client? client,
+    Duration timeout = const Duration(seconds: 3),
+  }) async {
     final cleanUrl = candidateBaseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final healthUrl = cleanUrl.endsWith('/api/v1') ? '$cleanUrl/health' : '$cleanUrl/api/v1/health';
 
     final stopwatch = Stopwatch()..start();
+    final httpClient = client ?? http.Client();
+    final shouldCloseClient = client == null;
+
     try {
       final uri = Uri.parse(healthUrl);
-      final response = await http.get(uri).timeout(const Duration(seconds: 3));
+      final response = await httpClient.get(
+        uri,
+        headers: const {
+          'Accept': 'application/json',
+          'X-Client-Platform': 'web',
+        },
+      ).timeout(timeout);
       stopwatch.stop();
 
-      if (response.statusCode == 200) {
+      // 1. Verify HTTP Status Code
+      if (response.statusCode != 200) {
+        return HealthCheckResult(
+          isReachable: false,
+          url: cleanUrl,
+          statusCode: response.statusCode,
+          latencyMs: stopwatch.elapsedMilliseconds,
+          rawPayload: response.body,
+          errorMessage: 'Server returned HTTP ${response.statusCode}',
+        );
+      }
+
+      // 2. Verify Content-Type is JSON (reject text/html SPA fallbacks)
+      final rawContentType = response.headers['content-type'] ?? '';
+      final contentType = rawContentType.toLowerCase();
+      if (!contentType.contains('application/json')) {
+        return HealthCheckResult(
+          isReachable: false,
+          url: cleanUrl,
+          statusCode: response.statusCode,
+          latencyMs: stopwatch.elapsedMilliseconds,
+          rawPayload: response.body,
+          errorMessage: 'Invalid content-type: expected application/json, received $rawContentType',
+        );
+      }
+
+      // 3. Inspect body for HTML markers (defense against misconfigured proxies)
+      final trimmedBody = response.body.trim().toLowerCase();
+      if (trimmedBody.startsWith('<!doctype html') ||
+          trimmedBody.startsWith('<html') ||
+          trimmedBody.contains('<head') ||
+          trimmedBody.contains('<body')) {
+        return HealthCheckResult(
+          isReachable: false,
+          url: cleanUrl,
+          statusCode: response.statusCode,
+          latencyMs: stopwatch.elapsedMilliseconds,
+          rawPayload: response.body,
+          errorMessage: 'Received HTML fallback page instead of JSON API response',
+        );
+      }
+
+      // 4. Parse and validate JSON structure
+      try {
+        final dynamic decoded = jsonDecode(response.body);
+        if (decoded is! Map<String, dynamic>) {
+          return HealthCheckResult(
+            isReachable: false,
+            url: cleanUrl,
+            statusCode: response.statusCode,
+            latencyMs: stopwatch.elapsedMilliseconds,
+            rawPayload: response.body,
+            errorMessage: 'Malformed health response: expected JSON object',
+          );
+        }
+
+        // Expected backend health structure from NestJS HealthController:
+        // { "status": "UP" | "ok", "service": "RideOS-AI-Backend", ... }
+        final statusValue = decoded['status']?.toString().toUpperCase();
+        final isHealthy = statusValue == 'UP' || statusValue == 'OK';
+
+        if (!isHealthy) {
+          return HealthCheckResult(
+            isReachable: false,
+            url: cleanUrl,
+            statusCode: response.statusCode,
+            latencyMs: stopwatch.elapsedMilliseconds,
+            rawPayload: response.body,
+            errorMessage: 'Backend reported degraded/unhealthy status: ${decoded['status']}',
+          );
+        }
+
         return HealthCheckResult(
           isReachable: true,
           url: cleanUrl,
@@ -162,15 +246,24 @@ class ApiConfig {
           latencyMs: stopwatch.elapsedMilliseconds,
           rawPayload: response.body,
         );
-      } else {
+      } catch (jsonErr) {
         return HealthCheckResult(
           isReachable: false,
           url: cleanUrl,
           statusCode: response.statusCode,
           latencyMs: stopwatch.elapsedMilliseconds,
-          errorMessage: 'Server returned HTTP ${response.statusCode}',
+          rawPayload: response.body,
+          errorMessage: 'Malformed health response: failed to parse JSON ($jsonErr)',
         );
       }
+    } on TimeoutException {
+      stopwatch.stop();
+      return HealthCheckResult(
+        isReachable: false,
+        url: cleanUrl,
+        latencyMs: stopwatch.elapsedMilliseconds,
+        errorMessage: 'Connection timed out after ${timeout.inSeconds}s',
+      );
     } catch (e) {
       stopwatch.stop();
       return HealthCheckResult(
@@ -179,6 +272,10 @@ class ApiConfig {
         latencyMs: stopwatch.elapsedMilliseconds,
         errorMessage: e.toString(),
       );
+    } finally {
+      if (shouldCloseClient) {
+        httpClient.close();
+      }
     }
   }
 

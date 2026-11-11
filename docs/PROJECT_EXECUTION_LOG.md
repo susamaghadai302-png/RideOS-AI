@@ -271,3 +271,63 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
 | `ci-apk-40553173335` | RideOS-AI Android APK ci-apk-40553173335 | 2026-10-27T17:42:46Z | True | app-release.apk (103.5 MB) |
 
 - **Security Note**: All 10 legacy releases contain debug-signed QA builds (`CN=Android Debug,O=Android,C=US`). Following the remediation in Phase 9, routine CI builds no longer publish public releases; only explicitly tagged releases (`refs/tags/v*.*.*`) or authorized manual dispatches trigger publication.
+
+---
+
+## Phase 11: PR #4 Critical Website API Integration Fix & Browser-Level Verification
+
+- **Execution Date**: November 11, 2026
+- **Feature Branch**: `feat/website-completion-deployment`
+- **Pull Request**: [#4](https://github.com/susamaghadai302-png/RideOS-AI/pull/4)
+- **Deployment Targets Verified**:
+  - Live Production Site: `https://rideos-ai.web.app` (HTTP/2 200, E2E 12/12 Passed)
+  - Preview Channel Site: `https://rideos-ai--website-preview-vi3g2jva.web.app` (HTTP/2 200, E2E 12/12 Passed)
+
+### 1. Firebase Hosting & Backend API Routing Remediation
+- **Problem**: Firebase Hosting previously had a blanket rewrite rule (`"source": "**", "destination": "/index.html"`). Requests to `/api/**` were captured by the SPA rewrite and returned the HTML index file with HTTP 200, causing client network layers to falsely consider the backend reachable.
+- **Fix**: Replaced blanket rewrite with negative glob pattern `"source": "!/api/**", "destination": "/index.html"`. Configured specific no-cache headers for `/api/**`.
+- **Verification**: Verified via curl and Puppeteer: requesting `/api/v1/health` on Firebase Hosting returns `HTTP 404 Not Found`, completely preventing HTML fallthrough.
+
+### 2. False Backend Health Status Elimination (`ApiConfig.testHealth`)
+- **Problem**: `ApiConfig.testHealth()` only checked `response.statusCode == 200`, incorrectly treating HTML fallback pages as a healthy backend.
+- **Remediation**:
+  1. Enforced `response.statusCode == 200`.
+  2. Enforced `Content-Type: application/json` header check.
+  3. Added body-level HTML inspection rejecting documents starting with `<!doctype html`, `<html`, etc.
+  4. Validated JSON structure and confirmed `status == 'UP' || status == 'OK'`.
+  5. Implemented client dependency injection (`http.Client? client`) and configurable timeouts.
+- **Regression Tests**: Created `apps/mobile/test/unit/api_config_health_test.dart` (8 tests):
+  - Valid backend JSON (`isReachable: true`)
+  - HTTP 200 HTML SPA fallback (`isReachable: false`, error specifies invalid content-type)
+  - Disguised HTML body (`isReachable: false`, error specifies HTML fallback page)
+  - HTTP 404 (`isReachable: false`, status 404)
+  - Timeout (`isReachable: false`)
+  - Connection refused (`isReachable: false`)
+  - Malformed JSON (`isReachable: false`)
+  - Degraded/unhealthy status (`isReachable: false`)
+  - Result: 8/8 tests passed.
+
+### 3. Google Maps Web Key & Dynamic Loader Hardening
+- **Problem**: Google Maps API key was hardcoded as a literal script in `apps/mobile/web/index.html` and used a synchronous `XMLHttpRequest` that caused browser warnings.
+- **Remediation**:
+  1. Removed the hardcoded literal key from `index.html`.
+  2. Implemented asynchronous loader using `fetch()` with `AbortSignal.timeout(3000)`.
+  3. Added `window.gm_authFailure` callback and `script.onerror` event listener, tracking genuine error states on `window.__gmaps_status__` and `window.__gmaps_error__`.
+  4. Preserved existing GCP key restrictions (`4ae0c1f7-ff79-4524-acb2-70bd14e2571b`) targeting Maps JavaScript API, Routes API v2, Places API, and HTTP referrers.
+
+### 4. Full Browser-Level E2E Automation
+- **Framework**: `puppeteer-core` with system Google Chrome (`157.0.8103.50`).
+- **Script**: `scripts/puppeteer-tests/verify_web_preview_e2e.js`.
+- **Checks Verified**:
+  1. Landing page initial load (HTTP 200)
+  2. Document title correctness
+  3. Flutter Web canvas/engine initialization
+  4. `/api/**` SPA fallback protection (HTTP 404 verified)
+  5. Google Maps auth handler registration and truthful unconfigured status
+  6. Protected route deep-link redirection (`/dashboard` -> `/login`)
+  7. Direct route access for `/login`
+  8. Direct route access for `/register`
+  9. Tablet viewport (768x1024) layout rendering
+  10. Mobile viewport (390x844) layout rendering
+  11. Zero fatal script or console errors
+- **Results**: 12/12 checks passed on both preview channel and live production hosting.

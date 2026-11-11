@@ -61,6 +61,7 @@ google-services.json
 
 # ── Audit / debugging artifacts ────────────────────────────────────────────────
 .firebase/
+scripts/puppeteer-tests/screenshots/
 analyze_out*.txt
 listeners.txt
 workspace_tree.txt
