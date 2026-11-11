@@ -11,31 +11,31 @@ export class VehiclesController {
 
   @Post()
   create(@Req() req: Request, @Body() createVehicleDto: CreateVehicleDto) {
-    const userId = (req.user as any).sub;
+    const userId = (req.user as any)?.userId || (req.user as any)?.sub;
     return this.vehiclesService.create(userId, createVehicleDto);
   }
 
   @Get()
   findAll(@Req() req: Request) {
-    const userId = (req.user as any).sub;
+    const userId = (req.user as any)?.userId || (req.user as any)?.sub;
     return this.vehiclesService.findAllActive(userId);
   }
 
   @Get(':id')
   findOne(@Req() req: Request, @Param('id') id: string) {
-    const userId = (req.user as any).sub;
+    const userId = (req.user as any)?.userId || (req.user as any)?.sub;
     return this.vehiclesService.findOne(id, userId);
   }
 
   @Put(':id')
   update(@Req() req: Request, @Param('id') id: string, @Body() updateVehicleDto: UpdateVehicleDto) {
-    const userId = (req.user as any).sub;
+    const userId = (req.user as any)?.userId || (req.user as any)?.sub;
     return this.vehiclesService.update(id, userId, updateVehicleDto);
   }
 
   @Delete(':id')
   remove(@Req() req: Request, @Param('id') id: string) {
-    const userId = (req.user as any).sub;
+    const userId = (req.user as any)?.userId || (req.user as any)?.sub;
     return this.vehiclesService.softDelete(id, userId);
   }
 }

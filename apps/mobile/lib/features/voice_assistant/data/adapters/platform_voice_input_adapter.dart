@@ -69,12 +69,14 @@ class PlatformVoiceInputAdapter implements VoiceGateway {
 
     _emitState(VoiceInputState.permissionRequired);
     
-    // Check real permissions
-    final permissionStatus = await Permission.microphone.request();
-    if (permissionStatus.isDenied || permissionStatus.isPermanentlyDenied) {
-      debugPrint('Microphone permission denied');
-      _emitState(VoiceInputState.error);
-      return;
+    // Check permissions safely across platforms
+    if (!kIsWeb) {
+      final permissionStatus = await Permission.microphone.request();
+      if (permissionStatus.isDenied || permissionStatus.isPermanentlyDenied) {
+        debugPrint('Microphone permission denied');
+        _emitState(VoiceInputState.error);
+        return;
+      }
     }
 
     final initSuccess = await _initSpeech();

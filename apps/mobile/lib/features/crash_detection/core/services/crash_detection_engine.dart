@@ -87,7 +87,7 @@ class CrashDetectionEngine {
   String generateEmergencyMessage({required double lat, required double lng}) {
     final reasonPart =
         lastTriggerReason.isNotEmpty ? ' Reason: $lastTriggerReason.' : '';
-    return 'EMERGENCY SOS ALERT! Rideo Pro detected a motorcycle crash for ${medicalProfile.fullName}.$reasonPart '
+    return 'EMERGENCY SOS ALERT! RideOS Pro detected a motorcycle crash for ${medicalProfile.fullName}.$reasonPart '
         'Location: https://maps.google.com/?q=$lat,$lng. '
         'Blood Type: ${medicalProfile.bloodType}, Allergies: ${medicalProfile.allergies}. '
         'Insurance: ${medicalProfile.insuranceProvider} (${medicalProfile.insurancePolicyNo}).';

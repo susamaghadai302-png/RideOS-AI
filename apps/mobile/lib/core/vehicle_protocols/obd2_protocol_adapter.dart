@@ -179,66 +179,91 @@ class Obd2ProtocolAdapter extends ProtocolAdapter {
         .replaceAll('>', '')
         .toUpperCase();
     
-    // Ignore ELM status and searching prompts
-    if (clean.isEmpty || clean == 'OK' || clean == 'SEARCHING...' || clean == 'NODATA' || clean.contains('ELM327')) {
+    // Ignore ELM status, errors, and searching prompts
+    if (clean.isEmpty ||
+        clean == 'OK' ||
+        clean == '?' ||
+        clean.contains('ERROR') ||
+        clean.contains('BUSY') ||
+        clean.contains('SEARCHING') ||
+        clean.contains('NODATA') ||
+        clean.contains('STOPPED') ||
+        clean.contains('TIMEOUT') ||
+        clean.contains('ELM327')) {
       return;
     }
+
+    bool hasUpdated = false;
 
     if (clean.startsWith('410C')) {
       // RPM Response: 41 0C XX YY -> ((XX * 256) + YY) / 4
       if (clean.length >= 8) {
-        int a = int.tryParse(clean.substring(4, 6), radix: 16) ?? 0;
-        int b = int.tryParse(clean.substring(6, 8), radix: 16) ?? 0;
+        final a = int.tryParse(clean.substring(4, 6), radix: 16);
+        final b = int.tryParse(clean.substring(6, 8), radix: 16);
+        if (a == null || b == null) return;
         int rpm = ((a * 256) + b) ~/ 4;
         _cachedTelemetry = _cachedTelemetry.copyWith(rpm: TelemetryValue.live(rpm, 'RPM'));
+        hasUpdated = true;
       }
     } else if (clean.startsWith('410D')) {
       // Speed Response: 41 0D XX -> XX km/h
       if (clean.length >= 6) {
-        int speed = int.tryParse(clean.substring(4, 6), radix: 16) ?? 0;
+        final speed = int.tryParse(clean.substring(4, 6), radix: 16);
+        if (speed == null) return;
         _cachedTelemetry = _cachedTelemetry.copyWith(speed: TelemetryValue.live(speed.toDouble(), 'km/h'));
+        hasUpdated = true;
       }
     } else if (clean.startsWith('4105')) {
       // Coolant Temp: 41 05 XX -> XX - 40 C
       if (clean.length >= 6) {
-        int a = int.tryParse(clean.substring(4, 6), radix: 16) ?? 40;
+        final a = int.tryParse(clean.substring(4, 6), radix: 16);
+        if (a == null) return;
         int temp = a - 40;
         _cachedTelemetry = _cachedTelemetry.copyWith(
           coolantTemperature: TelemetryValue.live(temp, 'C'),
           engineTemperature: TelemetryValue.live(temp, 'C'),
         );
+        hasUpdated = true;
       }
     } else if (clean.startsWith('4111')) {
       // Throttle Position %: 41 11 XX -> (XX * 100) / 255
       if (clean.length >= 6) {
-        int a = int.tryParse(clean.substring(4, 6), radix: 16) ?? 0;
+        final a = int.tryParse(clean.substring(4, 6), radix: 16);
+        if (a == null) return;
         double throttle = double.parse(((a * 100.0) / 255.0).toStringAsFixed(1));
         _cachedTelemetry = _cachedTelemetry.copyWith(throttlePosition: TelemetryValue.live(throttle, '%'));
+        hasUpdated = true;
       }
     } else if (clean.startsWith('412F')) {
       // Fuel Level %: 41 2F XX -> (XX * 100) / 255
       if (clean.length >= 6) {
-        int a = int.tryParse(clean.substring(4, 6), radix: 16) ?? 0;
+        final a = int.tryParse(clean.substring(4, 6), radix: 16);
+        if (a == null) return;
         int fuel = ((a * 100) / 255).round();
         _cachedTelemetry = _cachedTelemetry.copyWith(fuelLevel: TelemetryValue.live(fuel, '%'));
+        hasUpdated = true;
       }
     } else if (clean.startsWith('410F')) {
       // Intake Air Temp: 41 0F XX -> XX - 40 C
       if (clean.length >= 6) {
-        int a = int.tryParse(clean.substring(4, 6), radix: 16) ?? 40;
+        final a = int.tryParse(clean.substring(4, 6), radix: 16);
+        if (a == null) return;
         int temp = a - 40;
         _cachedTelemetry = _cachedTelemetry.copyWith(ambientTemperature: TelemetryValue.live(temp, 'C'));
+        hasUpdated = true;
       }
     } else if (clean.startsWith('4104')) {
       // Calculated Engine Load %: 41 04 XX -> (XX * 100) / 255
       if (clean.length >= 6) {
-        int a = int.tryParse(clean.substring(4, 6), radix: 16) ?? 0;
+        final a = int.tryParse(clean.substring(4, 6), radix: 16);
+        if (a == null) return;
         double load = double.parse(((a * 100.0) / 255.0).toStringAsFixed(1));
         _cachedTelemetry = _cachedTelemetry.copyWith(
           throttlePosition: _cachedTelemetry.throttlePosition.hasValue
               ? _cachedTelemetry.throttlePosition
               : TelemetryValue.live(load, '%'),
         );
+        hasUpdated = true;
       }
     } else if (clean.startsWith('4100') || clean.startsWith('4120') || clean.startsWith('4140') || clean.startsWith('4160')) {
       // Supported PIDs bitmask response (e.g. 41 00 BE 3F B8 13) -> Valid acknowledgement from ECU
@@ -246,13 +271,15 @@ class Obd2ProtocolAdapter extends ProtocolAdapter {
     } else if (clean.startsWith('4142')) {
       // Control Module Voltage standard Mode 01 PID 42: 41 42 XX YY -> ((XX * 256) + YY) / 1000.0 V
       if (clean.length >= 8) {
-        int a = int.tryParse(clean.substring(4, 6), radix: 16) ?? 0;
-        int b = int.tryParse(clean.substring(6, 8), radix: 16) ?? 0;
+        final a = int.tryParse(clean.substring(4, 6), radix: 16);
+        final b = int.tryParse(clean.substring(6, 8), radix: 16);
+        if (a == null || b == null) return;
         double volts = double.parse((((a * 256) + b) / 1000.0).toStringAsFixed(2));
         _cachedTelemetry = _cachedTelemetry.copyWith(
           batteryVoltage: TelemetryValue.live(volts, 'V'),
           deviceVoltage: TelemetryValue.live(volts, 'V'),
         );
+        hasUpdated = true;
       }
     } else if (clean.startsWith('43') || clean.startsWith('47')) {
       // DTC Fault Codes: Mode 03 / Mode 07 Response -> 43 XX YY ZZ WW...
@@ -267,9 +294,11 @@ class Obd2ProtocolAdapter extends ProtocolAdapter {
         }
       }
       _cachedTelemetry = _cachedTelemetry.copyWith(faultCodes: TelemetryValue.live(dtcs, 'DTC'));
+      hasUpdated = true;
     } else if (clean.startsWith('44')) {
       // Mode 04 Clear DTC confirmation
       _cachedTelemetry = _cachedTelemetry.copyWith(faultCodes: TelemetryValue.live(<String>[], 'DTC'));
+      hasUpdated = true;
     } else if (clean.contains('V') && !clean.startsWith('4')) {
       // Direct ELM327 ATRV Voltage -> e.g. "12.6V" or "14.2V"
       String voltStr = clean.replaceAll('V', '');
@@ -279,10 +308,13 @@ class Obd2ProtocolAdapter extends ProtocolAdapter {
           batteryVoltage: TelemetryValue.live(v, 'V'),
           deviceVoltage: TelemetryValue.live(v, 'V'),
         );
+        hasUpdated = true;
       }
     }
 
-    _controller.add(_cachedTelemetry);
+    if (hasUpdated) {
+      _controller.add(_cachedTelemetry);
+    }
   }
 
   @override

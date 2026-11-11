@@ -5,12 +5,16 @@ class AiChatMessage {
   final bool isUser;
   final String timestamp;
   final String? action;
+  final String? conversationId;
+  final String? language;
 
   const AiChatMessage({
     required this.text,
     required this.isUser,
     required this.timestamp,
     this.action,
+    this.conversationId,
+    this.language,
   });
 }
 
@@ -19,12 +23,19 @@ class AiAssistantRemoteDatasource {
 
   AiAssistantRemoteDatasource({required this.apiClient});
 
-  Future<AiChatMessage> sendQuery(String prompt, [Map<String, dynamic>? telemetryContext]) async {
+  Future<AiChatMessage> sendQuery(
+    String prompt, [
+    Map<String, dynamic>? telemetryContext,
+    String? conversationId,
+    String? language,
+  ]) async {
     final response = await apiClient.dio.post(
       '/ai/assistant/query',
       data: {
         'prompt': prompt,
-        'telemetryContext': telemetryContext,
+        if (telemetryContext != null) 'telemetryContext': telemetryContext,
+        if (conversationId != null) 'conversationId': conversationId,
+        if (language != null) 'language': language,
       },
     );
 
@@ -33,6 +44,8 @@ class AiAssistantRemoteDatasource {
       isUser: false,
       timestamp: response.data['timestamp'] ?? DateTime.now().toIso8601String(),
       action: response.data['suggestedAction'],
+      conversationId: response.data['conversationId'],
+      language: response.data['language'],
     );
   }
 }

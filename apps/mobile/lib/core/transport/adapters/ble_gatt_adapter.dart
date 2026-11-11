@@ -79,6 +79,7 @@ class BleGattTransportAdapter implements TransportAdapter {
 
   @override
   Future<TransportPermissionState> checkPermission() async {
+    if (kIsWeb) return TransportPermissionState.granted;
     PermissionStatus status;
     if (Platform.isAndroid) {
       final scan = await Permission.bluetoothScan.status;
@@ -112,6 +113,7 @@ class BleGattTransportAdapter implements TransportAdapter {
 
   @override
   Future<TransportPermissionState> requestPermission() async {
+    if (kIsWeb) return TransportPermissionState.granted;
     if (Platform.isAndroid) {
       final statuses = await [
         Permission.bluetoothScan,

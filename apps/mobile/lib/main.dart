@@ -198,7 +198,7 @@ class _RideOSAppState extends State<RideOSApp> {
                     widget.voiceService ?? getIt<NavigationVoiceService>(),
               );
 
-              if (Platform.isIOS) {
+              if (!kIsWeb && Platform.isIOS) {
                 navBloc.stream.listen((state) {
                   CarPlayStateBridge.onNavigationUpdate(state);
 

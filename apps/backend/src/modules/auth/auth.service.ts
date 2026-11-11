@@ -130,11 +130,11 @@ export class AuthService {
       'super_secret_rideos_jwt_key_2026';
 
     try {
-      const payload = this.jwtService.verify<{ sub: string; email: string; type?: string }>(
+      const payload = this.jwtService.verify<{ sub: string; email?: string; type?: string }>(
         refreshToken.trim(),
         { secret: refreshSecret },
       );
-      if (payload.type !== 'refresh' || !payload.sub || !payload.email) {
+      if (payload.type !== 'refresh' || !payload.sub) {
         throw new UnauthorizedException('Invalid refresh token');
       }
       const rider = await this.riderModel.findOne({ _id: payload.sub });
@@ -192,18 +192,18 @@ export class AuthService {
     throw new NotImplementedException('Email delivery is not currently configured.');
   }
 
-  private generateTokens(userId: string, email: string) {
+  private generateTokens(userId: string, email?: string) {
     const accessSecret = this.configService.get<string>('JWT_SECRET') || 'super_secret_rideos_jwt_key_2026';
     const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || accessSecret;
     const accessExpiration = this.configService.get<string>('JWT_EXPIRATION') || '7d';
     const refreshExpiration = this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '30d';
 
     const accessToken = this.jwtService.sign(
-      { sub: userId, email, type: 'access' },
+      { sub: userId, email: email || '', type: 'access' },
       { secret: accessSecret, expiresIn: accessExpiration },
     );
     const refreshToken = this.jwtService.sign(
-      { sub: userId, email, type: 'refresh' },
+      { sub: userId, email: email || '', type: 'refresh' },
       { secret: refreshSecret, expiresIn: refreshExpiration },
     );
 

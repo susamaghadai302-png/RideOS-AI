@@ -39,6 +39,8 @@ class RemoteAiAssistantGatewayAdapter implements AIProviderGateway {
       final message = await _remoteDatasource.sendQuery(
         request.prompt, 
         request.context.telemetryData,
+        request.conversationId,
+        request.language,
       );
       
       return AIResponse(

@@ -55,12 +55,16 @@ class AIRequest {
   final String prompt;
   final DateTime timestamp;
   final AIConsumerContext context;
+  final String? conversationId;
+  final String? language;
 
   const AIRequest({
     required this.requestId,
     required this.prompt,
     required this.timestamp,
     required this.context,
+    this.conversationId,
+    this.language,
   });
 }
 

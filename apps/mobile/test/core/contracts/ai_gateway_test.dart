@@ -13,7 +13,12 @@ class MockAiAssistantRemoteDatasource implements AiAssistantRemoteDatasource {
   ApiClient get apiClient => throw UnimplementedError();
 
   @override
-  Future<AiChatMessage> sendQuery(String prompt, [Map<String, dynamic>? telemetryContext]) async {
+  Future<AiChatMessage> sendQuery(
+    String prompt, [
+    Map<String, dynamic>? telemetryContext,
+    String? conversationId,
+    String? language,
+  ]) async {
     if (shouldThrow) {
       throw Exception('Network Error');
     }

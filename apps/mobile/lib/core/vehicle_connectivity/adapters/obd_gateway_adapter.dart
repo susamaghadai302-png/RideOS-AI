@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../models/vehicle_capabilities.dart';
 import '../models/vehicle_variant_taxonomy.dart';
@@ -50,7 +51,7 @@ class ObdGatewayAdapter implements VehicleConnectivityAdapter {
   @override
   Future<bool> discover({Duration timeout = const Duration(seconds: 10)}) async {
     _updateState(AdapterConnectionState.discovering);
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
       _updateState(AdapterConnectionState.error);
       return false;
     }

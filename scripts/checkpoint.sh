@@ -72,7 +72,8 @@ fi
 
 # 8. Checkpoint Commit
 echo "Verification passed. Creating checkpoint commit..."
-git commit -m "chore: automatic phase checkpoint completion"
+COMMIT_MSG="${1:-chore: automatic phase checkpoint completion}"
+git commit -m "$COMMIT_MSG"
 
 # 9. Push to GitHub
 echo "Pushing to remote..."

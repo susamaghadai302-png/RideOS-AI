@@ -21,7 +21,7 @@ adb -s "${device}" uninstall ai.rideos.app.test >/dev/null 2>&1 || true
 adb -s "${device}" uninstall ai.rideos.app >/dev/null 2>&1 || true
 adb -s "${device}" install -r "$apk"
 adb -s "${device}" logcat -c
-adb -s "${device}" shell am start -n ai.rideos.app/.MainActivity || adb -s "${device}" shell monkey -p ai.rideos.app -c android.intent.category.LAUNCHER 1
+adb -s "${device}" shell am start -n ai.rideos.app/com.example.rideos_mobile.MainActivity || adb -s "${device}" shell monkey -p ai.rideos.app -c android.intent.category.LAUNCHER 1
 sleep 15
 
 pid="$(adb -s "${device}" shell pidof ai.rideos.app 2>/dev/null || true)"
