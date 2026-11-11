@@ -490,6 +490,7 @@ class RoadOSButton extends StatelessWidget {
   final bool isLoading;
   final Gradient? gradient;
   final bool isFullWidth;
+  final double? width;
   final double height;
 
   const RoadOSButton({
@@ -500,26 +501,27 @@ class RoadOSButton extends StatelessWidget {
     this.isLoading = false,
     this.gradient,
     this.isFullWidth = true,
+    this.width,
     this.height = 54.0,
   });
 
   @override
   Widget build(BuildContext context) {
-    return LiquidSurfaceInteraction(
-      depth: 35.0,
-      interactive: true,
-      child: SizedBox(
-      width: isFullWidth ? double.infinity : null,
+    return SizedBox(
+      width: width ?? (isFullWidth ? double.infinity : null),
       height: height,
-      child: LiquidGlassButton(
-        label: label,
-        icon: icon,
-        onPressed: onPressed,
-        isLoading: isLoading,
-        gradient: gradient,
-        height: height,
+      child: LiquidSurfaceInteraction(
+        depth: 35.0,
+        interactive: true,
+        child: LiquidGlassButton(
+          label: label,
+          icon: icon,
+          onPressed: onPressed,
+          isLoading: isLoading,
+          gradient: gradient,
+          height: height,
+        ),
       ),
-    ),
     );
   }
 }

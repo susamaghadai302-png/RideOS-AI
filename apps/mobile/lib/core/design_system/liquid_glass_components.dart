@@ -301,24 +301,31 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton> with SingleTicker
                   child: Center(
                     child: widget.isLoading
                         ? const LiquidGlassProgressIndicator(size: 22)
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (widget.icon != null) ...[
-                                Icon(widget.icon, color: Colors.white, size: 18),
-                                const SizedBox(width: 8),
-                              ],
-                              Text(
-                                widget.label,
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.0,
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (widget.icon != null) ...[
+                                  Icon(widget.icon, color: Colors.white, size: 18),
+                                  const SizedBox(width: 8),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    widget.label,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 14.0,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                   ),
                 ),

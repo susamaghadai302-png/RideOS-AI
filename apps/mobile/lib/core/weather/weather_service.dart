@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import '../network/api_config.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  WEATHER SERVICE — Real abstraction for weather data
@@ -110,10 +111,11 @@ const _kOpenWeatherApiKey = String.fromEnvironment(
   defaultValue: '',
 );
 
-const _kBackendBaseUrl = String.fromEnvironment(
-  'BACKEND_URL',
-  defaultValue: 'http://localhost:3000',
-);
+String get _resolvedBackendUrl {
+  const envUrl = String.fromEnvironment('BACKEND_URL', defaultValue: '');
+  if (envUrl.isNotEmpty) return envUrl;
+  return ApiConfig.activeBaseUrl.replaceAll('/api/v1', '');
+}
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
@@ -159,7 +161,7 @@ class WeatherService {
   }
 
   Future<WeatherState> _fetchFromBackend({required double lat, required double lon}) async {
-    final url = '$_kBackendBaseUrl/weather/current?lat=$lat&lon=$lon';
+    final url = '$_resolvedBackendUrl/weather/current?lat=$lat&lon=$lon';
     final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 6));
 
     if (response.statusCode != 200) throw Exception('Backend weather: HTTP ${response.statusCode}');

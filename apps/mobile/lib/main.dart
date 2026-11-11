@@ -40,9 +40,9 @@ import 'features/squad_ride/presentation/bloc/squad_bloc.dart';
 import 'features/vehicle/presentation/bloc/vehicle_bloc.dart';
 import 'features/vehicle/presentation/bloc/vehicle_event.dart';
 import 'core/contracts/voice_gateway.dart';
+import 'core/router/app_router.dart';
 import 'features/voice_assistant/presentation/bloc/voice_bloc.dart';
 import 'core/carplay/carplay_state_bridge.dart';
-import 'dart:io' show Platform;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -198,7 +198,7 @@ class _RideOSAppState extends State<RideOSApp> {
                     widget.voiceService ?? getIt<NavigationVoiceService>(),
               );
 
-              if (!kIsWeb && Platform.isIOS) {
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
                 navBloc.stream.listen((state) {
                   CarPlayStateBridge.onNavigationUpdate(state);
 
@@ -294,8 +294,23 @@ class _RideOSAppState extends State<RideOSApp> {
         child: AnimatedBuilder(
           animation: LuxThemeEngine(),
           builder: (context, child) {
+            if (kIsWeb) {
+              return MaterialApp(
+                title: 'RideOS AI',
+                debugShowCheckedModeBanner: false,
+                theme: LuxThemeEngine.lightTheme,
+                darkTheme: LuxThemeEngine.darkTheme,
+                themeMode: LuxThemeEngine().themeMode,
+                builder: (context, child) {
+                  return GlobalCallOverlay(child: child!);
+                },
+                initialRoute: AppRouter.root,
+                onGenerateRoute: AppRouter.onGenerateRoute,
+              );
+            }
+
             return MaterialApp(
-              title: 'RideOS Pro',
+              title: 'RideOS AI',
               debugShowCheckedModeBanner: false,
               theme: LuxThemeEngine.lightTheme,
               darkTheme: LuxThemeEngine.darkTheme,
@@ -303,6 +318,7 @@ class _RideOSAppState extends State<RideOSApp> {
               builder: (context, child) {
                 return GlobalCallOverlay(child: child!);
               },
+              onGenerateRoute: AppRouter.onGenerateRoute,
               home: !_splashFinished
                   ? SplashScreen(
                       onInitialized: () {

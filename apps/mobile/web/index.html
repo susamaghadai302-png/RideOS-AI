@@ -16,7 +16,7 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>RideOS Pro - Motorcycle Intelligence</title>
+  <title>RideOS AI — Next-Generation Connected Motorcycle Operating System</title>
   <link rel="manifest" href="manifest.json">
   <!-- RideOS Web Bluetooth Bridge (macOS Chrome/Edge Web Bluetooth) -->
   <script src="web_bluetooth_bridge.js"></script>
@@ -53,8 +53,10 @@
         loadMapsScript(apiKey);
       } else {
         // Fetch client key from RideOS backend API dynamically
+        var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        var baseUrl = isLocal ? 'http://localhost:3000' : window.location.origin;
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'http://localhost:3000/api/v1/maps/client-key', false); // synchronous check
+        xhr.open('GET', baseUrl + '/api/v1/maps/client-key', false);
         try {
           xhr.send();
           if (xhr.status === 200) {

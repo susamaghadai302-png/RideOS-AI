@@ -175,3 +175,99 @@ Per our strict **Truthful State Policy**, the following items require physical v
    - Production AAB `apps/mobile/build/app/outputs/bundle/release/app-release.aab` verified with SHA-256 `b0fd2c23d0ecfef101793e13af42505c9cf1b54c4c540562e6f33db944b3f228`, signed with valid upload certificate through 2054.
 4. **Release Documentation**:
    - Updated `docs/deployment.md` with Play Console internal track deployment checklist, background location/BLE permission disclosures, and non-destructive rollback procedures.
+
+---
+
+## Phase 10: Post-Merge Website Completion & Autonomous Deployment Mission
+
+- **Execution Date**: November 11, 2026
+- **Feature Branch**: `feat/website-completion-deployment`
+- **Base Commit**: `252fb8405a3a25a88147b97530798d543d44651a` (PR #3 merged into `main`)
+- **Hosting Targets**:
+  - Live Production Site: `https://rideos-ai.web.app` (HTTP/2 200)
+  - Preview Channel Site: `https://rideos-ai--website-preview-vi3g2jva.web.app` (HTTP/2 200)
+
+### 1. Task 1 — Safe Resumption & Baseline Verification
+- Verified `main` branch HEAD at commit `252fb8405a3a25a88147b97530798d543d44651a`.
+- Created isolated feature branch `feat/website-completion-deployment` without overwriting or resetting `main`.
+- Reused all existing backend NestJS APIs, authentication protocols, MongoDB / TimescaleDB data layer, and Liquid Glass design tokens.
+
+### 2. Task 2 — Complete Responsive RideOS AI Website Architecture
+Delivered a complete, responsive Flutter Web experience:
+1. **Interactive Liquid Glass Landing Page** (`WebLandingScreen`):
+   - Fixed frosted water-glass top navigation bar with live backend status indicator (`Online` / `Offline`), deep links (Cockpit, Features, Safety, Architecture), and authentication CTAs.
+   - Hero banner with animated badge (`RIDEOS AI PRO v1.0.0`), action buttons, and network health monitor.
+   - Interactive Live Cockpit Telemetry Simulator: Real-time speedometer gauge, tachometer RPM bar, lean angle gauge, digital gear indicator, and ride profile mode selector (`Sport` 118 km/h, `Cruising` 62 km/h, `Rain` 48 km/h).
+   - 6-Capability Feature Grid: Two-Wheeler 3D Navigation, Real-time OBD-II Diagnostics, AI Co-Pilot & Voice Assistant, Squad Ride Mesh Network, 360° Safety & Crash SOS, 3D Garage & Digital Vault.
+   - 360° Safety & Crash SOS section highlighting multi-axis high-G sensor fusion and 30-second automated emergency dispatch countdown.
+   - Enterprise Architecture specification detailing frontend Flutter Web / Mobile, backend NestJS, vehicle protocol translation, and end-to-end encryption.
+2. **Web URL Routing & Session State Enforcement** (`AppRouter`):
+   - Canonical web paths defined: `/`, `/landing`, `/login`, `/register`, `/forgot-password`, `/otp`, and 11 protected routes (`/dashboard`, `/drive`, `/navigation`, `/vehicles`, `/garage`, `/telemetry`, `/diagnostics`, `/maintenance`, `/safety`, `/dashcam`, `/documents`, `/settings`, `/squad`, `/ai-assistant`).
+   - Symmetrical bidirectional mapping between shell indices (0..16) and URL route paths.
+   - `ProtectedRoute` wrapper guarding all dashboard views: renders `AuthLoadingScreen` during token verification, redirects unauthenticated requests to `/login`, and prevents URL spoofing.
+   - `SystemNavigator.routeInformationUpdated(uri: Uri.parse(route))` synchronization across browser history.
+3. **Application Shell & Sidebar Navigation Enhancements** (`RoadOSAppShell`):
+   - Categorized desktop sidebar navigation groups: `MAIN`, `VEHICLE`, `TELEMETRY`, `DIAGNOSTICS`, `COMMUNITY`, `AI & CO-PILOT`, `SYSTEM`.
+   - Desktop and mobile drawer logout actions integrated directly with `AuthBloc` (`AuthLogoutRequested`).
+   - Symmetrical index coverage for all 17 screens, including Squad Ride (index 15) and AI Assistant (index 16), with safe dependency fallbacks for isolated testing harnesses.
+4. **Dynamic API Origin Resolution** (`ApiConfig`, `WeatherService`, `index.html`):
+   - Eliminated hardcoded `localhost:3000` fallbacks in production web builds.
+   - Automatically detects runtime browser origin (`Uri.base.origin/api/v1`) in production, with fallback to `https://api.rideos.ai/api/v1`.
+
+### 3. Task 3 — Testing & Verification
+1. **Automated Unit & Widget Tests**:
+   - Created test suite `apps/mobile/test/unit/app_router_web_landing_test.dart` verifying all 17 route mappings, route generators, landing screen hero, simulator, and mode switching.
+   - Re-verified responsive viewport overflow tests across 9 standard viewports (320px ultra-narrow to 1920px ultra-wide).
+   - Re-verified integration flow tests and widget smoke tests.
+2. **Test Execution Results**:
+   - `flutter analyze`: **0 issues found** (clean static analysis).
+   - `flutter test`: **881 tests passed, 0 failures**.
+   - `pnpm --filter backend run test`: **120 tests passed across 23 test suites, 0 failures**.
+
+### 4. Task 4 — Production Web Deployment & Artifact Verification
+1. **Compilation**:
+   - Compiled release bundle via `flutter build web --release` into `apps/mobile/build/web`.
+   - Verified assets: `main.dart.js` (4.9 MB optimized JS), `flutter_bootstrap.js`, `flutter.js`, `flutter_service_worker.js`, `version.json`, CanvasKit wasm, and icon fonts.
+2. **Hosting Deployments**:
+   - **Preview Channel**: Deployed via `firebase hosting:channel:deploy website-preview` to `https://rideos-ai--website-preview-vi3g2jva.web.app` (Version `24d7e8216a5ce892`).
+   - **Production Site**: Deployed via `firebase deploy --only hosting` to `https://rideos-ai.web.app`.
+3. **Verification via HTTP Inspection**:
+   - Both targets verified with HTTP/2 200 OK.
+   - Verified security headers: `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
+   - Static assets served with `Cache-Control: max-age=31536000, immutable`.
+
+### 5. Task 5 — Backend Production Readiness Checklist
+- **Database Layer**: MongoDB connection via `MONGO_URI`, TimescaleDB / PostgreSQL for high-frequency telemetry, Redis for real-time pub/sub caching.
+- **Authentication**: JWT secrets require 64-character minimum entropy (`JWT_SECRET`, `JWT_REFRESH_SECRET`).
+- **External APIs**: Google Routes API v2 key (`GOOGLE_ROUTES_API_KEY`) for motorcycle navigation; Twilio credentials for production SMS OTP.
+- **Security & Headers**: NestJS Helmet security headers enforced; CORS allowlist includes `https://rideos.ai`, `https://app.rideos.ai`, `https://rideos-ai.web.app`, `https://rideos-ai.firebaseapp.com`.
+- **Status**: `COMPLETED_AND_VERIFIED` in code/tests; production database and API credentials require deployment environment injection.
+
+### 6. Task 6 — Google Play Internal Testing Inspection
+- **Signed Production AAB**: `apps/mobile/build/app/outputs/bundle/release/app-release.aab`
+- **File Size**: 84 MB (88,016,144 bytes)
+- **SHA-256 Checksum**: `b0fd2c23d0ecfef101793e13af42505c9cf1b54c4c540562e6f33db944b3f228`
+- **Keystore / Certificate**: Signed with upload keystore (`rideos-upload-key`, valid until 2054).
+- **Upload Status**: `BLOCKED_BY_REQUIRED_USER_ACCESS` (Play Console service account credentials are not stored in the repository; manual upload via Play Console UI or credential provisioning required).
+
+### 7. Task 7 — Hardware Validation Preparation
+- **Supported Protocols**: ELM327 OBD-II (ISO 15765-4 CAN, ISO 14230-4 KWP2000), BLE TPMS sensors, Smart Helmet HUD & Intercom BLE GATT, IMU multi-axis high-G crash detection.
+- **Software Implementation**: `COMPLETED_AND_VERIFIED` (all decoders, packet parsers, and mock unit tests passed).
+- **Physical Road Testing**: `IMPLEMENTED_NOT_PHYSICALLY_VERIFIED` (requires physical bike, OBD-II dongle, and smart helmet in hand).
+
+### 8. Task 8 — Legacy QA Release Inventory
+Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 and November 6, 2026:
+| Tag | Release Name | Created Date | Pre-release | Assets |
+| --- | --- | --- | --- | --- |
+| `ci-apk-42502763139` | RideOS-AI Android APK ci-apk-42502763139 | 2026-11-06T16:36:24Z | True | app-release.apk (104.0 MB) |
+| `ci-apk-42338307669` | RideOS-AI Android APK ci-apk-42338307669 | 2026-11-06T16:36:24Z | True | app-release.apk (104.0 MB) |
+| `ci-apk-41681647868` | RideOS-AI Android APK ci-apk-41681647868 | 2026-11-03T15:57:24Z | True | app-release.apk (103.6 MB) |
+| `ci-apk-41669218084` | RideOS-AI Android APK ci-apk-41669218084 | 2026-11-03T15:57:24Z | True | app-release.apk (103.6 MB) |
+| `ci-apk-41648488521` | RideOS-AI Android APK ci-apk-41648488521 | 2026-11-03T13:53:50Z | True | app-release.apk (103.6 MB) |
+| `ci-apk-40748214690` | RideOS-AI Android APK ci-apk-40748214690 | 2026-10-28T18:46:07Z | True | app-release.apk (103.6 MB) |
+| `ci-apk-40742440466` | RideOS-AI Android APK ci-apk-40742440466 | 2026-10-28T18:08:49Z | True | app-release.apk (103.6 MB) |
+| `ci-apk-40725525255` | RideOS-AI Android APK ci-apk-40725525255 | 2026-10-28T16:23:33Z | True | app-release.apk (103.5 MB) |
+| `ci-apk-40559158294` | RideOS-AI Android APK ci-apk-40559158294 | 2026-10-27T18:20:59Z | True | app-release.apk (103.5 MB) |
+| `ci-apk-40553173335` | RideOS-AI Android APK ci-apk-40553173335 | 2026-10-27T17:42:46Z | True | app-release.apk (103.5 MB) |
+
+- **Security Note**: All 10 legacy releases contain debug-signed QA builds (`CN=Android Debug,O=Android,C=US`). Following the remediation in Phase 9, routine CI builds no longer publish public releases; only explicitly tagged releases (`refs/tags/v*.*.*`) or authorized manual dispatches trigger publication.

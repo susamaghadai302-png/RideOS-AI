@@ -24,6 +24,21 @@ class ApiConfig {
   static String _customBaseUrl = '';
   static bool _isInitialized = false;
 
+  static String _resolveWebBaseUrl() {
+    const envUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (envUrl.isNotEmpty) {
+      return envUrl;
+    }
+    final uri = Uri.base;
+    if (uri.host == 'localhost' || uri.host == '127.0.0.1') {
+      return kDefaultWebBaseUrl;
+    }
+    if (uri.origin.isNotEmpty && !uri.origin.startsWith('file://')) {
+      return '${uri.origin}/api/v1';
+    }
+    return 'https://api.rideos.ai/api/v1';
+  }
+
   static BackendConnectionMode get currentMode => _currentMode;
   static String get activeBaseUrl {
     if (_activeBaseUrl.isNotEmpty) {
@@ -34,7 +49,7 @@ class ApiConfig {
       return envUrl;
     }
     if (kIsWeb) {
-      return kDefaultWebBaseUrl;
+      return _resolveWebBaseUrl();
     }
     return kDefaultUsbBaseUrl;
   }
@@ -73,7 +88,7 @@ class ApiConfig {
 
   static void _resolveDefaultUrlForMode(BackendConnectionMode mode) {
     if (kIsWeb) {
-      _activeBaseUrl = kDefaultWebBaseUrl;
+      _activeBaseUrl = _resolveWebBaseUrl();
       return;
     }
     switch (mode) {
@@ -171,16 +186,28 @@ class ApiConfig {
   static Future<HealthCheckResult> autoDetectWorkingEndpoint() async {
     await initialize();
 
-    // Priority A: USB Reverse Tunnel (http://127.0.0.1:3000/api/v1)
-    // Priority B: Wi-Fi LAN (http://<MAC_LAN_IP>:3000/api/v1)
-    // Priority C: Custom user endpoint
+    // Priority A: Candidate endpoint detection
     final candidates = <String>[];
-    candidates.add(kDefaultUsbBaseUrl);
-    if (kDefaultLanBaseUrl.isNotEmpty && !candidates.contains(kDefaultLanBaseUrl)) {
-      candidates.add(kDefaultLanBaseUrl);
-    }
-    if (_customBaseUrl.isNotEmpty && !candidates.contains(_customBaseUrl)) {
-      candidates.add(_customBaseUrl);
+    if (kIsWeb) {
+      const envUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+      if (envUrl.isNotEmpty) {
+        candidates.add(envUrl);
+      }
+      final webUrl = _resolveWebBaseUrl();
+      if (!candidates.contains(webUrl)) {
+        candidates.add(webUrl);
+      }
+      if (_customBaseUrl.isNotEmpty && !candidates.contains(_customBaseUrl)) {
+        candidates.add(_customBaseUrl);
+      }
+    } else {
+      candidates.add(kDefaultUsbBaseUrl);
+      if (kDefaultLanBaseUrl.isNotEmpty && !candidates.contains(kDefaultLanBaseUrl)) {
+        candidates.add(kDefaultLanBaseUrl);
+      }
+      if (_customBaseUrl.isNotEmpty && !candidates.contains(_customBaseUrl)) {
+        candidates.add(_customBaseUrl);
+      }
     }
 
     HealthCheckResult? bestFailure;

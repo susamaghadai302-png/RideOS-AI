@@ -267,30 +267,32 @@ class _RegisterScreenState extends State<RegisterScreen>
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 24, vertical: 16),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 480),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _buildHeader(),
-                              const SizedBox(height: 24),
-                              _buildPersonalSection(),
-                              const SizedBox(height: 16),
-                              _buildPasswordSection(),
-                              const SizedBox(height: 16),
-                              _buildVehicleToggle(),
-                              if (_showVehicleSection) ...[
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 480),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildHeader(),
+                                const SizedBox(height: 24),
+                                _buildPersonalSection(),
                                 const SizedBox(height: 16),
-                                _buildVehicleSection(),
+                                _buildPasswordSection(),
+                                const SizedBox(height: 16),
+                                _buildVehicleToggle(),
+                                if (_showVehicleSection) ...[
+                                  const SizedBox(height: 16),
+                                  _buildVehicleSection(),
+                                ],
+                                const SizedBox(height: 20),
+                                _buildTermsRow(),
+                                const SizedBox(height: 24),
+                                _buildSubmitButton(isLoading),
+                                const SizedBox(height: 32),
                               ],
-                              const SizedBox(height: 20),
-                              _buildTermsRow(),
-                              const SizedBox(height: 24),
-                              _buildSubmitButton(isLoading),
-                              const SizedBox(height: 32),
-                            ],
+                            ),
                           ),
                         ),
                       ),

@@ -60,6 +60,7 @@ google-services.json
 **/google-services.json
 
 # ── Audit / debugging artifacts ────────────────────────────────────────────────
+.firebase/
 analyze_out*.txt
 listeners.txt
 workspace_tree.txt

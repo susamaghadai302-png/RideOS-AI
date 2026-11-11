@@ -1,16 +1,24 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/roados_components.dart';
 import '../../../../core/design_system/premium_navigation.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/services/lux_haptics_audio_service.dart';
 import '../../../../core/widgets/cinematic_background.dart';
 import '../../../../core/vehicle_mode/vehicle_mode.dart';
 import '../../../../core/vehicle_resolution/providers/active_vehicle_context_provider.dart';
 import '../../../../core/vehicle_resolution/models/active_vehicle_context.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
+import '../../../ai_assistant/presentation/screens/ai_assistant_screen.dart';
+import '../../../squad_ride/presentation/bloc/squad_bloc.dart';
+import '../../../squad_ride/presentation/screens/squad_ride_screen.dart';
 import '../../../dashcam/presentation/screens/ai_vision_dashcam_screen.dart';
 import '../../../dashboard/presentation/screens/home_screen.dart';
 import '../../../vehicle_manager/presentation/screens/my_vehicles_screen.dart';
@@ -178,6 +186,20 @@ class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTick
         accentColor: RoadOSColors.textSecondary,
         screen: ProfileSettingsScreen(),
       ),
+      RoadOSShellNavItem(
+        icon: Icons.groups_rounded,
+        label: 'Squad Ride',
+        category: 'COMMUNITY',
+        accentColor: RoadOSColors.cyberCyan,
+        screen: _buildSquadRideScreenSafe(),
+      ),
+      RoadOSShellNavItem(
+        icon: Icons.psychology_rounded,
+        label: 'AI Co-Pilot',
+        category: 'AI & CO-PILOT',
+        accentColor: RoadOSColors.neonViolet,
+        screen: _buildAiAssistantScreenSafe(),
+      ),
     ];
   }
 
@@ -231,6 +253,10 @@ class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTick
     setState(() {
       _selectedIndex = index;
     });
+    if (kIsWeb) {
+      final route = AppRouter.routeForIndex(index);
+      SystemNavigator.routeInformationUpdated(uri: Uri.parse(route));
+    }
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.of(context).pop();
     }
@@ -686,32 +712,9 @@ class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTick
                 child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                   children: [
-                    _buildSidebarSection('MAIN', isCompact),
-                    _buildSidebarTile(0, isCompact),
-                    _buildSidebarTile(1, isCompact),
-                    _buildSidebarTile(2, isCompact),
-                    const SizedBox(height: 8),
-
-                    _buildSidebarSection('VEHICLE', isCompact),
-                    _buildSidebarTile(3, isCompact),
-                    _buildSidebarTile(4, isCompact),
-                    const SizedBox(height: 8),
-
-                    _buildSidebarSection('TELEMETRY', isCompact),
-                    _buildSidebarTile(5, isCompact),
-                    _buildSidebarTile(6, isCompact),
-                    const SizedBox(height: 8),
-
-                    _buildSidebarSection('DIAGNOSTICS', isCompact),
-                    _buildSidebarTile(7, isCompact),
-                    _buildSidebarTile(8, isCompact),
-                    const SizedBox(height: 8),
-
-                    _buildSidebarSection('SYSTEM', isCompact),
-                    _buildSidebarTile(9, isCompact),
-                    _buildSidebarTile(10, isCompact),
-                    _buildSidebarTile(11, isCompact),
-                    _buildSidebarTile(12, isCompact),
+                    ..._buildCategorizedSidebarTiles(isCompact),
+                    const Divider(color: Color(0x1400E5FF), height: 16),
+                    _buildSidebarLogoutTile(context, isCompact),
                   ],
                 ),
               ),
@@ -857,6 +860,112 @@ class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTick
     );
   }
 
+  List<Widget> _buildCategorizedSidebarTiles(bool isCompact) {
+    final widgets = <Widget>[];
+    String? lastCategory;
+
+    for (int i = 0; i < _navItems.length; i++) {
+      final item = _navItems[i];
+      if (lastCategory != item.category) {
+        lastCategory = item.category;
+        widgets.add(_buildSidebarSection(lastCategory, isCompact));
+      }
+      widgets.add(_buildSidebarTile(i, isCompact));
+    }
+    return widgets;
+  }
+
+  Widget _buildSidebarLogoutTile(BuildContext context, bool isCompact) {
+    final tile = AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      margin: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 0 : 10, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: RoadOSColors.errorCrimson.withValues(alpha: 0.08),
+        border: Border.all(color: RoadOSColors.errorCrimson.withValues(alpha: 0.25), width: 1.0),
+      ),
+      child: Row(
+        mainAxisAlignment: isCompact ? MainAxisAlignment.center : MainAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.logout_rounded,
+            color: RoadOSColors.errorCrimson,
+            size: 18,
+          ),
+          if (!isCompact) ...[
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Logout Session',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: RoadOSColors.errorCrimson,
+                  letterSpacing: 0.15,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return InkWell(
+      onTap: () {
+        LuxAudioHapticsService.lightImpact();
+        context.read<AuthBloc>().add(LogoutEvent());
+        Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.root, (route) => false);
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: isCompact ? Tooltip(message: 'Logout Session', child: tile) : tile,
+    );
+  }
+
+  static Widget _buildSquadRideScreenSafe() {
+    return Builder(
+      builder: (context) {
+        try {
+          context.read<SquadBloc>();
+          return const SquadRideScreen();
+        } catch (_) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF03050A),
+            body: Center(
+              child: Text(
+                'Squad Ride',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  static Widget _buildAiAssistantScreenSafe() {
+    return Builder(
+      builder: (context) {
+        try {
+          context.read<AiAssistantBloc>();
+          return const AiAssistantScreen();
+        } catch (_) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF03050A),
+            body: Center(
+              child: Text(
+                'AI Co-Pilot',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
+
   /// Mobile Slide-out Drawer Navigation with Liquid Water-Glass
   Widget _buildMobileDrawer(BuildContext context) {
     return Drawer(
@@ -931,6 +1040,30 @@ class _RoadOSAppShellState extends ConsumerState<RoadOSAppShell> with SingleTick
                             onTap: () => _onSelectNav(index),
                           ),
                         );
+                      },
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: const BoxDecoration(
+                      border: Border(top: BorderSide(color: Color(0x2200F2FE))),
+                    ),
+                    child: ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.logout_rounded, color: RoadOSColors.errorCrimson, size: 20),
+                      title: const Text(
+                        'Logout Account',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: RoadOSColors.errorCrimson,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        context.read<AuthBloc>().add(LogoutEvent());
+                        Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.root, (route) => false);
                       },
                     ),
                   ),
