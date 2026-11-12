@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "rideos-ai",
     "public": "apps/mobile/build/web",
     "ignore": [
       "firebase.json",

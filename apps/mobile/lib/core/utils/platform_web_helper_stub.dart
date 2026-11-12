@@ -10,4 +10,8 @@ class PlatformWebHelperImpl {
   static void cancelSpeech() {
     // Stub for VM/mobile tests
   }
+
+  static void replaceUrl(String path) {
+    // Stub for VM/mobile tests
+  }
 }

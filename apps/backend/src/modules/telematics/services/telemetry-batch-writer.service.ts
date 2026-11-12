@@ -1,4 +1,4 @@
-import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Inject, Optional, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { TIMESCALE_POOL } from '../../../database/timescale.provider';
 import { StreamTelemetryDto } from '../dto/stream-telemetry.dto';
@@ -8,18 +8,23 @@ export class TelemetryBatchWriterService implements OnModuleDestroy {
   private buffer: { dto: StreamTelemetryDto; riderId: string }[] = [];
   private readonly BATCH_SIZE = 50;
   private readonly FLUSH_INTERVAL_MS = 2000;
-  private flushTimer: NodeJS.Timeout;
+  private flushTimer?: NodeJS.Timeout;
 
-  constructor(@Inject(TIMESCALE_POOL) private readonly timescalePool: Pool) {
-    this.flushTimer = setInterval(() => this.flushBuffer(), this.FLUSH_INTERVAL_MS);
+  constructor(@Optional() @Inject(TIMESCALE_POOL) private readonly timescalePool?: Pool) {
+    if (this.timescalePool) {
+      this.flushTimer = setInterval(() => this.flushBuffer(), this.FLUSH_INTERVAL_MS);
+    }
   }
 
   onModuleDestroy() {
-    clearInterval(this.flushTimer);
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer);
+    }
     this.flushBuffer();
   }
 
   enqueueTelemetry(dto: StreamTelemetryDto, riderId: string) {
+    if (!this.timescalePool) return;
     this.buffer.push({ dto, riderId });
     if (this.buffer.length >= this.BATCH_SIZE) {
       this.flushBuffer();
@@ -27,7 +32,7 @@ export class TelemetryBatchWriterService implements OnModuleDestroy {
   }
 
   async flushBuffer() {
-    if (this.buffer.length === 0) return;
+    if (!this.timescalePool || this.buffer.length === 0) return;
 
     const itemsToFlush = [...this.buffer];
     this.buffer = [];

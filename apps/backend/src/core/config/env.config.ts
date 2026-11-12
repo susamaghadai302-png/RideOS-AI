@@ -19,6 +19,14 @@ export const envSchema = z.object({
     .default(false),
   REDIS_HOST: z.string().default('127.0.0.1'),
   REDIS_PORT: z.coerce.number().default(6379),
+  TIMESCALE_ENABLED: z
+    .preprocess((val) => {
+      if (typeof val === 'string') {
+        return val.toLowerCase() === 'true' || val === '1';
+      }
+      return Boolean(val);
+    }, z.boolean())
+    .default(false),
   TIMESCALE_HOST: z.string().default('127.0.0.1'),
   TIMESCALE_PORT: z.coerce.number().default(5432),
   TIMESCALE_USER: z.string().default('rideos_admin'),
@@ -67,6 +75,21 @@ export function validateEnv(config: Record<string, unknown>): EnvConfig {
       throw new Error(
         '[RideOS] FATAL: JWT_REFRESH_SECRET is set to an insecure default value. ' +
         'Set a cryptographically random JWT_REFRESH_SECRET before deploying to production.',
+      );
+    }
+    if (env.MONGO_URI.includes('localhost') || env.MONGO_URI.includes('127.0.0.1')) {
+      throw new Error(
+        '[RideOS] FATAL: MONGO_URI must not point to localhost in production.',
+      );
+    }
+    if (env.REDIS_ENABLED && (env.REDIS_HOST.includes('localhost') || env.REDIS_HOST === '127.0.0.1')) {
+      throw new Error(
+        '[RideOS] FATAL: REDIS_HOST must not point to localhost when REDIS_ENABLED=true in production.',
+      );
+    }
+    if (env.TIMESCALE_ENABLED && (env.TIMESCALE_HOST.includes('localhost') || env.TIMESCALE_HOST === '127.0.0.1')) {
+      throw new Error(
+        '[RideOS] FATAL: TIMESCALE_HOST must not point to localhost when TIMESCALE_ENABLED=true in production.',
       );
     }
   }

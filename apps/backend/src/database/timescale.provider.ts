@@ -7,15 +7,26 @@ export const TIMESCALE_POOL = 'TIMESCALE_POOL';
 export const TimescaleProvider: Provider = {
   provide: TIMESCALE_POOL,
   useFactory: async (configService: ConfigService) => {
+    const isEnabled = configService.get<boolean>('TIMESCALE_ENABLED', false);
+    if (!isEnabled) {
+      return null;
+    }
+
+    const host = configService.get<string>('TIMESCALE_HOST', 'localhost');
+    const port = configService.get<number>('TIMESCALE_PORT', 5432);
+    const user = configService.get<string>('TIMESCALE_USER', 'rideos_admin');
+    const password = configService.get<string>('TIMESCALE_PASSWORD', 'rideos_secure_password');
+    const database = configService.get<string>('TIMESCALE_DB', 'rideos_telemetry');
+
     const pool = new Pool({
-      host: configService.get<string>('TIMESCALE_HOST', 'localhost'),
-      port: configService.get<number>('TIMESCALE_PORT', 5432),
-      user: configService.get<string>('TIMESCALE_USER', 'rideos_admin'),
-      password: configService.get<string>('TIMESCALE_PASSWORD', 'rideos_secure_password'),
-      database: configService.get<string>('TIMESCALE_DB', 'rideos_telemetry'),
+      host,
+      port,
+      user,
+      password,
+      database,
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 1000,
+      connectionTimeoutMillis: 2000,
     });
 
     pool.on('error', (err) => {

@@ -6,4 +6,5 @@ abstract class PlatformWebHelper {
   static void speakText(String text, {String lang = 'en-US'}) =>
       PlatformWebHelperImpl.speakText(text, lang: lang);
   static void cancelSpeech() => PlatformWebHelperImpl.cancelSpeech();
+  static void replaceUrl(String path) => PlatformWebHelperImpl.replaceUrl(path);
 }
