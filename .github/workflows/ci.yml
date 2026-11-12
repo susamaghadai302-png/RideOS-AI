@@ -17,6 +17,7 @@ jobs:
       - name: Setup Flutter Engine
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.5'
           channel: 'stable'
           cache: true
 
