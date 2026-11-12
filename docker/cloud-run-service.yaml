@@ -35,13 +35,10 @@ spec:
                 secretKeyRef:
                   name: rideos-mongo-uri
                   key: latest
-            - name: REDIS_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: rideos-redis-host
-                  key: latest
-            - name: REDIS_PORT
-              value: '6379'
+            - name: REDIS_ENABLED
+              value: 'false'
+            - name: TIMESCALE_ENABLED
+              value: 'false'
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -56,6 +53,11 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: rideos-google-routes-api-key
+                  key: latest
+            - name: GOOGLE_MAPS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rideos-google-maps-api-key
                   key: latest
           startupProbe:
             httpGet:

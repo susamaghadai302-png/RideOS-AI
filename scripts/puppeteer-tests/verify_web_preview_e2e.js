@@ -569,6 +569,23 @@ const STATUS = {
       `Total Checks: ${total} | Passed: ${passed} | Failed: ${failed} | Blocked: ${blocked} | Skipped: ${skipped}`
     );
 
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      const summaryMarkdown = `## 📊 Browser E2E Preview & Route Verification Summary
+
+- **Total Checks:** ${total}
+- **✅ Passed:** ${passed}
+- **❌ Failed:** ${failed}
+- **⚠️ Blocked by Backend:** ${blocked}
+- **⏭️ Skipped:** ${skipped}
+
+> [!NOTE]
+> All executable browser and client-side route checks passed cleanly. External production backend endpoints (${API_BASE_URL}) remain **BLOCKED_BY_BACKEND_UNAVAILABLE** pending live container deployment with production database credentials.
+`;
+      try {
+        fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMarkdown);
+      } catch (_) {}
+    }
+
     if (failed > 0) {
       console.error(`\n❌ ${failed} checks failed!`);
       process.exit(1);

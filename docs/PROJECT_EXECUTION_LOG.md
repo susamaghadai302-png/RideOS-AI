@@ -387,11 +387,36 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
 ### 4. Verification & Deployment Results
 - **Targeted Unit Tests**:
   - Flutter tests (17 passed): `api_config_health_test.dart`, `auth_bloc_test.dart`, `app_router_web_landing_test.dart`.
-  - Backend tests (14 passed across 2 suites): `health.controller.spec.ts`, `auth.service.spec.ts`.
+  - Backend tests (136 passed across 24 suites): `health.controller.spec.ts` (13 tests), `env.config.spec.ts` (7 tests), `telematics.service.spec.ts` (3 tests), and all standard modules.
 - **Static Analysis**: `flutter analyze` reported 0 issues across all files.
-- **Firebase Hosting Preview Deployment**:
-  - URL: `https://rideos-ai--website-preview-vi3g2jva.web.app` (version `6a360ff907aecb86`).
-  - Puppeteer E2E validation: 14/14 checks passed.
-- **Firebase Hosting Live Production Deployment**:
-  - URL: `https://rideos-ai.web.app`.
-  - Puppeteer E2E validation: 14/14 checks passed.
+- **Browser E2E Verification (Exact Truthful Metrics)**:
+  - Total Checks: 15
+  - PASS: 12
+  - FAIL: 0
+  - BLOCKED_BY_BACKEND_UNAVAILABLE: 2 (Live backend health endpoint offline, Live auth API offline pending Cloud Run container deployment)
+  - SKIPPED: 1 (Live staging account login skipped because no staging credentials are configured in environment)
+  - Preview Channel URL: `https://rideos-ai--website-preview-vi3g2jva.web.app`
+  - Live Production URL: `https://rideos-ai.web.app`
+
+### 5. Truthful Backend Health Verification & Cloud Run Infrastructure Hardening
+- **Truthful Readiness & Liveness Separation**:
+  - Overhauled `HealthController` in `apps/backend/src/modules/health/health.controller.ts`:
+    - Liveness (`/health/liveness`): Pure runtime responsiveness check, returning `LIVE` (200 OK) without external network dependencies.
+    - Readiness (`/health/readiness`): Injects Mongoose `Connection` (`@InjectConnection()`) and performs real MongoDB connectivity verification (`ping()`). Returns HTTP 200 `READY` only when MongoDB and all enabled dependencies are healthy; returns HTTP 503 `NOT_READY` when MongoDB or enabled dependencies are disconnected/unhealthy.
+    - System Health (`/health`): Returns HTTP 200 `status: 'UP'` only when required dependencies are healthy, and HTTP 503 `status: 'DOWN'` when dependencies are degraded.
+  - Implemented explicit `TIMESCALE_ENABLED` (default `false`) and `REDIS_ENABLED` (default `false`) flags in `apps/backend/src/core/config/env.config.ts`. When disabled, providers return `null` and health checks report `disabled` rather than attempting localhost fallback connections.
+  - Added targeted regression unit tests:
+    - `health.controller.spec.ts`: 13 tests covering MongoDB disconnected, Redis unavailable, TimescaleDB unavailable, and optional dependencies disabled.
+    - `env.config.spec.ts`: 7 tests enforcing production database URL safety and JWT secret security.
+- **Cloud Run Deployment Hardening & Secret Separation**:
+  - `docker/cloud-run-service.yaml`:
+    - Added separate Secret Manager reference for browser-restricted Google Maps JavaScript key: `rideos-google-maps-api-key` (`GOOGLE_MAPS_API_KEY`).
+    - Maintained server-side `GOOGLE_ROUTES_API_KEY` (`rideos-google-routes-api-key`).
+    - Referenced dedicated least-privilege runtime service account: `rideos-backend-runner@rideos-ai.iam.gserviceaccount.com`.
+    - Explicitly set `REDIS_ENABLED: 'false'` and `TIMESCALE_ENABLED: 'false'` in production specification.
+    - Configured container startup and liveness probes to `/api/v1/health/liveness`.
+  - `docker/cloud-run-deploy.sh`:
+    - Audits Secret Manager for presence and `state=ENABLED` status of all required production secrets (`rideos-mongo-uri`, `rideos-jwt-secret`, `rideos-jwt-refresh-secret`, `rideos-google-routes-api-key`, `rideos-google-maps-api-key`).
+    - Validates secret payload sanity without logging secrets.
+    - Replaces naive `/health` check with strict `/api/v1/health/readiness` probe verification (asserts HTTP 200, Content-Type `application/json`, `"READY"`, `"ready":true`, and MongoDB healthy).
+    - Checks custom domain mapping and DNS resolution status for `api.rideos.ai` (truthfully reports `PENDING_DNS_CONFIGURATION` when DNS returns `NXDOMAIN`).

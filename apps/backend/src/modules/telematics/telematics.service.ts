@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { Pool } from 'pg';
 import { TIMESCALE_POOL } from '../../database/timescale.provider';
 import { TelemetryBatchWriterService } from './services/telemetry-batch-writer.service';
@@ -8,17 +8,28 @@ import { StreamTelemetryDto } from './dto/stream-telemetry.dto';
 @Injectable()
 export class TelematicsService {
   constructor(
-    @Inject(TIMESCALE_POOL) private readonly timescalePool: Pool,
-    private readonly batchWriter: TelemetryBatchWriterService,
-    private readonly leanAngleCalculator: LeanAngleCalculatorService,
+    @Optional() @Inject(TIMESCALE_POOL) private readonly timescalePool?: Pool,
+    private readonly batchWriter?: TelemetryBatchWriterService,
+    private readonly leanAngleCalculator?: LeanAngleCalculatorService,
   ) {}
 
   processTelemetry(riderId: string, dto: StreamTelemetryDto) {
-    this.batchWriter.enqueueTelemetry(dto, riderId);
+    if (this.batchWriter) {
+      this.batchWriter.enqueueTelemetry(dto, riderId);
+    }
     return { status: 'QUEUED', timestamp: new Date().toISOString() };
   }
 
   async getTripSummary(tripId: string) {
+    if (!this.timescalePool) {
+      return {
+        total_points: '0',
+        avg_speed: 0,
+        max_speed: 0,
+        max_lean_angle: 0,
+        max_accel_g: 0,
+      };
+    }
     const query = `
       SELECT 
         COUNT(*) as total_points,
