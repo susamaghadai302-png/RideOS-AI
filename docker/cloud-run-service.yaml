@@ -15,7 +15,7 @@ spec:
     spec:
       containerConcurrency: 80
       timeoutSeconds: 300
-      serviceAccountName: 121485873641-compute@developer.gserviceaccount.com
+      serviceAccountName: rideos-backend-runner@rideos-ai.iam.gserviceaccount.com
       containers:
         - image: us-central1-docker.pkg.dev/rideos-ai/rideos-repo/rideos-backend-api:latest
           ports:

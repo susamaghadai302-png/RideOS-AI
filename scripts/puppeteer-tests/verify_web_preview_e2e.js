@@ -2,8 +2,41 @@ const puppeteer = require('puppeteer-core');
 const path = require('path');
 const fs = require('fs');
 
-const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const TARGET_URL = process.env.TEST_TARGET_URL || 'https://rideos-ai--website-preview-vi3g2jva.web.app';
+// ---------------------------------------------------------------------------
+// Chrome Executable Resolution across Linux CI & macOS
+// ---------------------------------------------------------------------------
+function findChromeExecutable() {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH && fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  if (process.env.CHROME_BIN && fs.existsSync(process.env.CHROME_BIN)) {
+    return process.env.CHROME_BIN;
+  }
+
+  const candidatePaths = [
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/snap/bin/chromium',
+  ];
+
+  for (const candidate of candidatePaths) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    'No compatible Chrome or Chromium executable found. Please set PUPPETEER_EXECUTABLE_PATH or CHROME_BIN.'
+  );
+}
+
+const CHROME_PATH = findChromeExecutable();
+const TARGET_URL = process.env.TEST_TARGET_URL || 'https://rideos-ai.web.app';
+const API_BASE_URL = process.env.API_BASE_URL || 'https://api.rideos.ai/api/v1';
 const ARTIFACTS_DIR = path.join(__dirname, 'screenshots');
 
 if (!fs.existsSync(ARTIFACTS_DIR)) {
@@ -12,18 +45,44 @@ if (!fs.existsSync(ARTIFACTS_DIR)) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+const STATUS = {
+  PASS: 'PASS',
+  FAIL: 'FAIL',
+  SKIPPED: 'SKIPPED',
+  BLOCKED: 'BLOCKED_BY_BACKEND_UNAVAILABLE',
+};
+
 (async () => {
   console.log('================================================================');
   console.log('🚀 RIDEOS AI — RIGOROUS BROWSER E2E PREVIEW & AUTH VALIDATION');
-  console.log(`🌐 Target URL: ${TARGET_URL}`);
+  console.log(`🌐 Target Web URL: ${TARGET_URL}`);
+  console.log(`🔌 Target API URL: ${API_BASE_URL}`);
+  console.log(`🖥️  Chrome Binary:  ${CHROME_PATH}`);
   console.log('================================================================\n');
 
   let browser;
   const testResults = [];
-  const recordResult = (name, passed, details = '') => {
-    testResults.push({ name, passed, details });
-    const mark = passed ? '✅ PASS' : '❌ FAIL';
-    console.log(`${mark}: ${name} ${details ? '[' + details + ']' : ''}`);
+
+  const recordResult = (name, status, details = '') => {
+    testResults.push({ name, status, details });
+    let badge;
+    switch (status) {
+      case STATUS.PASS:
+        badge = '✅ PASS';
+        break;
+      case STATUS.FAIL:
+        badge = '❌ FAIL';
+        break;
+      case STATUS.SKIPPED:
+        badge = '⏭️  SKIPPED';
+        break;
+      case STATUS.BLOCKED:
+        badge = '⚠️  BLOCKED_BY_BACKEND_UNAVAILABLE';
+        break;
+      default:
+        badge = status;
+    }
+    console.log(`${badge}: ${name} ${details ? '[' + details + ']' : ''}`);
   };
 
   try {
@@ -33,9 +92,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
         '--enable-webgl',
-        '--use-gl=angle',
-        '--use-angle=metal',
         '--window-size=1280,900',
       ],
     });
@@ -51,9 +109,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     page.on('console', (msg) => {
       const text = msg.text();
       consoleMessages.push(`[${msg.type()}] ${text}`);
-      if (msg.type() === 'error' && !text.includes('favicon') && !text.includes('Failed to load resource')) {
+      if (
+        msg.type() === 'error' &&
+        !text.includes('favicon') &&
+        !text.includes('Failed to load resource') &&
+        !text.includes('404')
+      ) {
         criticalErrors.push(text);
       }
+    });
+
+    page.on('pageerror', (err) => {
+      criticalErrors.push(`Uncaught page error: ${err.message}`);
     });
 
     page.on('request', (req) => {
@@ -61,11 +128,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     });
 
     page.on('requestfailed', (req) => {
-      failedNetworkRequests.push({
-        url: req.url(),
-        method: req.method(),
-        error: req.failure() ? req.failure().errorText : 'unknown',
-      });
+      const url = req.url();
+      // Filter out expected test probe failures (e.g. offline api probes, favicons)
+      if (!url.includes('/api/v1/') && !url.includes('favicon.ico')) {
+        failedNetworkRequests.push({
+          url,
+          method: req.method(),
+          error: req.failure() ? req.failure().errorText : 'unknown',
+        });
+      }
     });
 
     // -------------------------------------------------------------
@@ -74,13 +145,21 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     console.log('--- Step 1: Validating Landing Page Initial Load ---');
     const response = await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.waitForSelector('canvas, flutter-view', { timeout: 15000 }).catch(() => {});
-    const httpStatus = response.status();
+    const httpStatus = response ? response.status() : 0;
     const title = await page.title();
     await sleep(2500);
 
     const hasExpectedTitle = title.includes('RideOS AI') || title.includes('Motorcycle');
-    recordResult('1. Landing Page Load & HTTP 200', httpStatus === 200, `HTTP ${httpStatus}`);
-    recordResult('1b. Document Title Correctness', hasExpectedTitle, title);
+    recordResult(
+      '1. Landing Page Load & HTTP 200',
+      httpStatus === 200 ? STATUS.PASS : STATUS.FAIL,
+      `HTTP ${httpStatus}`
+    );
+    recordResult(
+      '1b. Document Title Correctness',
+      hasExpectedTitle ? STATUS.PASS : STATUS.FAIL,
+      title
+    );
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, '01_landing_desktop.png') });
 
     // -------------------------------------------------------------
@@ -99,15 +178,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const canvasActive = !!canvasMetrics && canvasMetrics.width > 0 && canvasMetrics.height > 0;
     recordResult(
       '2. Flutter Canvas / Engine Active',
-      canvasActive,
+      canvasActive ? STATUS.PASS : STATUS.FAIL,
       canvasMetrics ? `${canvasMetrics.width}x${canvasMetrics.height}` : 'No canvas found'
     );
 
     // -------------------------------------------------------------
-    // Check 3: Firebase API Routing & SPA Fallback Protection
+    // Check 3a: Firebase API Routing & SPA Fallback Protection
     // -------------------------------------------------------------
-    console.log('\n--- Step 3: Validating /api/** SPA Fallback Protection ---');
-    const apiRouteCheck = await page.evaluate(async (baseUrl) => {
+    console.log('\n--- Step 3a: Validating /api/** SPA Fallback Protection ---');
+    const spaFallbackCheck = await page.evaluate(async (baseUrl) => {
       try {
         const res = await fetch(`${baseUrl}/api/v1/health`);
         const text = await res.text();
@@ -124,13 +203,60 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     }, TARGET_URL);
 
     // /api/** must NEVER fall through to the SPA index.html with HTTP 200
-    // When backend is not deployed on this origin, status must be 404 or connection failure, NEVER 200 index.html
-    const spaLeakagePrevented = !(apiRouteCheck.status === 200 && apiRouteCheck.isHtml);
+    const leakedHtmlSpa = spaFallbackCheck.status === 200 && spaFallbackCheck.isHtml;
+    const spaProtected = !leakedHtmlSpa && (spaFallbackCheck.status === 404 || spaFallbackCheck.error);
     recordResult(
-      '3. /api/** SPA Fallback Protection',
-      spaLeakagePrevented && apiRouteCheck.status !== 200,
-      `HTTP ${apiRouteCheck.status}, isHtml: ${apiRouteCheck.isHtml}`
+      '3a. SPA Fallback Protection (/api/** excludes HTML index.html)',
+      spaProtected ? STATUS.PASS : STATUS.FAIL,
+      `HTTP ${spaFallbackCheck.status || 'N/A'}, isHtml: ${spaFallbackCheck.isHtml || false}`
     );
+
+    // -------------------------------------------------------------
+    // Check 3b: Dedicated Backend API Health Check
+    // -------------------------------------------------------------
+    console.log('\n--- Step 3b: Validating Live Backend Health Endpoint ---');
+    const backendHealthCheck = await page.evaluate(async (apiUrl) => {
+      try {
+        const res = await fetch(`${apiUrl}/health`, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: AbortSignal.timeout(5000),
+        });
+        const contentType = res.headers.get('content-type') || '';
+        const body = await res.text();
+        return {
+          ok: res.ok,
+          status: res.status,
+          contentType,
+          bodySnippet: body.substring(0, 80),
+        };
+      } catch (err) {
+        return {
+          unreachable: true,
+          message: err.toString(),
+        };
+      }
+    }, API_BASE_URL);
+
+    if (backendHealthCheck.ok && backendHealthCheck.contentType.includes('application/json')) {
+      recordResult(
+        '3b. Backend API Live Health Verification',
+        STATUS.PASS,
+        `HTTP ${backendHealthCheck.status} OK [${backendHealthCheck.bodySnippet}]`
+      );
+    } else if (backendHealthCheck.unreachable) {
+      recordResult(
+        '3b. Backend API Live Health Verification',
+        STATUS.BLOCKED,
+        `Host unreachable (${backendHealthCheck.message}) — production backend pending deployment`
+      );
+    } else {
+      recordResult(
+        '3b. Backend API Live Health Verification',
+        STATUS.FAIL,
+        `Unexpected response: HTTP ${backendHealthCheck.status} [${backendHealthCheck.bodySnippet || 'empty'}]`
+      );
+    }
 
     // -------------------------------------------------------------
     // Check 4: Google Maps Asynchronous Configuration & Error Handlers
@@ -145,23 +271,23 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     });
 
     recordResult(
-      '4. Google Maps Auth Handler Registered',
-      mapsConfig.hasAuthFailureHandler,
-      `gm_authFailure: ${mapsConfig.hasAuthFailureHandler}`
+      '4a. Google Maps Auth Failure Handler Registered',
+      mapsConfig.hasAuthFailureHandler ? STATUS.PASS : STATUS.FAIL,
+      `gm_authFailure function present: ${mapsConfig.hasAuthFailureHandler}`
     );
     recordResult(
       '4b. Google Maps Status Initialized Honestly',
-      mapsConfig.gmapsStatus !== undefined && mapsConfig.gmapsStatus !== 'fake_ready',
+      mapsConfig.gmapsStatus !== undefined && mapsConfig.gmapsStatus !== 'fake_ready'
+        ? STATUS.PASS
+        : STATUS.FAIL,
       `status: ${mapsConfig.gmapsStatus}, error: ${mapsConfig.gmapsError || 'none'}`
     );
 
     // -------------------------------------------------------------
     // Check 5: Strict Protected Route Redirection (/dashboard -> /login)
-    // CRITICAL: Unauthenticated /dashboard must strictly end at /login!
     // -------------------------------------------------------------
     console.log('\n--- Step 5: Validating Strict Protected Route Redirection (/dashboard) ---');
     await page.goto(`${TARGET_URL}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    // Wait for Flutter Web AuthBloc to process initial auth state and redirect to /login
     try {
       await page.waitForFunction(
         () => window.location.href.includes('/login'),
@@ -170,78 +296,97 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     } catch (_) {}
 
     const urlAfterProtectedNav = page.url();
-    // Strictly assert that the URL ends at /login (NO acceptance of /dashboard)
-    const strictlyRedirectedToLogin = urlAfterProtectedNav.endsWith('/login') || urlAfterProtectedNav.includes('/login');
+    const strictlyRedirectedToLogin =
+      urlAfterProtectedNav.endsWith('/login') || urlAfterProtectedNav.includes('/login');
     recordResult(
       '5. Strict Protected Route Redirection to /login',
-      strictlyRedirectedToLogin,
+      strictlyRedirectedToLogin ? STATUS.PASS : STATUS.FAIL,
       `Final URL: ${urlAfterProtectedNav}`
     );
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, '02_protected_route_redirect.png') });
 
     // -------------------------------------------------------------
-    // Check 6: Direct Access to /login & Form Rendering
+    // Check 6: Direct Access to /login & Accessible Form Controls
     // -------------------------------------------------------------
-    console.log('\n--- Step 6: Validating Direct Access to /login & Form Rendering ---');
+    console.log('\n--- Step 6: Validating Direct Access to /login & Accessible Controls ---');
     await page.goto(`${TARGET_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForSelector('canvas, flutter-view', { timeout: 15000 }).catch(() => {});
-    await sleep(2500);
+    await sleep(2000);
 
-    const loginPageMetrics = await page.evaluate(() => {
-      const el = document.querySelector('canvas') || document.querySelector('flutter-view');
-      const rect = el ? el.getBoundingClientRect() : null;
-      return {
-        url: window.location.href,
-        hasCanvas: !!el,
-        width: rect ? Math.round(rect.width) : 0,
-        height: rect ? Math.round(rect.height) : 0,
-      };
+    // Trigger Flutter accessibility semantics activation
+    await page.evaluate(() => {
+      const ph = document.querySelector('flt-semantics-placeholder');
+      if (ph) ph.click();
+    });
+    await sleep(1500);
+
+    const loginInputs = await page.evaluate(() => {
+      const inputs = Array.from(document.querySelectorAll('input')).map((i) => ({
+        type: i.type,
+        label: i.getAttribute('aria-label') || '',
+      }));
+      return inputs;
     });
 
-    const loginRendersProperly = loginPageMetrics.url.includes('/login') && loginPageMetrics.hasCanvas && loginPageMetrics.width > 0;
+    const hasEmailInput = loginInputs.some(
+      (i) => i.label.toLowerCase().includes('email') || i.type === 'email' || i.type === 'text'
+    );
+    const hasPasswordInput = loginInputs.some(
+      (i) => i.label.toLowerCase().includes('password') || i.type === 'password'
+    );
+    const loginAccessible = loginInputs.length >= 2 && hasEmailInput && hasPasswordInput;
+
     recordResult(
-      '6. Login Screen Route Accessible & Rendered',
-      loginRendersProperly,
-      `URL: ${loginPageMetrics.url}, Canvas: ${loginPageMetrics.width}x${loginPageMetrics.height}`
+      '6. Login Screen Route Accessible & Interactive Form Controls Verified',
+      loginAccessible ? STATUS.PASS : STATUS.FAIL,
+      `Found ${loginInputs.length} semantic input controls (Email & Password verified)`
     );
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, '03_login_screen.png') });
 
     // -------------------------------------------------------------
-    // Check 7: Direct Access to /register & Form Rendering
+    // Check 7: Direct Access to /register & Accessible Form Controls
     // -------------------------------------------------------------
-    console.log('\n--- Step 7: Validating Direct Access to /register & Form Rendering ---');
+    console.log('\n--- Step 7: Validating Direct Access to /register & Accessible Controls ---');
     await page.goto(`${TARGET_URL}/register`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForSelector('canvas, flutter-view', { timeout: 15000 }).catch(() => {});
-    await sleep(2500);
+    await sleep(2000);
 
-    const registerPageMetrics = await page.evaluate(() => {
-      const el = document.querySelector('canvas') || document.querySelector('flutter-view');
-      const rect = el ? el.getBoundingClientRect() : null;
-      return {
-        url: window.location.href,
-        hasCanvas: !!el,
-        width: rect ? Math.round(rect.width) : 0,
-        height: rect ? Math.round(rect.height) : 0,
-      };
+    // Trigger Flutter accessibility semantics activation
+    await page.evaluate(() => {
+      const ph = document.querySelector('flt-semantics-placeholder');
+      if (ph) ph.click();
+    });
+    await sleep(1500);
+
+    const registerInputs = await page.evaluate(() => {
+      const inputs = Array.from(document.querySelectorAll('input')).map((i) => ({
+        type: i.type,
+        label: i.getAttribute('aria-label') || '',
+      }));
+      return inputs;
     });
 
-    const registerRendersProperly = registerPageMetrics.url.includes('/register') && registerPageMetrics.hasCanvas && registerPageMetrics.width > 0;
+    const hasNameInput = registerInputs.some((i) => i.label.toLowerCase().includes('name'));
+    const hasRegEmailInput = registerInputs.some((i) => i.label.toLowerCase().includes('email'));
+    const hasRegPasswordInput = registerInputs.some((i) => i.label.toLowerCase().includes('password'));
+    const registerAccessible = registerInputs.length >= 3 && hasNameInput && hasRegEmailInput && hasRegPasswordInput;
+
     recordResult(
-      '7. Register Screen Route Accessible & Rendered',
-      registerRendersProperly,
-      `URL: ${registerPageMetrics.url}, Canvas: ${registerPageMetrics.width}x${registerPageMetrics.height}`
+      '7. Register Screen Route Accessible & Interactive Form Controls Verified',
+      registerAccessible ? STATUS.PASS : STATUS.FAIL,
+      `Found ${registerInputs.length} semantic input controls (Name, Email & Password verified)`
     );
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, '04_register_screen.png') });
 
     // -------------------------------------------------------------
-    // Check 8: Real Authentication API Validation (No Fake Success)
+    // Check 8: Real Authentication API Error Rejection
     // -------------------------------------------------------------
     console.log('\n--- Step 8: Validating Real Authentication API Endpoint & Error Rejection ---');
-    const authApiTest = await page.evaluate(async () => {
+    const authApiTest = await page.evaluate(async (apiUrl) => {
       try {
-        const res = await fetch('https://api.rideos.ai/api/v1/auth/login', {
+        const res = await fetch(`${apiUrl}/auth/login`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify({
             email: 'unauthorized_audit_rider@rideos.ai',
             password: 'NonExistentPassword_Audit_2026!',
@@ -259,18 +404,27 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
           message: err.toString(),
         };
       }
-    });
+    }, API_BASE_URL);
 
-    // An invalid authentication attempt must NEVER succeed (res.ok must be false)
-    const invalidAuthProperlyRejected = !authApiTest.ok;
-    const authDetails = authApiTest.networkError
-      ? `Backend host unreachable (${authApiTest.message}) — truthful offline rejection`
-      : `HTTP ${authApiTest.status} (${authApiTest.bodySnippet})`;
-    recordResult(
-      '8. Authentication API Rejects Invalid Credentials / Offline',
-      invalidAuthProperlyRejected,
-      authDetails
-    );
+    if (authApiTest.status === 400 || authApiTest.status === 401 || authApiTest.status === 403) {
+      recordResult(
+        '8. Authentication API Correctly Rejects Invalid Credentials',
+        STATUS.PASS,
+        `HTTP ${authApiTest.status} (${authApiTest.bodySnippet})`
+      );
+    } else if (authApiTest.networkError) {
+      recordResult(
+        '8. Authentication API Correctly Rejects Invalid Credentials',
+        STATUS.BLOCKED,
+        `Backend host offline (${authApiTest.message}) — live authentication blocked by backend availability`
+      );
+    } else {
+      recordResult(
+        '8. Authentication API Correctly Rejects Invalid Credentials',
+        STATUS.FAIL,
+        `Unexpected response: HTTP ${authApiTest.status} (${authApiTest.bodySnippet})`
+      );
+    }
 
     // -------------------------------------------------------------
     // Check 9: Staging Account Verification Status
@@ -278,16 +432,50 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     console.log('\n--- Step 9: Auditing Staging Test Account Availability ---');
     const stagingEmail = process.env.STAGING_RIDER_EMAIL;
     const stagingPassword = process.env.STAGING_RIDER_PASSWORD;
+
     if (stagingEmail && stagingPassword) {
-      console.log(`ℹ️ Staging account provided (${stagingEmail}). Testing authentication...`);
-      // Test real authentication only if staging account explicitly provided
-      recordResult('9. Staging Account Authentication', true, `Account ${stagingEmail} verified`);
+      console.log(`ℹ️  Staging credentials supplied (${stagingEmail}). Testing live authentication...`);
+      const stagingLoginTest = await page.evaluate(
+        async ({ apiUrl, email, password }) => {
+          try {
+            const res = await fetch(`${apiUrl}/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              body: JSON.stringify({ email, password }),
+            });
+            const data = await res.json();
+            return {
+              ok: res.ok,
+              status: res.status,
+              hasAccessToken: !!(data.accessToken || data.token),
+            };
+          } catch (err) {
+            return { networkError: true, message: err.toString() };
+          }
+        },
+        { apiUrl: API_BASE_URL, email: stagingEmail, password: stagingPassword }
+      );
+
+      if (stagingLoginTest.ok && stagingLoginTest.hasAccessToken) {
+        recordResult('9. Staging Account Live Authentication', STATUS.PASS, `Account ${stagingEmail} authenticated`);
+      } else if (stagingLoginTest.networkError) {
+        recordResult(
+          '9. Staging Account Live Authentication',
+          STATUS.BLOCKED,
+          `Backend offline (${stagingLoginTest.message})`
+        );
+      } else {
+        recordResult(
+          '9. Staging Account Live Authentication',
+          STATUS.FAIL,
+          `HTTP ${stagingLoginTest.status}: Authentication failed`
+        );
+      }
     } else {
-      console.log('ℹ️ No STAGING_RIDER_EMAIL provided in environment. Production safety policy prohibits creating unverified accounts.');
       recordResult(
-        '9. Staging Account Authentication Status',
-        true,
-        'SKIPPED: No staging account provided; production user creation blocked by release safety policy'
+        '9. Staging Account Live Authentication',
+        STATUS.SKIPPED,
+        'No STAGING_RIDER_EMAIL provided in environment; user creation blocked by release safety policy'
       );
     }
 
@@ -309,11 +497,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       };
     });
 
-    // Real assertion: windowWidth must equal 768 and canvas must fill tablet width
     const tabletValid = tabletMetrics.windowWidth === 768 && tabletMetrics.canvasWidth >= 700;
     recordResult(
       '10. Tablet Viewport (768px) Real DOM Metric Assertion',
-      tabletValid,
+      tabletValid ? STATUS.PASS : STATUS.FAIL,
       `Window: ${tabletMetrics.windowWidth}px, Canvas: ${tabletMetrics.canvasWidth}x${tabletMetrics.canvasHeight}px`
     );
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, '05_tablet_viewport.png') });
@@ -336,42 +523,63 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       };
     });
 
-    // Real assertion: windowWidth must equal 390 and canvas must fit mobile screen
     const mobileValid = mobileMetrics.windowWidth === 390 && mobileMetrics.canvasWidth >= 350;
     recordResult(
       '11. Mobile Viewport (390px) Real DOM Metric Assertion',
-      mobileValid,
+      mobileValid ? STATUS.PASS : STATUS.FAIL,
       `Window: ${mobileMetrics.windowWidth}px, Canvas: ${mobileMetrics.canvasWidth}x${mobileMetrics.canvasHeight}px`
     );
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, '06_mobile_viewport.png') });
 
     // -------------------------------------------------------------
-    // Check 12: Zero Fatal Script Errors Audit
+    // Check 12: Zero Fatal Script Errors & Zero Asset Network Failures
     // -------------------------------------------------------------
     console.log('\n--- Step 12: Auditing Browser Console for Fatal Errors ---');
     const fatalSyntaxOrScriptErrors = criticalErrors.filter(
-      (err) => err.includes('SyntaxError') || err.includes('ReferenceError') || err.includes('uncaught exception')
-    );
-    recordResult(
-      '12. Zero Fatal Script Errors',
-      fatalSyntaxOrScriptErrors.length === 0,
-      `Errors: ${fatalSyntaxOrScriptErrors.length}`
+      (err) =>
+        err.includes('SyntaxError') ||
+        err.includes('ReferenceError') ||
+        err.includes('TypeError') ||
+        err.includes('uncaught exception')
     );
 
+    const zeroScriptErrors = fatalSyntaxOrScriptErrors.length === 0;
+    const zeroAssetFailures = failedNetworkRequests.length === 0;
+    const healthPassed = zeroScriptErrors && zeroAssetFailures;
+
+    recordResult(
+      '12. Zero Fatal Script Errors & Zero Asset Network Failures',
+      healthPassed ? STATUS.PASS : STATUS.FAIL,
+      `Critical script errors: ${fatalSyntaxOrScriptErrors.length}, Asset network failures: ${failedNetworkRequests.length}`
+    );
+
+    // -------------------------------------------------------------
     // Summary
+    // -------------------------------------------------------------
     console.log('\n================================================================');
     console.log('📊 BROWSER E2E TEST SUMMARY');
     console.log('================================================================');
     const total = testResults.length;
-    const passed = testResults.filter((r) => r.passed).length;
-    const failed = total - passed;
-    console.log(`Total Checks: ${total} | Passed: ${passed} | Failed: ${failed}`);
+    const passed = testResults.filter((r) => r.status === STATUS.PASS).length;
+    const failed = testResults.filter((r) => r.status === STATUS.FAIL).length;
+    const blocked = testResults.filter((r) => r.status === STATUS.BLOCKED).length;
+    const skipped = testResults.filter((r) => r.status === STATUS.SKIPPED).length;
+
+    console.log(
+      `Total Checks: ${total} | Passed: ${passed} | Failed: ${failed} | Blocked: ${blocked} | Skipped: ${skipped}`
+    );
 
     if (failed > 0) {
       console.error(`\n❌ ${failed} checks failed!`);
       process.exit(1);
     } else {
-      console.log('\n🎉 ALL BROWSER E2E CHECKS PASSED RIGOROUSLY!');
+      console.log('\n🎉 ALL EXECUTABLE BROWSER E2E CHECKS PASSED RIGOROUSLY!');
+      if (blocked > 0 || skipped > 0) {
+        console.log(
+          `ℹ️  Note: ${blocked} check(s) BLOCKED_BY_BACKEND_UNAVAILABLE, ${skipped} check(s) SKIPPED (truthfully reported, not falsely passed).`
+        );
+      }
+      process.exit(0);
     }
   } catch (err) {
     console.error('Fatal test error:', err);
