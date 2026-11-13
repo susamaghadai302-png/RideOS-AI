@@ -11,7 +11,11 @@ export class CatalogService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.seedProducts();
+    try {
+      await this.seedProducts();
+    } catch (err: any) {
+      console.warn(`[CatalogService] Initial product seeding deferred (database unavailable): ${err?.message || err}`);
+    }
   }
 
   async getActiveProducts(): Promise<Product[]> {

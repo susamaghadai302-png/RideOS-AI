@@ -64,12 +64,13 @@ export class VehicleRegistryService {
   }
 
   async seedDemoRegistry(): Promise<void> {
-    const count = await this.vehicleModel.countDocuments();
-    if (count > 0) return;
+    try {
+      const count = await this.vehicleModel.countDocuments();
+      if (count > 0) return;
 
-    this.logger.log('Seeding Vehicle Registry with comprehensive motorcycle and scooter taxonomy...');
-    
-    await this.vehicleModel.insertMany([
+      this.logger.log('Seeding Vehicle Registry with comprehensive motorcycle and scooter taxonomy...');
+      
+      await this.vehicleModel.insertMany([
       // --- SCOOTERS ---
       {
         manufacturer: 'Suzuki',
@@ -414,6 +415,9 @@ export class VehicleRegistryService {
         maintenanceIntervals: {}
       }
     ]);
+    } catch (err: any) {
+      this.logger.warn(`Initial vehicle taxonomy seeding deferred (database unavailable): ${err?.message || err}`);
+    }
   }
 
   getCatalogVersion() {

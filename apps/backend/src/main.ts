@@ -83,4 +83,7 @@ async function bootstrap() {
   console.log(`[RoadOS Swagger] Documentation available at http://localhost:${port}/api/docs`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('[Fatal Bootstrap Error]', err);
+  process.exit(1);
+});
