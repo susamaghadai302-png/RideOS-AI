@@ -212,4 +212,27 @@ export class HealthController {
       cpuUsagePct: null,
     };
   }
+
+  @Get('/egress-ip')
+  @ApiOperation({ summary: 'Outbound Egress IP Diagnostic' })
+  async getEgressIp() {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json', {
+        headers: { 'User-Agent': 'RideOS-CloudRun-Egress-Check/1.0' },
+        signal: AbortSignal.timeout(5000),
+      });
+      const data: any = await response.json();
+      return {
+        service: 'RideOS-AI-Backend',
+        egressIp: data.ip,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      return {
+        service: 'RideOS-AI-Backend',
+        error: err?.message || 'Failed to determine outbound IP',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
 }

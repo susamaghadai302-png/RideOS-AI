@@ -249,4 +249,35 @@ describe('HealthController', () => {
       expect(metrics.apiLatencyMsP95).toBeNull();
     });
   });
+
+  describe('Outbound Egress IP Diagnostic (/health/egress-ip)', () => {
+    it('should return outbound IP when fetch resolves', async () => {
+      controller = new HealthController();
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ip: '34.123.45.67' }),
+      } as any);
+
+      const result = await controller.getEgressIp();
+      expect(result.service).toBe('RideOS-AI-Backend');
+      expect((result as any).egressIp).toBe('34.123.45.67');
+      expect(result.timestamp).toBeDefined();
+
+      global.fetch = originalFetch;
+    });
+
+    it('should handle fetch failures gracefully without throwing', async () => {
+      controller = new HealthController();
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network unreachable'));
+
+      const result = await controller.getEgressIp();
+      expect(result.service).toBe('RideOS-AI-Backend');
+      expect((result as any).error).toBe('Network unreachable');
+      expect(result.timestamp).toBeDefined();
+
+      global.fetch = originalFetch;
+    });
+  });
 });
