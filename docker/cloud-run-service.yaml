@@ -4,11 +4,11 @@ metadata:
   name: rideos-backend-api
   annotations:
     run.googleapis.com/ingress: all
-    run.googleapis.com/execution-environment: gen2
 spec:
   template:
     metadata:
       annotations:
+        run.googleapis.com/execution-environment: gen2
         autoscaling.knative.dev/minScale: '0'
         autoscaling.knative.dev/maxScale: '10'
         run.googleapis.com/cpu-throttling: 'true'
@@ -28,8 +28,6 @@ spec:
           env:
             - name: NODE_ENV
               value: 'production'
-            - name: PORT
-              value: '3000'
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
