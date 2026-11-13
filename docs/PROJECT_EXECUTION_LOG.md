@@ -474,3 +474,13 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
 | **Crash Detection & SOS** | `EXTERNAL_HARDWARE_VALIDATION_REQUIRED` | IMU threshold algorithm & emergency workflow implemented; live crash testing required. |
 | **Offline Nav & Tile Caching** | `IMPLEMENTED_NOT_LIVE` | Offline caching engine ready; live vector tile download depends on network at ride start. |
 | **Squad Ride Live Sync** | `IMPLEMENTED_NOT_LIVE` | WebSocket telemetry gateway ready; requires live backend deployment. |
+
+### 4. Single-Milestone Live Backend Activation Audit
+- Conducted deep scan across all local configuration sources for an active MongoDB Atlas URI:
+  - Scanned local shell profiles, `.env` files, and environment variables (zero remote credentials found).
+  - Scanned MongoDB Compass local configuration; discovered a legacy reference to `hitanshu.wl9zytg.mongodb.net`, which was tested via DNS and confirmed inactive (returns `NXDOMAIN` with no active SRV/TXT records).
+  - Audited macOS Keychain and system toolchains; confirmed no active MongoDB Atlas CLI session or Atlas API keys are configured.
+  - Checked GitHub repository secrets (`ANDROID_GOOGLE_MAPS_API_KEY`, `GOOGLE_MAPS_API_KEY`); no MongoDB URI configured.
+- Verified Secret Manager in project `rideos-ai`: 4 of 5 required secrets are enabled and verified (`rideos-jwt-secret`, `rideos-jwt-refresh-secret`, `rideos-google-routes-api-key`, `rideos-google-maps-api-key`).
+- Confirmed single remaining blocker: **`rideos-mongo-uri` — BLOCKED_BY_MISSING_CREDENTIALS**.
+- Halted safely at this exact dependency without fabricating credentials or substituting localhost. Deploying will immediately proceed via `./docker/cloud-run-deploy.sh --skip-build` once the user provisions `rideos-mongo-uri`.
