@@ -1,0 +1,13 @@
+.git
+.gitignore
+node_modules/
+apps/backend/node_modules/
+apps/backend/dist/
+apps/mobile/
+.idea/
+.vscode/
+build/
+.dart_tool/
+.gradle/
+*.aab
+*.apk

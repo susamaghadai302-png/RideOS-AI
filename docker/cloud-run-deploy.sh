@@ -10,6 +10,26 @@ REGION="us-central1"
 REPO_NAME="rideos-repo"
 SERVICE_NAME="rideos-backend-api"
 
+AUDIT_ONLY=false
+SKIP_BUILD=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --audit-only)
+      AUDIT_ONLY=true
+      shift
+      ;;
+    --skip-build)
+      SKIP_BUILD=true
+      shift
+      ;;
+    --help|-h)
+      echo "Usage: ./docker/cloud-run-deploy.sh [--audit-only] [--skip-build]"
+      exit 0
+      ;;
+  esac
+done
+
 COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "latest")
 IMAGE_TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}:${COMMIT_SHA}"
 LATEST_TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}:latest"
@@ -117,6 +137,11 @@ fi
 
 echo "✅ All required production secrets validated in Secret Manager."
 
+if [[ "${AUDIT_ONLY}" == "true" ]]; then
+  echo "✅ Secrets audit completed successfully. Exiting due to --audit-only flag."
+  exit 0
+fi
+
 # 3. Ensure Artifact Registry repository exists
 if ! gcloud artifacts repositories describe "${REPO_NAME}" --location="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
   echo "Creating Artifact Registry repository '${REPO_NAME}'..."
@@ -128,11 +153,20 @@ if ! gcloud artifacts repositories describe "${REPO_NAME}" --location="${REGION}
 fi
 
 # 4. Build and Push Container using Google Cloud Build
-echo "Submitting multi-stage build to Google Cloud Build..."
-gcloud builds submit . \
-  --config=docker/cloudbuild.backend.yaml \
-  --substitutions=_IMAGE_TAG="${IMAGE_TAG}",_LATEST_TAG="${LATEST_TAG}" \
-  --project="${PROJECT_ID}"
+if [[ "${SKIP_BUILD}" == "true" ]]; then
+  echo "Skipping container build (--skip-build requested). Verifying image in Artifact Registry..."
+  if ! gcloud artifacts docker images list "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+    echo "❌ ERROR: No existing container image found in Artifact Registry."
+    exit 1
+  fi
+  echo "✅ Existing container image verified in Artifact Registry."
+else
+  echo "Submitting multi-stage build to Google Cloud Build..."
+  gcloud builds submit . \
+    --config=docker/cloudbuild.backend.yaml \
+    --substitutions=_IMAGE_TAG="${IMAGE_TAG}",_LATEST_TAG="${LATEST_TAG}" \
+    --project="${PROJECT_ID}"
+fi
 
 # 5. Deploy Cloud Run Service using declarative spec
 echo "Deploying Cloud Run service..."
@@ -194,12 +228,12 @@ echo "Auditing custom domain mapping and DNS status for api.rideos.ai..."
 DOMAIN_MAPPED=false
 DNS_RESOLVED=false
 
-if gcloud beta run domain-mappings describe --domain="api.rideos.ai" --region="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+if gcloud beta --quiet run domain-mappings describe --domain="api.rideos.ai" --region="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
   DOMAIN_MAPPED=true
   echo "✅ Cloud Run domain mapping exists: api.rideos.ai -> ${SERVICE_NAME}"
 else
   echo "ℹ️  Domain mapping for api.rideos.ai not found in Cloud Run. Attempting registration..."
-  if gcloud beta run domain-mappings create --service="${SERVICE_NAME}" --domain="api.rideos.ai" --region="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+  if gcloud beta --quiet run domain-mappings create --service="${SERVICE_NAME}" --domain="api.rideos.ai" --region="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
     DOMAIN_MAPPED=true
     echo "✅ Cloud Run domain mapping created."
   else
