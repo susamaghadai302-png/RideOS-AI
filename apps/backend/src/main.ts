@@ -83,6 +83,14 @@ async function bootstrap() {
   console.log(`[RoadOS Swagger] Documentation available at http://localhost:${port}/api/docs`);
 }
 
+// Process safety handlers for background driver events
+process.on('unhandledRejection', (reason: any) => {
+  console.warn('[Process Warning] Unhandled rejection intercepted:', reason?.message || reason);
+});
+process.on('uncaughtException', (err: any) => {
+  console.error('[Process Warning] Uncaught exception intercepted:', err?.message || err);
+});
+
 bootstrap().catch((err) => {
   console.error('[Fatal Bootstrap Error]', err);
   process.exit(1);

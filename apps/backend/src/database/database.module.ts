@@ -1,6 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
+import { Connection } from 'mongoose';
 import { RedisProvider, REDIS_CLIENT } from './redis.provider';
 import { TimescaleProvider, TIMESCALE_POOL } from './timescale.provider';
 
@@ -11,15 +12,16 @@ import { TimescaleProvider, TIMESCALE_POOL } from './timescale.provider';
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('MONGO_URI', 'mongodb://localhost:27017/rideos'),
         lazyConnection: true,
-        serverSelectionTimeoutMS: 2000,
-        connectTimeoutMS: 2000,
-        onConnectionCreate: (connection) => {
-          connection.on('error', (err) => {
-            console.warn('[MongoDB] Connection warning (running without MongoDB):', err.message);
+        serverSelectionTimeoutMS: 3000,
+        connectTimeoutMS: 3000,
+        connectionFactory: (connection: Connection) => {
+          connection.on('error', (err: any) => {
+            console.warn('[MongoDB] Connection warning (database unavailable):', err?.message || err);
           });
           connection.on('connected', () => {
             console.log('[MongoDB] Connected successfully to database');
           });
+          return connection;
         },
       }),
       inject: [ConfigService],
