@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { Response } from 'express';
+import * as tls from 'tls';
 import { REDIS_CLIENT } from '../../database/redis.provider';
 import { TIMESCALE_POOL } from '../../database/timescale.provider';
 import { Redis } from 'ioredis';
@@ -12,6 +13,8 @@ import { Pool } from 'pg';
 @ApiTags('Health & Monitoring')
 @Controller('health')
 export class HealthController {
+  private isReconnecting = false;
+
   constructor(
     @Optional() @InjectConnection() private readonly mongoConnection?: Connection,
     @Optional() @Inject(REDIS_CLIENT) private readonly redisClient?: Redis,
@@ -50,6 +53,21 @@ export class HealthController {
       } else {
         mongoStatus = 'disconnected';
         mongoError = `MongoDB is disconnected (readyState=${this.mongoConnection.readyState})`;
+        const uri = this.configService?.get<string>('MONGO_URI');
+        if (uri && this.mongoConnection.readyState === 0 && !this.isReconnecting) {
+          this.isReconnecting = true;
+          this.mongoConnection
+            .openUri(uri, {
+              serverSelectionTimeoutMS: 15000,
+              connectTimeoutMS: 15000,
+            })
+            .catch((err) => {
+              console.warn('[MongoDB] Background reconnect attempt failed:', err?.message || err);
+            })
+            .finally(() => {
+              this.isReconnecting = false;
+            });
+        }
       }
     } else {
       mongoStatus = 'disconnected';
@@ -234,5 +252,50 @@ export class HealthController {
         timestamp: new Date().toISOString(),
       };
     }
+  }
+
+  @Get('/atlas-probe')
+  @ApiOperation({ summary: 'MongoDB Atlas TLS Connectivity Diagnostic' })
+  async probeAtlas() {
+    return new Promise((resolve) => {
+      const host = 'ac-tm8mhdx-shard-00-00.wl9zytg.mongodb.net';
+      const socket = tls.connect(
+        {
+          host,
+          port: 27017,
+          servername: host,
+          timeout: 8000,
+        },
+        () => {
+          const res = {
+            service: 'RideOS-AI-Backend',
+            status: 'CONNECTED',
+            authorized: socket.authorized,
+            protocol: socket.getProtocol(),
+            cipher: socket.getCipher(),
+            timestamp: new Date().toISOString(),
+          };
+          socket.end();
+          resolve(res);
+        },
+      );
+      socket.on('error', (err: any) => {
+        resolve({
+          service: 'RideOS-AI-Backend',
+          status: 'ERROR',
+          error: err?.message || 'TLS connection error',
+          timestamp: new Date().toISOString(),
+        });
+      });
+      socket.on('timeout', () => {
+        socket.destroy();
+        resolve({
+          service: 'RideOS-AI-Backend',
+          status: 'TIMEOUT',
+          error: 'TLS handshake timed out after 8000ms',
+          timestamp: new Date().toISOString(),
+        });
+      });
+    });
   }
 }

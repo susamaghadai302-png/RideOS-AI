@@ -12,8 +12,8 @@ import { TimescaleProvider, TIMESCALE_POOL } from './timescale.provider';
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('MONGO_URI', 'mongodb://localhost:27017/rideos'),
         lazyConnection: true,
-        serverSelectionTimeoutMS: 3000,
-        connectTimeoutMS: 3000,
+        serverSelectionTimeoutMS: Number(configService.get('MONGO_SERVER_SELECTION_TIMEOUT_MS') || 15000),
+        connectTimeoutMS: Number(configService.get('MONGO_CONNECT_TIMEOUT_MS') || 15000),
         connectionFactory: (connection: Connection) => {
           connection.on('error', (err: any) => {
             console.warn('[MongoDB] Connection warning (database unavailable):', err?.message || err);

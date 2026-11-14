@@ -61,12 +61,12 @@ spec:
                   key: latest
           startupProbe:
             httpGet:
-              path: /api/v1/health/readiness
+              path: /api/v1/health/liveness
               port: 3000
-            initialDelaySeconds: 15
+            initialDelaySeconds: 10
             periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 20
+            timeoutSeconds: 3
+            failureThreshold: 5
           livenessProbe:
             httpGet:
               path: /api/v1/health/liveness
