@@ -5,6 +5,8 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { Response } from 'express';
 import * as tls from 'tls';
+import * as dns from 'dns';
+import { MongoClient } from 'mongodb';
 import { REDIS_CLIENT } from '../../database/redis.provider';
 import { TIMESCALE_POOL } from '../../database/timescale.provider';
 import { Redis } from 'ioredis';
@@ -257,45 +259,69 @@ export class HealthController {
   @Get('/atlas-probe')
   @ApiOperation({ summary: 'MongoDB Atlas TLS Connectivity Diagnostic' })
   async probeAtlas() {
-    return new Promise((resolve) => {
+    const srvPromise = new Promise((res) => {
+      dns.resolveSrv('_mongodb._tcp.hitanshu.wl9zytg.mongodb.net', (err, addresses) => {
+        res(err ? { error: err.message, code: (err as any).code } : addresses);
+      });
+    });
+
+    const tlsPromise = new Promise((res) => {
       const host = 'ac-tm8mhdx-shard-00-00.wl9zytg.mongodb.net';
       const socket = tls.connect(
         {
           host,
           port: 27017,
           servername: host,
-          timeout: 8000,
+          timeout: 6000,
         },
         () => {
-          const res = {
-            service: 'RideOS-AI-Backend',
+          const r = {
             status: 'CONNECTED',
             authorized: socket.authorized,
             protocol: socket.getProtocol(),
             cipher: socket.getCipher(),
-            timestamp: new Date().toISOString(),
           };
           socket.end();
-          resolve(res);
+          res(r);
         },
       );
-      socket.on('error', (err: any) => {
-        resolve({
-          service: 'RideOS-AI-Backend',
-          status: 'ERROR',
-          error: err?.message || 'TLS connection error',
-          timestamp: new Date().toISOString(),
-        });
-      });
+      socket.on('error', (err: any) => res({ status: 'ERROR', error: err?.message }));
       socket.on('timeout', () => {
         socket.destroy();
-        resolve({
-          service: 'RideOS-AI-Backend',
-          status: 'TIMEOUT',
-          error: 'TLS handshake timed out after 8000ms',
-          timestamp: new Date().toISOString(),
-        });
+        res({ status: 'TIMEOUT', error: 'TLS timed out' });
       });
     });
+
+    const mongoUri = this.configService?.get<string>('MONGO_URI');
+    let clientResult: any = { status: 'SKIPPED' };
+    if (mongoUri) {
+      try {
+        const client = new MongoClient(mongoUri, {
+          serverSelectionTimeoutMS: 6000,
+          connectTimeoutMS: 6000,
+        });
+        await client.connect();
+        await client.db().admin().ping();
+        await client.close();
+        clientResult = { status: 'CONNECTED', ping: 'OK' };
+      } catch (err: any) {
+        clientResult = {
+          status: 'ERROR',
+          name: err?.name,
+          message: err?.message,
+          code: err?.code,
+        };
+      }
+    }
+
+    const [dnsSrv, tlsResult] = await Promise.all([srvPromise, tlsPromise]);
+
+    return {
+      service: 'RideOS-AI-Backend',
+      dnsSrv,
+      tlsResult,
+      clientResult,
+      timestamp: new Date().toISOString(),
+    };
   }
 }
