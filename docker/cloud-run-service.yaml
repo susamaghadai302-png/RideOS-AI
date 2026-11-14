@@ -12,6 +12,8 @@ spec:
         autoscaling.knative.dev/minScale: '0'
         autoscaling.knative.dev/maxScale: '10'
         run.googleapis.com/cpu-throttling: 'true'
+        run.googleapis.com/network-interfaces: '[{"network":"rideos-vpc","subnetwork":"rideos-cloudrun-subnet"}]'
+        run.googleapis.com/vpc-access-egress: all-traffic
     spec:
       containerConcurrency: 80
       timeoutSeconds: 300
@@ -59,14 +61,22 @@ spec:
                   key: latest
           startupProbe:
             httpGet:
-              path: /api/v1/health/liveness
+              path: /api/v1/health/readiness
               port: 3000
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
-            failureThreshold: 3
+            timeoutSeconds: 5
+            failureThreshold: 20
           livenessProbe:
             httpGet:
               path: /api/v1/health/liveness
               port: 3000
             periodSeconds: 15
+            timeoutSeconds: 3
             failureThreshold: 3
+  traffic:
+    - revisionName: rideos-backend-api-00004-xcj
+      percent: 100
+    - latestRevision: true
+      percent: 0
+      tag: candidate
