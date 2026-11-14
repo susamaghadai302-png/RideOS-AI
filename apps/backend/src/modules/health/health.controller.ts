@@ -2,11 +2,10 @@ import { Controller, Get, Inject, Optional, Res, HttpStatus } from '@nestjs/comm
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { Connection, mongo } from 'mongoose';
 import { Response } from 'express';
 import * as tls from 'tls';
 import * as dns from 'dns';
-import { MongoClient } from 'mongodb';
 import { REDIS_CLIENT } from '../../database/redis.provider';
 import { TIMESCALE_POOL } from '../../database/timescale.provider';
 import { Redis } from 'ioredis';
@@ -296,7 +295,7 @@ export class HealthController {
     let clientResult: any = { status: 'SKIPPED' };
     if (mongoUri) {
       try {
-        const client = new MongoClient(mongoUri, {
+        const client = new mongo.MongoClient(mongoUri, {
           serverSelectionTimeoutMS: 6000,
           connectTimeoutMS: 6000,
         });
