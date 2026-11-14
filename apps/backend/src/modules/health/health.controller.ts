@@ -2,10 +2,8 @@ import { Controller, Get, Inject, Optional, Res, HttpStatus } from '@nestjs/comm
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { InjectConnection } from '@nestjs/mongoose';
-import { Connection, mongo } from 'mongoose';
+import { Connection } from 'mongoose';
 import { Response } from 'express';
-import * as tls from 'tls';
-import * as dns from 'dns';
 import { REDIS_CLIENT } from '../../database/redis.provider';
 import { TIMESCALE_POOL } from '../../database/timescale.provider';
 import { Redis } from 'ioredis';
@@ -229,98 +227,6 @@ export class HealthController {
       apiLatencyMsP95: null,
       requestsPerMinute: null,
       cpuUsagePct: null,
-    };
-  }
-
-  @Get('/egress-ip')
-  @ApiOperation({ summary: 'Outbound Egress IP Diagnostic' })
-  async getEgressIp() {
-    try {
-      const response = await fetch('https://api.ipify.org?format=json', {
-        headers: { 'User-Agent': 'RideOS-CloudRun-Egress-Check/1.0' },
-        signal: AbortSignal.timeout(5000),
-      });
-      const data: any = await response.json();
-      return {
-        service: 'RideOS-AI-Backend',
-        egressIp: data.ip,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (err: any) {
-      return {
-        service: 'RideOS-AI-Backend',
-        error: err?.message || 'Failed to determine outbound IP',
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
-
-  @Get('/atlas-probe')
-  @ApiOperation({ summary: 'MongoDB Atlas TLS Connectivity Diagnostic' })
-  async probeAtlas() {
-    const srvPromise = new Promise((res) => {
-      dns.resolveSrv('_mongodb._tcp.hitanshu.wl9zytg.mongodb.net', (err, addresses) => {
-        res(err ? { error: err.message, code: (err as any).code } : addresses);
-      });
-    });
-
-    const tlsPromise = new Promise((res) => {
-      const host = 'ac-tm8mhdx-shard-00-00.wl9zytg.mongodb.net';
-      const socket = tls.connect(
-        {
-          host,
-          port: 27017,
-          servername: host,
-          timeout: 6000,
-        },
-        () => {
-          const r = {
-            status: 'CONNECTED',
-            authorized: socket.authorized,
-            protocol: socket.getProtocol(),
-            cipher: socket.getCipher(),
-          };
-          socket.end();
-          res(r);
-        },
-      );
-      socket.on('error', (err: any) => res({ status: 'ERROR', error: err?.message }));
-      socket.on('timeout', () => {
-        socket.destroy();
-        res({ status: 'TIMEOUT', error: 'TLS timed out' });
-      });
-    });
-
-    const mongoUri = this.configService?.get<string>('MONGO_URI');
-    let clientResult: any = { status: 'SKIPPED' };
-    if (mongoUri) {
-      try {
-        const client = new mongo.MongoClient(mongoUri, {
-          serverSelectionTimeoutMS: 6000,
-          connectTimeoutMS: 6000,
-        });
-        await client.connect();
-        await client.db().admin().ping();
-        await client.close();
-        clientResult = { status: 'CONNECTED', ping: 'OK' };
-      } catch (err: any) {
-        clientResult = {
-          status: 'ERROR',
-          name: err?.name,
-          message: err?.message,
-          code: err?.code,
-        };
-      }
-    }
-
-    const [dnsSrv, tlsResult] = await Promise.all([srvPromise, tlsPromise]);
-
-    return {
-      service: 'RideOS-AI-Backend',
-      dnsSrv,
-      tlsResult,
-      clientResult,
-      timestamp: new Date().toISOString(),
     };
   }
 }
