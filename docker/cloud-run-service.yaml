@@ -19,7 +19,7 @@ spec:
       timeoutSeconds: 300
       serviceAccountName: rideos-backend-runner@rideos-ai.iam.gserviceaccount.com
       containers:
-        - image: us-central1-docker.pkg.dev/rideos-ai/rideos-repo/rideos-backend-api:2f94109
+        - image: us-central1-docker.pkg.dev/rideos-ai/rideos-repo/rideos-backend-api:e0eb4f8
           ports:
             - name: http1
               containerPort: 3000
@@ -61,12 +61,12 @@ spec:
                   key: latest
           startupProbe:
             httpGet:
-              path: /api/v1/health/liveness
+              path: /api/v1/health/readiness
               port: 3000
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 5
+            timeoutSeconds: 5
+            failureThreshold: 20
           livenessProbe:
             httpGet:
               path: /api/v1/health/liveness
