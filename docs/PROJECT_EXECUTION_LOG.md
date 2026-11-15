@@ -1001,6 +1001,76 @@ Following Task 3.3, an architectural audit of `apps/mobile/lib/core/network/api_
   - Traffic Shifts: **0% shifted**.
   - DNS / Secret Manager: **Zero mutations performed**.
 
+---
+
+## 12. Task 3.4: Production Backend Availability Recovery & Cutover Readiness Audit
+
+### 12.1 Read-Only Live Baseline
+- **Cloud Run Service**: `rideos-backend-api` (us-central1, project `rideos-ai`)
+- **Current Live Traffic Allocation**:
+  - `rideos-backend-api-00004-xcj`: **99%**
+  - `rideos-backend-api-00009-4gt`: **1%** (Tagged: `candidate`, URL: `https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app`)
+  - **Total Traffic**: Exactly **100%**.
+- **Latest Created & Ready Revision**: `rideos-backend-api-00009-4gt`
+
+### 12.2 Root Cause Analysis: Revision Configuration Comparison
+A rigorous comparison between `00004-xcj` and `00009-4gt` revealed the exact mechanism of the production database failure:
+1. **Network Configuration & Static Egress**:
+   - `rideos-backend-api-00004-xcj`: **Zero Direct VPC Egress annotations**. Egress routed through Google's dynamic public IP pool, which is blocked by the MongoDB Atlas IP Access List firewall (`tlsv1 alert internal error` / buffering timeout).
+   - `rideos-backend-api-00009-4gt`: Explicitly configured with Direct VPC Egress annotations:
+     - `run.googleapis.com/network-interfaces: "[{\"network\":\"rideos-vpc\",\"subnetwork\":\"rideos-cloudrun-subnet\"}]"`
+     - `run.googleapis.com/vpc-access-egress: "all-traffic"`
+     - Outbound traffic routes through Cloud NAT static external IP `34.172.212.158` (authorized in MongoDB Atlas Network Access).
+2. **Health Check Probes**:
+   - `00004-xcj`: Startup probe pointed to `/api/v1/health/liveness` (which does not check database connectivity). As a result, Cloud Run falsely marked `00004-xcj` as healthy on deployment despite a broken database connection.
+   - `00009-4gt`: Startup probe pointed to `/api/v1/health/readiness` with 20 retries, guaranteeing the instance only receives traffic when MongoDB connection is established.
+3. **Immutability of Cloud Run Revisions**:
+   - Knative revisions are immutable resources. Networking configurations cannot be patched on `00004-xcj`.
+
+### 12.3 Independent Backend Functional Validation
+
+| Test Target | Endpoint / Route | Revision 00004-xcj (Old Production) | Revision 00009-4gt (Candidate) |
+| :--- | :--- | :--- | :--- |
+| **MongoDB Readiness** | `GET /api/v1/health/readiness` | **HTTP 503 Service Unavailable**<br>`"error":"MongoDB is disconnected (readyState=0)"` | **HTTP 200 OK**<br>`"ready":true, "status":"healthy"` |
+| **System Health** | `GET /api/v1/health` | **HTTP 503 / Degraded** | **HTTP 200 OK** (`"status":"UP"`, latency: 766ms) |
+| **Liveness** | `GET /api/v1/health/liveness` | **HTTP 200 OK** (False positive; does not probe DB) | **HTTP 200 OK** (`"status":"LIVE"`, latency: 690ms) |
+| **Real DB Functionality** | `GET /api/v1/vehicle-registry/catalog/manufacturers` | **HTTP 500 Internal Server Error**<br>(Operation buffering timed out after 10000ms) | **HTTP 200 OK**<br>Returns 11 manufacturers from Atlas |
+| **Maps Client Key** | `GET /api/v1/maps/client-key` | HTTP 200 OK | **HTTP 200 OK** (latency: 583ms) |
+| **Protected Route** | `GET /api/v1/riders/profile` | HTTP 401 Unauthorized | **HTTP 401 Unauthorized** (JSON error format) |
+| **Auth Login Rejection** | `POST /api/v1/auth/login` | HTTP 500 / Timeout | **HTTP 401 Unauthorized** (`"Invalid email or password"`) |
+| **CORS Preflight** | `OPTIONS /api/v1/health` | HTTP 204 | **HTTP 204 No Content** (`access-control-allow-origin: https://rideos-ai.web.app`) |
+
+### 12.4 Candidate Release Confidence & Provenance
+- **Container Image Digest**: `us-central1-docker.pkg.dev/rideos-ai/rideos-repo/rideos-backend-api@sha256:14d22fa8eddc19223d1b82cef2819f7aca13cbc3c79970d28511078108e0048b`
+- **Artifact Registry Tags**: `e0eb4f8`, `latest`
+- **Intended Source Commit**: `e0eb4f8825d21223b82d115fdeb9d3ae0773bc3d`
+- **Backend Test Evidence**: 24/24 suites passed, 136/136 tests passed.
+- **Candidate Health**: Zero critical errors in logs; MongoDB Atlas connected.
+
+### 12.5 Cutover Dry-Run Verification
+- Executed `./scripts/staged-canary-rollout.sh stage 5 --dry-run`:
+  - Planned: `00004-xcj=95%`, `00009-4gt=5%`
+  - Candidate pre-flight checks: ALL PASSED (Readiness: HEALTHY, Liveness: LIVE, System: UP)
+  - Result: `[DRY-RUN] Simulated stage 5% validation PASSED. Cloud Run traffic remains 100% on rideos-backend-api-00004-xcj.`
+  - Mutations executed: **0**
+- Executed `./scripts/staged-canary-rollout.sh stage 100 --dry-run`:
+  - Planned: `00004-xcj=0%`, `00009-4gt=100%`
+  - Candidate pre-flight checks: ALL PASSED
+  - Result: `[DRY-RUN] Simulated stage 100% validation PASSED.`
+  - Mutations executed: **0**
+- Post-dry-run live inspection verified traffic remains strictly **99% / 1%**.
+
+### 12.6 Decision & Cutover Readiness Classification
+- **Old Production Revision (`00004-xcj`)**: **UNHEALTHY**
+  - Fails all database operations due to missing Direct VPC egress. Permanently unfixable due to revision immutability.
+- **Candidate Revision (`00009-4gt`)**: **READY**
+  - Fully functional with verified static Direct VPC egress, healthy MongoDB Atlas connectivity, CORS headers, and 100% passing tests.
+- **Production Recovery**: **SAFE TO PROMOTE**
+  - Candidate `rideos-backend-api-00009-4gt` is fully equipped and verified to replace `00004-xcj`.
+  - **No new container build or revision deployment is needed**.
+  - A staged progression (5% &rarr; 25% &rarr; 50% &rarr; 100%) or direct emergency promotion can be safely executed whenever authorized.
+
+
 
 
 
