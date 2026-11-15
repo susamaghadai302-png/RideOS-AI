@@ -1363,6 +1363,95 @@ Updated `scripts/test-staged-canary-rollout.sh` with 34 new assertions across Te
 - DNS / Secret Manager Modifications: **ZERO**.
 - Revisions Created: **ZERO**.
 
+---
+
+## 16. Task 3.4.4: Candidate Revision Metadata, Tag Identity & Health Probe Binding Verification
+
+- **Execution Date**: November 15, 2026
+- **Feature Branch**: `feat/cloudrun-direct-vpc-static-egress`
+- **Lead Verification**: Senior Cloud Reliability & Systems Architect
+- **Scope**: Implementation of read-only Google Cloud Run metadata and revision queries to independently verify that Cloud Run candidate traffic tag (`tag: "candidate"`) maps to the exact candidate revision passed to the rollout controller, verify revision existence and `Ready` condition, extract container image digest, creation timestamp, and service account; enforce health probe URL binding and gating; expansion of the canary rollout safety test suite to 181 assertions covering 10 failure/success scenarios (Test 34); live read-only verification of existing production traffic (99% `00004-xcj` / 1% `00009-4gt`).
+
+### 16.1 Problem Statement & Code Review Finding
+Prior to Task 3.4.4:
+- In `scripts/staged-canary-rollout.sh`, the rollout controller checked candidate health by probing `CANDIDATE_TAG_URL` (or fallback to service URL with tag).
+- However, the script never independently verified that the Cloud Run candidate traffic tag (`tag: "candidate"`) actually mapped to the exact `CANDIDATE_REV` supplied to the controller.
+- A healthy response from a tagged endpoint URL alone was insufficient proof of candidate revision identity; an operator error or stale Cloud Run deployment could cause the tag to point to an outdated, different, or rogue revision.
+- If the tag pointed to a different revision or if duplicate tag mappings existed, health probes would evaluate the wrong container, potentially promoting unverified code to production.
+
+### 16.2 Architectural Solution: Live Metadata & Tag Identity Verification (`verify_candidate_revision_identity`)
+Implemented `verify_candidate_revision_identity` in `scripts/staged-canary-rollout.sh`:
+1. **Cloud Run Service Tag Mapping Verification**:
+   - Queries Cloud Run Service metadata via `gcloud run services describe "$SERVICE" --format="json"`.
+   - Parses `status.traffic` using Node.js to filter for `tag === "candidate"`.
+   - **Missing Tag Check**: Rejects if candidate traffic tag is not found in `status.traffic` (`CRITICAL_SAFETY_REJECTION: Candidate traffic tag "candidate" is missing`).
+   - **Duplicate Tag Check**: Rejects if multiple traffic entries share tag `candidate` (`CRITICAL_SAFETY_REJECTION: Duplicate candidate tag mapping detected`).
+   - **Tag-to-Revision Mismatch Check**: Rejects if candidate tag points to a revision other than `CANDIDATE_REV` (`CRITICAL_SAFETY_REJECTION: Candidate tag "candidate" maps to revision "<mapped>", but expected candidate revision is "<cand>" (tag-to-revision mismatch)`).
+   - **Tag URL Extraction & Mismatch Check**: Validates assigned tag URL in `status.traffic`. If controller's `CANDIDATE_TAG_URL` is set, verifies it strictly matches the Cloud Run tag URL.
+2. **Cloud Run Revision Resource Verification**:
+   - Queries the revision directly via `gcloud run revisions describe "$cand_rev" --format="json"`.
+   - **Revision Existence**: Rejects if the revision does not exist in Cloud Run (`CRITICAL_SAFETY_REJECTION: Candidate revision '<cand>' does not exist`).
+   - **Revision Name Match**: Asserts exact metadata name match (`metadata.name === cand_rev`).
+   - **Ready Condition Check**: Verifies `status.conditions` contains `{ type: "Ready", status: "True" }`. Rejects if revision is not Ready (`CRITICAL_SAFETY_REJECTION: Candidate revision '<cand>' is not in Ready state`).
+   - **Container Image Digest Extraction**: Extracts `status.imageDigest` (e.g., `us-central1-docker.pkg.dev/rideos-ai/rideos-repo/rideos-backend-api@sha256:...`) and creation timestamp (`metadata.creationTimestamp`).
+   - **Service Account Extraction**: Extracts `spec.serviceAccountName` (e.g., `rideos-backend-runner@rideos-ai.iam.gserviceaccount.com`).
+3. **Health Probe Binding & Strict Gating**:
+   - Updated `check_status`: Executes `verify_candidate_revision_identity "$CANDIDATE_REV"` **before** running any curl probes against `/api/v1/health/readiness`, `/liveness`, or `/health`.
+   - Binds `CANDIDATE_TAG_URL` dynamically to the verified Cloud Run tag URL.
+   - Logs verified metadata:
+     - Cloud Run Tag: `candidate -> <rev>`
+     - Candidate URL: `<url>`
+     - Ready Condition: `True`
+     - Image Digest: `<digest>`
+     - Created: `<timestamp>`
+     - Service Account: `<sa>`
+   - If metadata identity verification fails, logs `CRITICAL_SAFETY_REJECTION`, halts immediately with exit code 1, and runs **zero health probes**.
+4. **Staged Rollout Gating (`apply_stage`)**:
+   - Both dry-run and live stage execution enforce `check_status`.
+   - Any tag mismatch, non-existent revision, or unready condition causes immediate fail-closed termination with exit code 1 and **zero traffic mutations**.
+5. **Candidate Verification Subcommand (`verify-candidate`)**:
+   - Gated behind `check_status`. Rejects candidate revision identity anomalies prior to diagnostic probing.
+
+### 16.3 Test Suite Updates & Execution Evidence
+Added Test 34 with 10 comprehensive scenarios to `scripts/test-staged-canary-rollout.sh` and updated stateful gcloud mock:
+- **Scenario 1**: Correct tag and revision mapping dry-run succeeds (exit code 0, metadata logged).
+- **Scenario 2**: Candidate tag points to different revision &rarr; exits with code 1, 0 mutations, logs `CRITICAL_SAFETY_REJECTION: ... tag-to-revision mismatch`.
+- **Scenario 3**: Candidate revision does not exist &rarr; exits with code 1, 0 mutations, logs `CRITICAL_SAFETY_REJECTION: Candidate revision ... does not exist`.
+- **Scenario 4**: Candidate revision not Ready &rarr; exits with code 1, 0 mutations, logs `CRITICAL_SAFETY_REJECTION: Candidate revision ... is not in Ready state`.
+- **Scenario 5**: Candidate traffic tag is missing &rarr; exits with code 1, 0 mutations, logs `CRITICAL_SAFETY_REJECTION: Candidate traffic tag "candidate" is missing`.
+- **Scenario 6**: Duplicate candidate tag mapping &rarr; exits with code 1, 0 mutations, logs `CRITICAL_SAFETY_REJECTION: Duplicate candidate tag mapping detected`.
+- **Scenario 7**: Candidate URL health succeeds but revision identity mismatches &rarr; `verify-candidate` halts on identity mismatch with exit code 1, 0 mutations.
+- **Scenario 8**: Correct mapping and live probes succeed in live stage execution &rarr; exits with code 0, exactly 1 mutation executed, stage verified and stable.
+- **Scenario 9**: Fresh-process status check with verified candidate &rarr; exits with code 0, candidate identity verified.
+- **Scenario 10**: Zero mutations across all rejected scenarios (Scenarios 2, 3, 4, 5, 6).
+- **Test 25 (Master Invariant)**: Global assertion verified `--to-revisions=rideos-backend-api-00004-xcj=100` was executed **zero times** across all 181 test runs.
+
+| Test Suite | Command | Total Passed | Total Failed | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Canary Rollout Safety Suite** | `./scripts/test-staged-canary-rollout.sh` | **181 passed** | **0 failed** | **PASS** |
+| **Cloud Run Deployment Safety Suite** | `./scripts/test-cloud-run-deploy.sh` | **54 passed** | **0 failed** | **PASS** |
+| **Backend Unit Test Suite** | `cd apps/backend && npm test` | **136 passed (24 suites)** | **0 failed** | **PASS** |
+| **Rollout Script Syntax Check** | `bash -n scripts/staged-canary-rollout.sh` | Clean exit (code 0) | 0 | **PASS** |
+| **Test Script Syntax Check** | `bash -n scripts/test-staged-canary-rollout.sh` | Clean exit (code 0) | 0 | **PASS** |
+
+### 16.4 Live Production State & Invariant Verification
+- Verified Cloud Run service status via read-only command:
+  `gcloud run services describe rideos-backend-api --region=us-central1 --format="json"`
+- Live Traffic Allocation:
+  - `rideos-backend-api-00004-xcj`: **99%**
+  - `rideos-backend-api-00009-4gt`: **1%** (Tagged: `candidate`, URL: `https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app`)
+  - **Total Traffic**: Exactly **100%**.
+- Candidate Revision Live Metadata:
+  - Revision: `rideos-backend-api-00009-4gt`
+  - Ready Condition: `True`
+  - Container Image Digest: `us-central1-docker.pkg.dev/rideos-ai/rideos-repo/rideos-backend-api@sha256:14d22fa8eddc19223d1b82cef2819f7aca13cbc3c79970d28511078108e0048b`
+  - Created: `2026-11-14T16:59:24.093250Z`
+  - Service Account: `rideos-backend-runner@rideos-ai.iam.gserviceaccount.com`
+- Production Traffic Drift: **ZERO**.
+- Live Cloud Run Mutations: **ZERO**.
+- DNS / Secret Manager Modifications: **ZERO**.
+- Revisions Created: **ZERO**.
+
 
 
 

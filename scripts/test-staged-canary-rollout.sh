@@ -122,7 +122,7 @@ if [[ ! -f "$STATE_FILE" ]]; then
   "status": {
     "traffic": [
       { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
-      { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt", "tag": "candidate" }
+      { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt", "tag": "candidate", "url": "https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app" }
     ]
   }
 }
@@ -159,8 +159,9 @@ case "$*" in
         const [rev, pctStr] = p.split("=");
         const pct = parseInt(pctStr, 10);
         const obj = { percent: pct, revisionName: rev };
-        if (rev === "rideos-backend-api-00009-4gt") {
+        if (rev === "rideos-backend-api-00009-4gt" || rev === "rideos-backend-api-00010-xyz") {
           obj.tag = "candidate";
+          obj.url = "https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app";
         }
         return obj;
       });
@@ -203,6 +204,66 @@ case "$*" in
     if [[ -f "$MOCK_LOG_DIR/simulate_describe_failure" ]]; then
       echo "ERROR: simulated describe network timeout" >&2
       exit 1
+    fi
+
+    if [[ -f "$MOCK_LOG_DIR/simulate_tag_pointing_to_different_rev" ]]; then
+      cat <<'JSON'
+{
+  "apiVersion": "serving.knative.dev/v1",
+  "kind": "Service",
+  "status": {
+    "traffic": [
+      { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
+      { "percent": 1, "revisionName": "rideos-backend-api-00008-other", "tag": "candidate", "url": "https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app" }
+    ]
+  }
+}
+JSON
+      exit 0
+    fi
+    if [[ -f "$MOCK_LOG_DIR/simulate_missing_candidate_tag" ]]; then
+      cat <<'JSON'
+{
+  "apiVersion": "serving.knative.dev/v1",
+  "kind": "Service",
+  "status": {
+    "traffic": [
+      { "percent": 100, "revisionName": "rideos-backend-api-00004-xcj" }
+    ]
+  }
+}
+JSON
+      exit 0
+    fi
+    if [[ -f "$MOCK_LOG_DIR/simulate_duplicate_candidate_tag" ]]; then
+      cat <<'JSON'
+{
+  "apiVersion": "serving.knative.dev/v1",
+  "kind": "Service",
+  "status": {
+    "traffic": [
+      { "percent": 50, "revisionName": "rideos-backend-api-00009-4gt", "tag": "candidate", "url": "https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app" },
+      { "percent": 50, "revisionName": "rideos-backend-api-00008-other", "tag": "candidate", "url": "https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app" }
+    ]
+  }
+}
+JSON
+      exit 0
+    fi
+    if [[ -f "$MOCK_LOG_DIR/simulate_candidate_url_mismatch" ]]; then
+      cat <<'JSON'
+{
+  "apiVersion": "serving.knative.dev/v1",
+  "kind": "Service",
+  "status": {
+    "traffic": [
+      { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
+      { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt", "tag": "candidate", "url": "https://wrong-url---rideos-backend-api-aeoxwaaccq-uc.a.run.app" }
+    ]
+  }
+}
+JSON
+      exit 0
     fi
 
     if [[ -f "$MOCK_LOG_DIR/simulate_malformed_traffic" ]]; then
@@ -252,6 +313,51 @@ JSON
         });
       ' "$STATE_FILE"
     fi
+    exit 0
+    ;;
+
+  *"run revisions describe"*)
+    if [[ -f "$MOCK_LOG_DIR/simulate_revision_not_found" ]]; then
+      echo "ERROR: (gcloud.run.revisions.describe) Cannot find revision" >&2
+      exit 1
+    fi
+    rev_name=$(echo "$*" | awk '{for(i=1;i<=NF;i++) if($i=="describe") print $(i+1)}')
+    ready_status="True"
+    ready_msg="Revision is ready"
+    if [[ -f "$MOCK_LOG_DIR/simulate_revision_not_ready" ]]; then
+      ready_status="False"
+      ready_msg="Startup probe failed"
+    fi
+    cat <<JSON
+{
+  "apiVersion": "serving.knative.dev/v1",
+  "kind": "Revision",
+  "metadata": {
+    "name": "${rev_name}",
+    "namespace": "rideos-ai",
+    "creationTimestamp": "2026-11-14T16:59:24.093250Z"
+  },
+  "spec": {
+    "containers": [
+      {
+        "image": "us-central1-docker.pkg.dev/rideos-ai/rideos-repo/rideos-backend-api@sha256:14d22fa8eddc19223d1b82cef2819f7aca13cbc3c79970d28511078108e0048b",
+        "name": "rideos-backend-api-1"
+      }
+    ],
+    "serviceAccountName": "rideos-backend-runner@rideos-ai.iam.gserviceaccount.com"
+  },
+  "status": {
+    "conditions": [
+      {
+        "status": "${ready_status}",
+        "type": "Ready",
+        "message": "${ready_msg}"
+      }
+    ],
+    "imageDigest": "us-central1-docker.pkg.dev/rideos-ai/rideos-repo/rideos-backend-api@sha256:14d22fa8eddc19223d1b82cef2819f7aca13cbc3c79970d28511078108e0048b"
+  }
+}
+JSON
     exit 0
     ;;
 
@@ -809,6 +915,19 @@ echo "rideos-backend-api-00009-4gt" > "$SAVED_BASELINE_FILE"
 
 # Candidate for next deployment
 NEW_CANDIDATE="rideos-backend-api-00010-xyz"
+cat <<'JSON' > "$MOCK_LOG_DIR/simulated_traffic.json"
+{
+  "apiVersion": "serving.knative.dev/v1",
+  "kind": "Service",
+  "metadata": { "name": "rideos-backend-api", "namespace": "rideos-ai" },
+  "status": {
+    "traffic": [
+      { "percent": 99, "revisionName": "rideos-backend-api-00009-4gt" },
+      { "percent": 1, "revisionName": "rideos-backend-api-00010-xyz", "tag": "candidate", "url": "https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app" }
+    ]
+  }
+}
+JSON
 
 for stage in 5 25 50 100; do
   prod_pct=$(( 100 - stage ))
@@ -1134,6 +1253,171 @@ assert_eq "Duplicate revision in traffic exits with code 1" "1" "$exit_code_dup_
 assert_eq "Duplicate revision in traffic performs zero mutations" "0" "$mutation_count_dup_traffic"
 assert_contains "Duplicate revision logs safety gate error" "$output_dup_traffic" "CRITICAL SAFETY GATE"
 assert_contains "Duplicate revision entry reported" "$output_dup_traffic" "Duplicate revision entry in status.traffic"
+
+# ------------------------------------------------------------------------------
+# Test 34: Candidate Revision Metadata, Tag Identity & Health Probe Binding (Task 3.4.4 Scenarios)
+# ------------------------------------------------------------------------------
+echo "Test 34: Candidate Revision Metadata, Tag Identity & Health Probe Binding (Task 3.4.4 Scenarios)"
+MOCK_LOG_DIR="$TEST_TMP_DIR/candidate_metadata_binding"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+T34_BASELINE_FILE="$MOCK_LOG_DIR/non_existent_baseline"
+VALID_CANDIDATE="rideos-backend-api-00009-4gt"
+
+# Scenario 1: Correct candidate tag and revision mapping succeeds
+set +e
+output_s1=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T34_BASELINE_FILE" \
+  CANDIDATE_REV="$VALID_CANDIDATE" \
+  "$SCRIPT_UNDER_TEST" stage 5 --dry-run 2>&1)
+exit_code_s1=$?
+set -e
+assert_eq "Correct tag and revision mapping dry-run exits with code 0" "0" "$exit_code_s1"
+assert_contains "Candidate revision identity verified logged" "$output_s1" "Candidate revision identity & tag binding VERIFIED"
+assert_contains "Image digest logged in metadata" "$output_s1" "Image Digest:"
+assert_contains "Ready condition verified in metadata" "$output_s1" "Ready Condition:    True"
+
+# Scenario 2: Candidate tag points to a different revision (Tag-to-Revision Mismatch)
+MOCK_LOG_DIR_S2="$TEST_TMP_DIR/candidate_tag_mismatch"
+mkdir -p "$MOCK_LOG_DIR_S2"
+touch "$MOCK_LOG_DIR_S2/gcloud_mutations.log"
+touch "$MOCK_LOG_DIR_S2/simulate_tag_pointing_to_different_rev"
+
+set +e
+output_s2=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR_S2" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T34_BASELINE_FILE" \
+  CANDIDATE_REV="$VALID_CANDIDATE" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_s2=$?
+set -e
+mutations_s2=$(wc -l < "$MOCK_LOG_DIR_S2/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Tag pointing to different revision exits with code 1" "1" "$exit_code_s2"
+assert_eq "Tag pointing to different revision executes zero mutations" "0" "$mutations_s2"
+assert_contains "Tag mismatch logs safety rejection" "$output_s2" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Tag mismatch reported" "$output_s2" "tag-to-revision mismatch"
+
+# Scenario 3: Candidate revision does not exist in Cloud Run
+MOCK_LOG_DIR_S3="$TEST_TMP_DIR/candidate_rev_missing"
+mkdir -p "$MOCK_LOG_DIR_S3"
+touch "$MOCK_LOG_DIR_S3/gcloud_mutations.log"
+touch "$MOCK_LOG_DIR_S3/simulate_revision_not_found"
+
+set +e
+output_s3=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR_S3" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T34_BASELINE_FILE" \
+  CANDIDATE_REV="$VALID_CANDIDATE" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_s3=$?
+set -e
+mutations_s3=$(wc -l < "$MOCK_LOG_DIR_S3/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Non-existent revision exits with code 1" "1" "$exit_code_s3"
+assert_eq "Non-existent revision executes zero mutations" "0" "$mutations_s3"
+assert_contains "Non-existent revision logs safety rejection" "$output_s3" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Non-existent revision error reported" "$output_s3" "does not exist in Cloud Run"
+
+# Scenario 4: Candidate revision is not in Ready state
+MOCK_LOG_DIR_S4="$TEST_TMP_DIR/candidate_rev_not_ready"
+mkdir -p "$MOCK_LOG_DIR_S4"
+touch "$MOCK_LOG_DIR_S4/gcloud_mutations.log"
+touch "$MOCK_LOG_DIR_S4/simulate_revision_not_ready"
+
+set +e
+output_s4=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR_S4" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T34_BASELINE_FILE" \
+  CANDIDATE_REV="$VALID_CANDIDATE" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_s4=$?
+set -e
+mutations_s4=$(wc -l < "$MOCK_LOG_DIR_S4/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Not Ready revision exits with code 1" "1" "$exit_code_s4"
+assert_eq "Not Ready revision executes zero mutations" "0" "$mutations_s4"
+assert_contains "Not Ready revision logs safety rejection" "$output_s4" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Not Ready error reported" "$output_s4" "is NOT Ready"
+
+# Scenario 5: Candidate traffic tag is missing in service configuration
+MOCK_LOG_DIR_S5="$TEST_TMP_DIR/candidate_tag_missing"
+mkdir -p "$MOCK_LOG_DIR_S5"
+touch "$MOCK_LOG_DIR_S5/gcloud_mutations.log"
+touch "$MOCK_LOG_DIR_S5/simulate_missing_candidate_tag"
+
+set +e
+output_s5=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR_S5" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T34_BASELINE_FILE" \
+  CANDIDATE_REV="$VALID_CANDIDATE" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_s5=$?
+set -e
+mutations_s5=$(wc -l < "$MOCK_LOG_DIR_S5/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Missing candidate tag exits with code 1" "1" "$exit_code_s5"
+assert_eq "Missing candidate tag executes zero mutations" "0" "$mutations_s5"
+assert_contains "Missing tag logs safety rejection" "$output_s5" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Missing tag error reported" "$output_s5" "tag \"candidate\" is missing"
+
+# Scenario 6: Duplicate candidate traffic tag mapping
+MOCK_LOG_DIR_S6="$TEST_TMP_DIR/candidate_tag_duplicate"
+mkdir -p "$MOCK_LOG_DIR_S6"
+touch "$MOCK_LOG_DIR_S6/gcloud_mutations.log"
+touch "$MOCK_LOG_DIR_S6/simulate_duplicate_candidate_tag"
+
+set +e
+output_s6=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR_S6" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T34_BASELINE_FILE" \
+  CANDIDATE_REV="$VALID_CANDIDATE" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_s6=$?
+set -e
+mutations_s6=$(wc -l < "$MOCK_LOG_DIR_S6/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Duplicate candidate tag exits with code 1" "1" "$exit_code_s6"
+assert_eq "Duplicate candidate tag executes zero mutations" "0" "$mutations_s6"
+assert_contains "Duplicate tag logs safety rejection" "$output_s6" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Duplicate tag error reported" "$output_s6" "Duplicate candidate tag mapping detected"
+
+# Scenario 7: Candidate URL health succeeds but revision identity mismatches (verify-candidate)
+MOCK_LOG_DIR_S7="$TEST_TMP_DIR/candidate_probe_gated"
+mkdir -p "$MOCK_LOG_DIR_S7"
+touch "$MOCK_LOG_DIR_S7/simulate_tag_pointing_to_different_rev"
+
+set +e
+output_s7=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR_S7" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  CANDIDATE_REV="$VALID_CANDIDATE" \
+  "$SCRIPT_UNDER_TEST" verify-candidate 2>&1)
+exit_code_s7=$?
+set -e
+assert_eq "verify-candidate with mismatched tag exits with code 1" "1" "$exit_code_s7"
+assert_contains "verify-candidate halts on identity mismatch" "$output_s7" "CRITICAL_SAFETY_REJECTION"
+assert_contains "verify-candidate reports tag-to-revision mismatch" "$output_s7" "tag-to-revision mismatch"
+
+# Scenario 8: Correct mapping and all health probes succeed in live stage execution
+MOCK_LOG_DIR_S8="$TEST_TMP_DIR/candidate_live_success"
+mkdir -p "$MOCK_LOG_DIR_S8"
+touch "$MOCK_LOG_DIR_S8/gcloud_mutations.log"
+
+set +e
+output_s8=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR_S8" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T34_BASELINE_FILE" \
+  CANDIDATE_REV="$VALID_CANDIDATE" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_s8=$?
+set -e
+mutations_s8=$(wc -l < "$MOCK_LOG_DIR_S8/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Correct mapping and live probes succeed with exit code 0" "0" "$exit_code_s8"
+assert_eq "Exactly 1 traffic update executed" "1" "$mutations_s8"
+assert_contains "Stage verified and stable" "$output_s8" "Stage 5% canary rollout VERIFIED AND STABLE"
+
+# Scenario 9: Fresh-process identity verification
+set +e
+output_s9=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T34_BASELINE_FILE" \
+  CANDIDATE_REV="$VALID_CANDIDATE" \
+  "$SCRIPT_UNDER_TEST" status 2>&1)
+exit_code_s9=$?
+set -e
+assert_eq "Fresh-process status check with verified candidate exits with code 0" "0" "$exit_code_s9"
+assert_contains "Fresh-process verified candidate tag" "$output_s9" "Candidate revision identity & tag binding VERIFIED"
+
+# Scenario 10: Zero mutations across all rejected scenarios
+total_rejected_mutations=$(( mutations_s2 + mutations_s3 + mutations_s4 + mutations_s5 + mutations_s6 ))
+assert_eq "Zero traffic mutations executed across all rejected candidate identity scenarios" "0" "$total_rejected_mutations"
 
 # ------------------------------------------------------------------------------
 # Test 25: Master Invariant: No automatic 00004-xcj=100 rollback across entire suite (Requirement 11)

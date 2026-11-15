@@ -225,6 +225,188 @@ validate_rollout_stage_allocation() {
   return 0
 }
 
+# ==============================================================================
+# Verifies candidate revision identity, Ready status, tag mapping, and URL binding
+# ==============================================================================
+verify_candidate_revision_identity() {
+  local cand_rev="${1:-${CANDIDATE_REV:-}}"
+  local target_tag="${CANDIDATE_TAG:-candidate}"
+
+  if [[ -z "$cand_rev" ]]; then
+    echo "ERR: Candidate revision is missing or empty"
+    return 0
+  fi
+
+  # 1. Query Cloud Run Service to verify tag-to-revision mapping and candidate URL
+  local raw_service_json
+  raw_service_json=$($GCLOUD_CMD run services describe "$SERVICE" \
+    --region="$REGION" \
+    --project="$PROJECT" \
+    --format="json" 2>/dev/null || echo "")
+
+  if [[ -z "$raw_service_json" ]]; then
+    echo "ERR: Unable to query Cloud Run service metadata for '$SERVICE'"
+    return 0
+  fi
+
+  local tag_verify_result
+  tag_verify_result=$(node -e '
+    try {
+      const raw = process.argv[1];
+      const targetTag = process.argv[2];
+      const expectedRev = process.argv[3];
+      const expectedUrl = process.argv[4];
+
+      const parsed = JSON.parse(raw);
+      let traffic = null;
+      if (Array.isArray(parsed)) {
+        traffic = parsed;
+      } else if (parsed && parsed.status && Array.isArray(parsed.status.traffic)) {
+        traffic = parsed.status.traffic;
+      } else {
+        console.log("ERR: status.traffic array not found in Cloud Run service JSON");
+        process.exit(0);
+      }
+
+      const matchingTagEntries = traffic.filter(t => t.tag === targetTag);
+
+      if (matchingTagEntries.length === 0) {
+        console.log(`ERR: Candidate traffic tag "${targetTag}" is missing in Cloud Run service traffic configuration`);
+        process.exit(0);
+      }
+
+      if (matchingTagEntries.length > 1) {
+        console.log(`ERR: Duplicate candidate tag mapping detected. Found ${matchingTagEntries.length} entries for tag "${targetTag}"`);
+        process.exit(0);
+      }
+
+      const entry = matchingTagEntries[0];
+      const mappedRev = (entry.revisionName || "").trim();
+      const mappedUrl = (entry.url || "").trim();
+
+      if (!mappedRev) {
+        console.log(`ERR: Candidate tag "${targetTag}" has empty or missing revisionName`);
+        process.exit(0);
+      }
+
+      if (mappedRev !== expectedRev) {
+        console.log(`ERR: Candidate tag "${targetTag}" maps to revision "${mappedRev}", but expected candidate revision is "${expectedRev}" (tag-to-revision mismatch)`);
+        process.exit(0);
+      }
+
+      if (!mappedUrl) {
+        console.log(`ERR: Candidate tag "${targetTag}" does not have an assigned URL in status.traffic`);
+        process.exit(0);
+      }
+
+      // Check URL match if expectedUrl is provided
+      if (expectedUrl && expectedUrl.trim().length > 0) {
+        const cleanExpected = expectedUrl.trim().replace(/\/+$/, "");
+        const cleanMapped = mappedUrl.replace(/\/+$/, "");
+        if (cleanExpected !== cleanMapped) {
+          console.log(`ERR: Candidate URL mismatch. Controller CANDIDATE_TAG_URL (${cleanExpected}) does not match Cloud Run tag URL (${cleanMapped}) for revision "${expectedRev}"`);
+          process.exit(0);
+        }
+      }
+
+      console.log(`OK_TAG|${mappedRev}|${mappedUrl}`);
+    } catch (e) {
+      console.log("ERR: Failed to parse service traffic JSON: " + e.message);
+    }
+  ' "$raw_service_json" "$target_tag" "$cand_rev" "${CANDIDATE_TAG_URL:-}" 2>/dev/null || echo "ERR: Service tag parser execution failure")
+
+  if [[ "$tag_verify_result" != OK_TAG\|* ]]; then
+    echo "ERR: ${tag_verify_result#ERR: }"
+    return 0
+  fi
+
+  local verified_tag_rev
+  local verified_tag_url
+  verified_tag_rev=$(echo "$tag_verify_result" | cut -d'|' -f2)
+  verified_tag_url=$(echo "$tag_verify_result" | cut -d'|' -f3)
+
+  # 2. Query Cloud Run Revision directly to verify existence, exact name, Ready condition, and container image digest
+  local raw_rev_json
+  raw_rev_json=$($GCLOUD_CMD run revisions describe "$cand_rev" \
+    --region="$REGION" \
+    --project="$PROJECT" \
+    --format="json" 2>/dev/null || echo "")
+
+  if [[ -z "$raw_rev_json" ]]; then
+    echo "ERR: Candidate revision '$cand_rev' does not exist in Cloud Run ($SERVICE, $REGION, $PROJECT)"
+    return 0
+  fi
+
+  local rev_verify_result
+  rev_verify_result=$(node -e '
+    try {
+      const raw = process.argv[1];
+      const expectedRev = process.argv[2];
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.metadata) {
+        console.log("ERR: Malformed revision metadata in Cloud Run describe response");
+        process.exit(0);
+      }
+
+      const revName = (parsed.metadata.name || "").trim();
+      if (revName !== expectedRev) {
+        console.log(`ERR: Revision name in metadata ("${revName}") does not match expected CANDIDATE_REV ("${expectedRev}")`);
+        process.exit(0);
+      }
+
+      const conditions = (parsed.status && Array.isArray(parsed.status.conditions)) ? parsed.status.conditions : [];
+      const readyCond = conditions.find(c => c.type === "Ready");
+      if (!readyCond) {
+        console.log(`ERR: Candidate revision "${expectedRev}" does not have a "Ready" condition in status.conditions`);
+        process.exit(0);
+      }
+
+      if (readyCond.status !== "True") {
+        const msg = readyCond.message || "No condition message provided";
+        console.log(`ERR: Candidate revision "${expectedRev}" is NOT Ready (Ready condition status: "${readyCond.status}", message: "${msg}")`);
+        process.exit(0);
+      }
+
+      // Extract image digest and metadata
+      let imageDigest = (parsed.status && parsed.status.imageDigest) || "";
+      if (!imageDigest && parsed.status && Array.isArray(parsed.status.containerStatuses) && parsed.status.containerStatuses.length > 0) {
+        imageDigest = parsed.status.containerStatuses[0].imageDigest || "";
+      }
+      if (!imageDigest && parsed.spec && Array.isArray(parsed.spec.containers) && parsed.spec.containers.length > 0) {
+        imageDigest = parsed.spec.containers[0].image || "";
+      }
+
+      if (!imageDigest) {
+        console.log(`ERR: Could not determine container image digest for candidate revision "${expectedRev}"`);
+        process.exit(0);
+      }
+
+      const creationTimestamp = parsed.metadata.creationTimestamp || "unknown";
+      const serviceAccount = (parsed.spec && parsed.spec.serviceAccountName) || "unknown";
+
+      console.log(`OK_REV|${revName}|${imageDigest}|${creationTimestamp}|${serviceAccount}`);
+    } catch (e) {
+      console.log("ERR: Failed to parse revision describe JSON: " + e.message);
+    }
+  ' "$raw_rev_json" "$cand_rev" 2>/dev/null || echo "ERR: Revision metadata parser execution failure")
+
+  if [[ "$rev_verify_result" != OK_REV\|* ]]; then
+    echo "ERR: ${rev_verify_result#ERR: }"
+    return 0
+  fi
+
+  local rev_image
+  local rev_created
+  local rev_sa
+  rev_image=$(echo "$rev_verify_result" | cut -d'|' -f3)
+  rev_created=$(echo "$rev_verify_result" | cut -d'|' -f4)
+  rev_sa=$(echo "$rev_verify_result" | cut -d'|' -f5)
+
+  echo "OK|${verified_tag_rev}|${verified_tag_url}|${rev_image}|${rev_created}|${rev_sa}"
+  return 0
+}
+
 # Portable latency measurement using curl's built-in timing
 measure_request() {
   local url="$1"
@@ -683,7 +865,36 @@ check_status() {
     return 0
   fi
 
-  log "Verifying Candidate Revision ($CANDIDATE_REV) health..."
+  # TASK 1 & 2: Verify candidate revision identity and tag binding BEFORE running any probes
+  local id_check
+  id_check=$(verify_candidate_revision_identity "$CANDIDATE_REV")
+  if [[ "$id_check" != OK\|* ]]; then
+    log_error "CRITICAL_SAFETY_REJECTION: ${id_check#ERR: }"
+    return 1
+  fi
+
+  local verified_tag_rev
+  local verified_tag_url
+  local verified_image
+  local verified_created
+  local verified_sa
+  verified_tag_rev=$(echo "$id_check" | cut -d'|' -f2)
+  verified_tag_url=$(echo "$id_check" | cut -d'|' -f3)
+  verified_image=$(echo "$id_check" | cut -d'|' -f4)
+  verified_created=$(echo "$id_check" | cut -d'|' -f5)
+  verified_sa=$(echo "$id_check" | cut -d'|' -f6)
+
+  log_success "Candidate revision identity & tag binding VERIFIED: $CANDIDATE_REV"
+  log "  - Cloud Run Tag:      candidate -> $verified_tag_rev"
+  log "  - Candidate URL:      $verified_tag_url"
+  log "  - Ready Condition:    True"
+  log "  - Image Digest:       $verified_image"
+  log "  - Created:            $verified_created"
+  log "  - Service Account:    $verified_sa"
+
+  CANDIDATE_TAG_URL="$verified_tag_url"
+
+  log "Verifying Candidate Revision ($CANDIDATE_REV) health probes on verified URL ($CANDIDATE_TAG_URL)..."
 
   # A. Readiness Probe (Verifies MongoDB connectivity, with cold-start allowance)
   local res_readiness
@@ -1029,7 +1240,10 @@ apply_stage() {
     log "[DRY-RUN] Pre-shift baseline preserved: $PRE_SHIFT_SNAPSHOT"
 
     # Pre-flight candidate health checks in dry-run mode
-    check_status
+    if ! check_status; then
+      log_error "CRITICAL_SAFETY_REJECTION: Candidate pre-flight verification failed in dry-run mode."
+      exit 1
+    fi
     log_success "[DRY-RUN] Simulated stage $candidate_pct% validation PASSED. Cloud Run traffic remains intact at $PRE_SHIFT_SNAPSHOT."
     exit 0
   fi
@@ -1044,7 +1258,10 @@ apply_stage() {
   fi
 
   # Step A: Pre-flight candidate health check
-  check_status
+  if ! check_status; then
+    log_error "CRITICAL_SAFETY_REJECTION: Candidate pre-flight verification failed. Aborting traffic shift."
+    exit 1
+  fi
 
   # Step B: Mark traffic shift active BEFORE attempting update (arms interrupt and rollback traps)
   CURRENT_STAGE_PCT="$candidate_pct"
