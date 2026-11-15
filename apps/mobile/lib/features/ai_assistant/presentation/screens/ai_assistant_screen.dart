@@ -51,6 +51,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> with SingleTicker
 
   void _clearChatHistory() {
     LuxAudioHapticsService.selectionClick();
+    context.read<AiAssistantBloc>().add(const ClearAiChatHistoryEvent());
   }
 
   @override

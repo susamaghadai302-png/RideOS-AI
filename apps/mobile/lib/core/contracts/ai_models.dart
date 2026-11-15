@@ -77,6 +77,8 @@ class AIResponse {
   final String modelUsed;
   final bool isOfflineFallback;
   final String? suggestedActionPayload;
+  final String? conversationId;
+  final List<String>? citations;
 
   const AIResponse({
     required this.text,
@@ -86,6 +88,8 @@ class AIResponse {
     this.modelUsed = 'default',
     this.isOfflineFallback = false,
     this.suggestedActionPayload,
+    this.conversationId,
+    this.citations,
   });
 }
 

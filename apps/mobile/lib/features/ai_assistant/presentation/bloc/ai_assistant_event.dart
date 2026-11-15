@@ -15,3 +15,7 @@ class SendAiPromptEvent extends AiAssistantEvent {
   @override
   List<Object?> get props => [prompt];
 }
+
+class ClearAiChatHistoryEvent extends AiAssistantEvent {
+  const ClearAiChatHistoryEvent();
+}

@@ -47,6 +47,7 @@ class ServiceLocator {
 
   T call<T extends Object>() => _getIt<T>();
   T get<T extends Object>() => _getIt<T>();
+  bool isRegistered<T extends Object>() => _getIt.isRegistered<T>();
 
   bool get isInitialized => _getIt.isRegistered<SecurityService>();
 

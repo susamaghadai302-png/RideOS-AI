@@ -10,6 +10,9 @@ class MockAiAssistantRemoteDatasource implements AiAssistantRemoteDatasource {
   String mockText = 'Routing home now.';
 
   @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+
+  @override
   ApiClient get apiClient => throw UnimplementedError();
 
   @override

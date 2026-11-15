@@ -6,6 +6,9 @@ class AiMessageEntity extends Equatable {
   final bool isUser;
   final String? suggestedAction;
   final DateTime timestamp;
+  final double? confidence;
+  final String? language;
+  final List<String>? citations;
 
   const AiMessageEntity({
     required this.id,
@@ -13,8 +16,20 @@ class AiMessageEntity extends Equatable {
     required this.isUser,
     this.suggestedAction,
     required this.timestamp,
+    this.confidence,
+    this.language,
+    this.citations,
   });
 
   @override
-  List<Object?> get props => [id, text, isUser, suggestedAction, timestamp];
+  List<Object?> get props => [
+        id,
+        text,
+        isUser,
+        suggestedAction,
+        timestamp,
+        confidence,
+        language,
+        citations,
+      ];
 }

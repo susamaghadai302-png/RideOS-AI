@@ -50,6 +50,8 @@ class RemoteAiAssistantGatewayAdapter implements AIProviderGateway {
         modelUsed: 'cloud-default', // Obfuscated behind gateway
         isOfflineFallback: false,
         suggestedActionPayload: message.action,
+        conversationId: message.conversationId,
+        citations: message.citations,
       );
     } catch (_) {
       // Local fallback representation

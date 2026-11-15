@@ -15,6 +15,12 @@ class AiAssistantBloc extends Bloc<AiAssistantEvent, AiAssistantState> {
     required this.intentResolver,
   }) : super(AiAssistantInitialState()) {
     on<SendAiPromptEvent>(_onSendPrompt);
+    on<ClearAiChatHistoryEvent>(_onClearHistory);
+  }
+
+  void _onClearHistory(ClearAiChatHistoryEvent event, Emitter<AiAssistantState> emit) {
+    _messages.clear();
+    emit(AiAssistantInitialState());
   }
 
   Future<void> _onSendPrompt(SendAiPromptEvent event, Emitter<AiAssistantState> emit) async {

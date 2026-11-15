@@ -1,5 +1,7 @@
 import 'dart:async';
 import '../models/ai_ride_assistant_models.dart';
+import '../../contracts/ai_models.dart';
+import '../../contracts/ai_provider_gateway.dart';
 
 abstract class AIRideProvider {
   String get providerName;
@@ -220,6 +222,80 @@ class LocalAIProvider implements AIRideProvider {
       requiresClarification: false,
       isOfflineAi: true,
     );
+  }
+}
+
+/// Cloud-connected AI Provider delegating queries to the backend AI gateway
+class CloudBackendAIRideProvider implements AIRideProvider {
+  final AIProviderGateway gateway;
+  final LocalAIProvider _localFallback = LocalAIProvider();
+
+  CloudBackendAIRideProvider({required this.gateway});
+
+  @override
+  String get providerName => 'CloudBackendAIProvider';
+
+  @override
+  bool get isLocal => false;
+
+  @override
+  Future<AssistantResponse> processQuery({
+    required String textQuery,
+    required RideContextSnapshot context,
+  }) async {
+    final now = DateTime.now();
+    try {
+      final req = AIRequest(
+        requestId: 'ride-req-${now.millisecondsSinceEpoch}',
+        prompt: textQuery,
+        timestamp: now,
+        context: AIConsumerContext(
+          telemetryData: {
+            'speedKmh': context.telemetry.speedKmh.value,
+            'engineRpm': context.telemetry.rpm.value,
+            'batteryVoltage': context.telemetry.batteryVoltage.value,
+            'fuelLevelPct': context.telemetry.fuelLevelPct.value,
+            'engineTempC': context.telemetry.engineTempC.value,
+          },
+          vehicleData: {
+            'bikeModel': context.activeVehicle?.model ?? 'Generic',
+          },
+        ),
+      );
+
+      final res = await gateway.processQuery(req);
+      if (res.isOfflineFallback) {
+        return _localFallback.processQuery(textQuery: textQuery, context: context);
+      }
+
+      return AssistantResponse(
+        responseId: 'cloud_${now.millisecondsSinceEpoch}',
+        spokenText: res.text,
+        displayText: res.text,
+        intent: _mapAiIntent(res.intent),
+        confidence: res.confidence == AIConfidence.high ? 0.95 : 0.80,
+        isOfflineAi: false,
+      );
+    } catch (_) {
+      return _localFallback.processQuery(textQuery: textQuery, context: context);
+    }
+  }
+
+  RideAssistantIntent _mapAiIntent(AIIntent intent) {
+    switch (intent) {
+      case AIIntent.navigate:
+        return RideAssistantIntent.navigation;
+      case AIIntent.diagnostics:
+      case AIIntent.telemetry:
+        return RideAssistantIntent.vehicleStatus;
+      case AIIntent.emergency:
+        return RideAssistantIntent.safety;
+      case AIIntent.informational:
+      case AIIntent.garage:
+      case AIIntent.squadRadar:
+      case AIIntent.unsupported:
+        return RideAssistantIntent.generalQuery;
+    }
   }
 }
 
