@@ -719,6 +719,63 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
 - **Total Traffic**: **100%**
 - **Traffic Progression Halted**: Strictly stopped at 1% canary as commanded. Zero progression to 5%, 25%, 50%, or 100%. Zero new container builds or revision deployments.
 
+---
+
+## 8. Task 3.1 Observability Audit & Task 3.2 Deployment Drift Elimination
+
+- **Execution Date**: November 15, 2026
+- **Feature Branch**: `feat/cloudrun-direct-vpc-static-egress`
+- **Target Service**: `rideos-backend-api` (us-central1, project `rideos-ai`)
+- **Active Traffic Allocation**: **99% Production (`rideos-backend-api-00004-xcj`) / 1% Candidate (`rideos-backend-api-00009-4gt`)** (Total: 100%)
+
+### 8.1 Task 3.1 Production Soak Validation & Observability Audit
+1. **Audit Time Range**: `2026-11-15T10:56:30Z` to `2026-11-15T11:15:00Z` UTC (window immediately following Stage 1 traffic shift).
+2. **Request Counts & Traffic Source Breakdown**:
+   - Total HTTP access requests recorded: **11**.
+   - Tooling-originated requests (`curl/8.9.1`): **11** (100% of traffic).
+   - Organic customer/end-user requests: **0** (zero mobile app, website, or external traffic).
+3. **Observability Metrics by Revision**:
+   - Production Revision (`00004-xcj`):
+     - Request count: 5 (2xx: 5, 4xx: 0, 5xx: 0).
+     - Error rate: 0.00%.
+     - Latency: p50 = 3.52ms, p95 = 5.92ms, p99 = 6.21ms (pure in-memory `/health/liveness`).
+     - CPU utilization: avg 3.10% (peak 3.28%). Memory utilization: avg 4.77% (peak 4.79%).
+   - Candidate Revision (`00009-4gt`):
+     - Request count: 6 (5 to candidate-tag direct endpoint, 1 routed from main production URL).
+     - 2xx: 6, 4xx: 0, 5xx: 0. Error rate: 0.00%.
+     - Latency: p50 = 245.27ms, p95 = 245.87ms, p99 = 245.99ms (includes live MongoDB Atlas ping via Direct VPC static egress NAT `34.172.212.158`). Memory liveness = 1.61ms.
+     - CPU utilization: avg 2.31% (peak 2.48%). Memory utilization: avg 5.17% (peak 5.22%).
+   - Database / SSL Errors: **0**.
+   - Container Restarts: **0**.
+4. **Candidate Exposure Assessment & Classification**:
+   - While routing functionality was confirmed (candidate received 1 routed request from the weighted production endpoint), the lack of organic production user traffic limits statistical significance.
+   - Classification: **`INSUFFICIENT_CANARY_EXPOSURE`**.
+5. **Configuration Drift Finding**:
+   - Discovered that [docker/cloud-run-service.yaml](file:///Users/hitanshughadai/RideOS-AI/docker/cloud-run-service.yaml) hardcoded `00004-xcj: 100%` and `candidate: 0%`.
+   - Discovered that [docker/cloud-run-deploy.sh](file:///Users/hitanshughadai/RideOS-AI/docker/cloud-run-deploy.sh) used `gcloud run services replace`, which would have silently overwritten running canary allocations and reset traffic to 100% on the old revision.
+
+### 8.2 Task 3.2 Configuration Drift Fix & Traffic Preservation Hardening
+1. **Manifest Hardening ([docker/cloud-run-service.yaml](file:///Users/hitanshughadai/RideOS-AI/docker/cloud-run-service.yaml))**:
+   - Removed hardcoded obsolete revision `rideos-backend-api-00004-xcj` and `percent: 100`.
+   - Pinned candidate configuration to `{ latestRevision: true, percent: 0, tag: candidate }`.
+   - Documented that traffic promotion is exclusively governed by [scripts/staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/staged-canary-rollout.sh).
+2. **Deployment Script Hardening ([docker/cloud-run-deploy.sh](file:///Users/hitanshughadai/RideOS-AI/docker/cloud-run-deploy.sh))**:
+   - **Default Non-Mutating Plan Mode**: Deployment defaults to a read-only plan mode with zero mutations unless explicitly authorized with `--confirm`.
+   - **Genuinely Read-Only `--audit-only`**: Audits secrets and Artifact Registry without executing mutations.
+   - **Safe `--skip-build`**: Reusing an image does not bypass the `--confirm` safety gate.
+   - **Pre-Deployment Traffic Capture**: Queries Cloud Run and captures live `BEFORE_TRAFFIC` allocations and percentages.
+   - **Official No-Traffic Deployment Semantics**: Uses `gcloud run deploy --no-traffic --tag=candidate` to deploy new revisions with 0% traffic while preserving existing allocations.
+   - **Post-Deployment Read-Back Verification**: Queries Cloud Run after deployment, compares `AFTER_TRAFFIC` against `BEFORE_TRAFFIC`, and verifies every pre-existing percentage is identical and total is 100%. If drift is detected, automatically attempts emergency traffic restoration.
+   - **Candidate Readiness Probe**: Probes candidate readiness on Candidate Tag URL (`${CANDIDATE_URL}/api/v1/health/readiness`), preventing false 503 failures on weighted endpoints during canary runs.
+3. **Automated Test Coverage**:
+   - **Deployment Safety Tests ([scripts/test-cloud-run-deploy.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-cloud-run-deploy.sh))**: **30 passed, 0 failed** across 9 isolated mock scenarios (plan preservation, no hardcoded resets, zero dry-run mutations, safety gate enforcement, no-traffic semantics, Direct VPC preservation, mismatch detection, corrupt traffic rejection, deploy failure handling).
+   - **Canary Rollout Safety Tests ([scripts/test-staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-staged-canary-rollout.sh))**: **59 passed, 0 failed** across 21 test scenarios.
+4. **Current Live State Confirmation**:
+   - `rideos-backend-api-00004-xcj`: **99%**
+   - `rideos-backend-api-00009-4gt`: **1%**
+   - Total traffic: **100%**
+
+
 
 
 
