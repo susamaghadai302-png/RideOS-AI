@@ -4,7 +4,7 @@
 # ==============================================================================
 # Controlled traffic progression: 1% -> 5% -> 25% -> 50% -> 100%
 # With automated health, latency, 5xx error monitoring, interrupt traps,
-# actual traffic allocation verification, and automatic emergency rollback.
+# actual traffic allocation verification, and verified emergency rollback.
 # ==============================================================================
 
 set -euo pipefail
@@ -135,6 +135,73 @@ validate_health_payload() {
   ' "$kind" "$http_code" "$raw_json" 2>/dev/null || echo "ERR: Health validation script execution failure"
 }
 
+# Parser for full Cloud Run service resource or traffic array
+parse_traffic_json() {
+  local raw_json="$1"
+  local prod_rev="$2"
+  local cand_rev="$3"
+  local exp_prod="$4"
+  local exp_cand="$5"
+
+  node -e '
+    try {
+      const raw = process.argv[1];
+      const prodRev = process.argv[2];
+      const candRev = process.argv[3];
+      const expProd = parseInt(process.argv[4], 10);
+      const expCand = parseInt(process.argv[5], 10);
+
+      if (!raw || raw.trim().length === 0) {
+        console.log("ERR: Empty response from Cloud Run describe");
+        process.exit(0);
+      }
+
+      const parsed = JSON.parse(raw);
+      let traffic = null;
+      if (Array.isArray(parsed)) {
+        traffic = parsed;
+      } else if (parsed && parsed.status && Array.isArray(parsed.status.traffic)) {
+        traffic = parsed.status.traffic;
+      } else {
+        console.log("ERR: status.traffic array not found in Cloud Run JSON");
+        process.exit(0);
+      }
+
+      let prodPct = 0;
+      let candPct = 0;
+      let totalPct = 0;
+
+      for (const t of traffic) {
+        const pct = parseInt(t.percent || 0, 10);
+        totalPct += pct;
+        if (t.revisionName === prodRev) {
+          prodPct += pct;
+        }
+        if (t.revisionName === candRev) {
+          candPct += pct;
+        }
+      }
+
+      if (totalPct !== 100) {
+        console.log(`ERR: Total traffic is ${totalPct}%, expected exactly 100%`);
+        process.exit(0);
+      }
+      if (prodPct !== expProd) {
+        console.log(`ERR: Production revision (${prodRev}) percentage is ${prodPct}%, expected ${expProd}%`);
+        process.exit(0);
+      }
+      if (candPct !== expCand) {
+        console.log(`ERR: Candidate revision (${candRev}) percentage is ${candPct}%, expected ${expCand}%`);
+        process.exit(0);
+      }
+
+      console.log(`OK: prod=${prodPct}, cand=${candPct}, total=${totalPct}`);
+    } catch (e) {
+      console.log("ERR: Failed to parse traffic JSON: " + e.message);
+    }
+  ' "$raw_json" "$prod_rev" "$cand_rev" "$exp_prod" "$exp_cand" 2>/dev/null || echo "ERR: Parser execution failed"
+}
+
 emergency_rollback() {
   local reason="${1:-Unknown failure}"
   log_error "CRITICAL FAILURE DETECTED: $reason"
@@ -142,17 +209,39 @@ emergency_rollback() {
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log "[DRY-RUN] Simulated rollback: Would restore $PROD_REV=100 on $SERVICE (zero mutations)."
-  else
-    $GCLOUD_CMD run services update-traffic "$SERVICE" \
-      --to-revisions="$PROD_REV=100" \
-      --region="$REGION" \
-      --project="$PROJECT" \
-      --quiet
+    TRAFFIC_SHIFT_ACTIVE=0
+    exit 1
   fi
 
-  TRAFFIC_SHIFT_ACTIVE=0
-  log_success "Rollback completed. 100% traffic safely restored to $PROD_REV."
-  exit 1
+  # Attempt rollback command with explicit failure check
+  local rollback_cmd_failed=0
+  if ! $GCLOUD_CMD run services update-traffic "$SERVICE" \
+    --to-revisions="$PROD_REV=100" \
+    --region="$REGION" \
+    --project="$PROJECT" \
+    --quiet; then
+    rollback_cmd_failed=1
+    log_error "CRITICAL: gcloud rollback update-traffic command failed!"
+  fi
+
+  # Retrieve actual Cloud Run traffic to verify restoration
+  local raw_verify_json
+  raw_verify_json=$($GCLOUD_CMD run services describe "$SERVICE" \
+    --region="$REGION" \
+    --project="$PROJECT" \
+    --format="json" 2>/dev/null || echo "")
+
+  local verify_res
+  verify_res=$(parse_traffic_json "$raw_verify_json" "$PROD_REV" "$CANDIDATE_REV" 100 0)
+
+  if [[ "$rollback_cmd_failed" -eq 0 && "$verify_res" == OK:* ]]; then
+    TRAFFIC_SHIFT_ACTIVE=0
+    log_success "Rollback verified successfully: 100% traffic safely restored to $PROD_REV ($verify_res)."
+    exit 1
+  else
+    log_error "CRITICAL_ROLLBACK_UNVERIFIED: Could not confirm 100% traffic restoration to $PROD_REV! Details: $verify_res"
+    exit 2
+  fi
 }
 
 # Trap for unexpected termination (SIGINT / SIGTERM) during canary execution
@@ -240,60 +329,10 @@ verify_actual_traffic_allocation() {
   raw_traffic_json=$($GCLOUD_CMD run services describe "$SERVICE" \
     --region="$REGION" \
     --project="$PROJECT" \
-    --format="json(status.traffic)" 2>/dev/null || echo "")
-
-  if [[ -z "$raw_traffic_json" ]]; then
-    emergency_rollback "Failed to retrieve status.traffic from Cloud Run service $SERVICE."
-  fi
+    --format="json" 2>/dev/null || echo "")
 
   local parse_result
-  parse_result=$(node -e '
-    try {
-      const input = process.argv[1];
-      const prodRev = process.argv[2];
-      const candRev = process.argv[3];
-      const expProd = parseInt(process.argv[4], 10);
-      const expCand = parseInt(process.argv[5], 10);
-
-      const traffic = JSON.parse(input);
-      if (!Array.isArray(traffic)) {
-        console.log("ERR: status.traffic is not an array");
-        process.exit(0);
-      }
-
-      let prodPct = 0;
-      let candPct = 0;
-      let totalPct = 0;
-
-      for (const t of traffic) {
-        const pct = parseInt(t.percent || 0, 10);
-        totalPct += pct;
-        if (t.revisionName === prodRev) {
-          prodPct += pct;
-        }
-        if (t.revisionName === candRev) {
-          candPct += pct;
-        }
-      }
-
-      if (totalPct !== 100) {
-        console.log(`ERR: Total traffic is ${totalPct}%, expected exactly 100%`);
-        process.exit(0);
-      }
-      if (prodPct !== expProd) {
-        console.log(`ERR: Production revision (${prodRev}) percentage is ${prodPct}%, expected ${expProd}%`);
-        process.exit(0);
-      }
-      if (candPct !== expCand) {
-        console.log(`ERR: Candidate revision (${candRev}) percentage is ${candPct}%, expected ${expCand}%`);
-        process.exit(0);
-      }
-
-      console.log(`OK: prod=${prodPct}, cand=${candPct}, total=${totalPct}`);
-    } catch (e) {
-      console.log("ERR: Failed to parse traffic JSON: " + e.message);
-    }
-  ' "$raw_traffic_json" "$PROD_REV" "$CANDIDATE_REV" "$expected_prod" "$expected_cand" 2>/dev/null || echo "ERR: Parser execution failed")
+  parse_result=$(parse_traffic_json "$raw_traffic_json" "$PROD_REV" "$CANDIDATE_REV" "$expected_prod" "$expected_cand")
 
   if [[ "$parse_result" != OK:* ]]; then
     emergency_rollback "Traffic allocation verification failed: $parse_result"
@@ -469,24 +508,33 @@ apply_stage() {
   # Step A: Pre-flight candidate health check
   check_status
 
-  # Step B: Mark traffic shift active (arms interrupt and rollback traps)
+  # Step B: Mark traffic shift active BEFORE attempting update (arms interrupt and rollback traps)
   CURRENT_STAGE_PCT="$candidate_pct"
   TRAFFIC_SHIFT_ACTIVE=1
 
-  # Step C: Execute Cloud Run traffic update
+  # Step C: Execute Cloud Run traffic update with explicit failure handling
   log "Applying traffic allocation..."
+  local update_cmd_failed=0
   if [[ "$candidate_pct" -eq 100 ]]; then
-    $GCLOUD_CMD run services update-traffic "$SERVICE" \
+    if ! $GCLOUD_CMD run services update-traffic "$SERVICE" \
       --to-revisions="$CANDIDATE_REV=100" \
       --region="$REGION" \
       --project="$PROJECT" \
-      --quiet
+      --quiet; then
+      update_cmd_failed=1
+    fi
   else
-    $GCLOUD_CMD run services update-traffic "$SERVICE" \
+    if ! $GCLOUD_CMD run services update-traffic "$SERVICE" \
       --to-revisions="$PROD_REV=$prod_pct,$CANDIDATE_REV=$candidate_pct" \
       --region="$REGION" \
       --project="$PROJECT" \
-      --quiet
+      --quiet; then
+      update_cmd_failed=1
+    fi
+  fi
+
+  if [[ "$update_cmd_failed" -ne 0 ]]; then
+    emergency_rollback "gcloud update-traffic command failed for stage $candidate_pct%. Treating traffic state as ambiguous/potentially mutated; executing recovery."
   fi
   log_success "Traffic update command executed successfully."
 

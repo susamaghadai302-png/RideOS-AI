@@ -611,7 +611,7 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
 
 ### 6.3 Task 2 Final Closure — Verification Gaps Closed & Hardening Evidence
 1. **Actual Traffic Allocation Verification in Machine-Readable JSON**:
-   - Post-update verification retrieves `status.traffic` via `$GCLOUD_CMD run services describe "$SERVICE" --format="json(status.traffic)"`.
+   - Post-update verification retrieves `status.traffic` via `$GCLOUD_CMD run services describe "$SERVICE" --format="json"`.
    - Strict JSON parsing verifies:
      - Production revision percentage exactly matches requested stage (`$prod_pct`).
      - Candidate revision percentage exactly matches requested stage (`$candidate_pct`).
@@ -631,10 +631,38 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
    - Implemented `validate_health_payload` using strict JSON field inspection.
    - Verified that `ready=false` is rejected even if a generic `"status":"healthy"` is present.
    - Cross-verifies weighted production endpoint (`$PROD_URL`) and candidate-tag direct endpoint (`$CANDIDATE_TAG_URL`) across liveness, readiness, and system health.
-5. **Comprehensive Test Suite Execution Results**:
-   - Test script: [scripts/test-staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-staged-canary-rollout.sh)
-   - Results: **16 test scenarios, 43 passed, 0 failed**.
-   - Zero production traffic changes executed during tests.
+
+### 6.4 Task 2 Last Safety Patch — Complete Resilience & Verified Rollback
+1. **GCloud Traffic Update Failure Protection**:
+   - Wrapped all `gcloud run services update-traffic` invocations (both canary percentage allocations and 100% full transitions) in explicit command failure handling (`if ! $GCLOUD_CMD ...; then emergency_rollback ...; fi`).
+   - Arms `TRAFFIC_SHIFT_ACTIVE=1` *before* issuing mutation commands so any interrupted or ambiguous result is treated as a potentially mutated traffic state and automatically triggers recovery.
+2. **Actual Rollback Verification & Critical Failure Signaling**:
+   - Following an emergency rollback update-traffic invocation, `emergency_rollback` retrieves the actual Cloud Run service traffic configuration via `gcloud run services describe --format="json"`.
+   - Parses `status.traffic` and confirms:
+     - Production revision (`rideos-backend-api-00004-xcj`) = **100%**.
+     - Candidate revision (`rideos-backend-api-00009-4gt`) = **0%**.
+     - Total allocated traffic = **exactly 100%**.
+   - If restoration is verified, logs `Rollback verified successfully` and exits with code `1` (standard handled error).
+   - If the rollback update command fails or verification cannot confirm 100% production restoration, logs `CRITICAL_ROLLBACK_UNVERIFIED` and exits with code `2`.
+3. **Realistic Cloud Run Service JSON Handling**:
+   - `parse_traffic_json` handles full Knative/Cloud Run Service resource JSON (`apiVersion: "serving.knative.dev/v1"`, `status.traffic`) as well as direct traffic arrays.
+   - Safely rejects malformed, empty, or corrupt responses and triggers recovery.
+   - Stateful mock test harness updated to generate realistic full Cloud Run service resource JSON with dynamic state updates on mutation.
+4. **Comprehensive Regression Test Suite ([scripts/test-staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-staged-canary-rollout.sh))**:
+   - Cleaned test script by removing any unreachable trailing heredocs or duplicate permissions commands.
+   - Added 5 new rigorous regression test scenarios (Tests 17–21):
+     - **Test 17**: Traffic update failure before mutation triggers safe rollback & verified recovery (exit code 1).
+     - **Test 18**: Traffic update failure after partial mutation triggers recovery & verified rollback (exit code 1).
+     - **Test 19**: Rollback command failure logs `CRITICAL_ROLLBACK_UNVERIFIED` and exits with code 2.
+     - **Test 20**: Rollback verification mismatch logs `CRITICAL_ROLLBACK_UNVERIFIED` and exits with code 2.
+     - **Test 21**: Malformed Cloud Run traffic JSON triggers safe emergency rollback and verified recovery (exit code 1).
+   - Execution Results: **21 test scenarios, 59 passed, 0 failed**.
+5. **Strict Production Traffic Invariance**:
+   - Verified via read-only `gcloud run services describe`:
+     - `rideos-backend-api-00004-xcj`: **100% traffic** (pinned production revision).
+     - `rideos-backend-api-00009-4gt`: **0% traffic** (tagged `candidate`).
+   - Zero production traffic changes executed. Zero new revisions deployed.
+
 
 
 
