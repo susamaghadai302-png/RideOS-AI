@@ -20,7 +20,7 @@ KNOWN_UNHEALTHY_REVISIONS="${KNOWN_UNHEALTHY_REVISIONS:-rideos-backend-api-00004
 # Discover or read verified stable baseline if present
 STABLE_PROD_REV="${STABLE_PROD_REV:-}"
 PROD_REV="${PROD_REV:-}"
-CANDIDATE_REV="${CANDIDATE_REV:-rideos-backend-api-00009-4gt}"
+CANDIDATE_REV="${CANDIDATE_REV:-}"
 PROD_URL="${PROD_URL:-https://rideos-backend-api-aeoxwaaccq-uc.a.run.app}"
 CANDIDATE_TAG_URL="${CANDIDATE_TAG_URL:-https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app}"
 
@@ -164,6 +164,67 @@ initialize_baseline() {
 
 initialize_baseline
 
+# Validates stage percentage, revision identities, and allocation invariants
+validate_rollout_stage_allocation() {
+  local cand_pct="$1"
+
+  # 1. Validate stage percentage
+  if [[ ! "$cand_pct" =~ ^(1|5|25|50|100)$ ]]; then
+    echo "ERR: Invalid stage percentage '$cand_pct'. Valid stages: 1, 5, 25, 50, 100"
+    return 0
+  fi
+
+  local prod_pct=$(( 100 - cand_pct ))
+  if [[ "$cand_pct" -lt 0 || "$cand_pct" -gt 100 || "$prod_pct" -lt 0 || "$prod_pct" -gt 100 ]]; then
+    echo "ERR: Allocation percentages (prod=$prod_pct%, cand=$cand_pct%) must be between 0 and 100."
+    return 0
+  fi
+
+  local total_pct=$(( prod_pct + cand_pct ))
+  if [[ "$total_pct" -ne 100 ]]; then
+    echo "ERR: Allocation percentages (prod=$prod_pct%, cand=$cand_pct%) do not sum to 100% (sum=$total_pct%)."
+    return 0
+  fi
+
+  # 2. Validate Candidate Revision
+  if [[ -z "${CANDIDATE_REV:-}" ]]; then
+    echo "ERR: Candidate revision is missing. Staged rollouts require an explicit CANDIDATE_REV."
+    return 0
+  fi
+
+  if [[ ! "$CANDIDATE_REV" =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]]; then
+    echo "ERR: Candidate revision '$CANDIDATE_REV' has invalid name format."
+    return 0
+  fi
+
+  for unh in $(echo "$KNOWN_UNHEALTHY_REVISIONS" | tr ',' ' '); do
+    if [[ "$CANDIDATE_REV" == "$unh" ]]; then
+      echo "ERR: Candidate revision '$CANDIDATE_REV' is listed in KNOWN_UNHEALTHY_REVISIONS ($KNOWN_UNHEALTHY_REVISIONS). Staging traffic to unhealthy revisions is strictly forbidden."
+      return 0
+    fi
+  done
+
+  # 3. Validate Production Baseline Revision
+  if [[ -z "${PROD_REV:-}" ]]; then
+    echo "ERR: Production baseline revision (PROD_REV) is missing or uninitialized."
+    return 0
+  fi
+
+  if [[ ! "$PROD_REV" =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]]; then
+    echo "ERR: Production baseline revision '$PROD_REV' has invalid name format."
+    return 0
+  fi
+
+  # 4. Enforce Distinct Revision Identities
+  if [[ "$CANDIDATE_REV" == "$PROD_REV" ]]; then
+    echo "ERR: Candidate revision ($CANDIDATE_REV) is identical to production baseline ($PROD_REV). Candidate and baseline must be distinct revisions (cannot allocate $PROD_REV=$prod_pct,$CANDIDATE_REV=$cand_pct)."
+    return 0
+  fi
+
+  echo "OK"
+  return 0
+}
+
 # Portable latency measurement using curl's built-in timing
 measure_request() {
   local url="$1"
@@ -282,20 +343,28 @@ capture_traffic_snapshot() {
 
       let totalPct = 0;
       const entries = [];
+      const seenRevs = new Set();
 
       for (const t of traffic) {
         if (!t.revisionName || typeof t.revisionName !== "string" || t.revisionName.trim().length === 0) {
           console.log("ERR: Missing or invalid revisionName in traffic entry");
           process.exit(0);
         }
+        const rev = t.revisionName.trim();
+        if (seenRevs.has(rev)) {
+          console.log(`ERR: Duplicate revision entry in status.traffic: ${rev}`);
+          process.exit(0);
+        }
+        seenRevs.add(rev);
+
         const pct = parseInt(t.percent !== undefined ? t.percent : 0, 10);
-        if (isNaN(pct) || pct < 0) {
-          console.log(`ERR: Invalid percentage ${t.percent} for revision ${t.revisionName}`);
+        if (isNaN(pct) || pct < 0 || pct > 100) {
+          console.log(`ERR: Invalid percentage ${t.percent} for revision ${rev}`);
           process.exit(0);
         }
         totalPct += pct;
         if (pct > 0) {
-          entries.push(`${t.revisionName.trim()}=${pct}`);
+          entries.push(`${rev}=${pct}`);
         }
       }
 
@@ -355,17 +424,42 @@ verify_snapshot_match() {
 
       const expectedMap = {};
       for (const pair of expected.split(",")) {
-        const [rev, pctStr] = pair.split("=");
+        const [revRaw, pctStr] = pair.split("=");
+        const rev = (revRaw || "").trim();
+        if (!rev) {
+          console.log("ERR: Missing revision name in expected allocation");
+          process.exit(0);
+        }
+        if (expectedMap[rev] !== undefined) {
+          console.log(`ERR: Duplicate revision entry in expected allocation: ${rev}`);
+          process.exit(0);
+        }
         const pct = parseInt(pctStr, 10);
-        expectedMap[rev.trim()] = pct;
+        if (isNaN(pct) || pct < 0 || pct > 100) {
+          console.log(`ERR: Invalid percentage in expected allocation: ${pctStr}`);
+          process.exit(0);
+        }
+        expectedMap[rev] = pct;
       }
 
       const actualMap = {};
       let actualTotal = 0;
       for (const t of traffic) {
         const rev = (t.revisionName || "").trim();
+        if (!rev) {
+          console.log("ERR: Missing revisionName in actual traffic entry");
+          process.exit(0);
+        }
+        if (actualMap[rev] !== undefined) {
+          console.log(`ERR: Duplicate revision entry in actual status.traffic: ${rev}`);
+          process.exit(0);
+        }
         const pct = parseInt(t.percent !== undefined ? t.percent : 0, 10);
-        actualMap[rev] = (actualMap[rev] || 0) + pct;
+        if (isNaN(pct) || pct < 0 || pct > 100) {
+          console.log(`ERR: Invalid percentage in actual status.traffic: ${t.percent}`);
+          process.exit(0);
+        }
+        actualMap[rev] = pct;
         actualTotal += pct;
       }
 
@@ -400,13 +494,23 @@ parse_traffic_json() {
   node -e '
     try {
       const raw = process.argv[1];
-      const prodRev = process.argv[2];
-      const candRev = process.argv[3];
+      const prodRev = (process.argv[2] || "").trim();
+      const candRev = (process.argv[3] || "").trim();
       const expProd = parseInt(process.argv[4], 10);
       const expCand = parseInt(process.argv[5], 10);
 
       if (!raw || raw.trim().length === 0) {
         console.log("ERR: Empty response from Cloud Run describe");
+        process.exit(0);
+      }
+
+      if (!prodRev || !candRev) {
+        console.log("ERR: Production and candidate revisions must both be specified");
+        process.exit(0);
+      }
+
+      if (prodRev === candRev) {
+        console.log(`ERR: Duplicate revision identity detected: prodRev (${prodRev}) and candRev (${candRev}) must be distinct`);
         process.exit(0);
       }
 
@@ -424,14 +528,30 @@ parse_traffic_json() {
       let prodPct = 0;
       let candPct = 0;
       let totalPct = 0;
+      const seenRevs = new Set();
 
       for (const t of traffic) {
-        const pct = parseInt(t.percent || 0, 10);
+        const rev = (t.revisionName || "").trim();
+        if (!rev) {
+          console.log("ERR: Missing revisionName in traffic entry");
+          process.exit(0);
+        }
+        if (seenRevs.has(rev)) {
+          console.log(`ERR: Duplicate revision entry in traffic array: ${rev}`);
+          process.exit(0);
+        }
+        seenRevs.add(rev);
+
+        const pct = parseInt(t.percent !== undefined ? t.percent : 0, 10);
+        if (isNaN(pct) || pct < 0 || pct > 100) {
+          console.log(`ERR: Invalid percentage ${t.percent} for revision ${rev}`);
+          process.exit(0);
+        }
         totalPct += pct;
-        if (t.revisionName === prodRev) {
+        if (rev === prodRev) {
           prodPct += pct;
         }
-        if (t.revisionName === candRev) {
+        if (rev === candRev) {
           candPct += pct;
         }
       }
@@ -557,6 +677,11 @@ check_status() {
     --region="$REGION" \
     --project="$PROJECT" \
     --format="yaml(status.traffic)"
+
+  if [[ -z "${CANDIDATE_REV:-}" ]]; then
+    log_warn "No candidate revision specified (CANDIDATE_REV is unset). Candidate health verification skipped."
+    return 0
+  fi
 
   log "Verifying Candidate Revision ($CANDIDATE_REV) health..."
 
@@ -863,6 +988,14 @@ apply_stage() {
     DRY_RUN=1
   fi
 
+  # Validate stage percentage, revision identities, and allocation invariants BEFORE any operations
+  local val_stage_out
+  val_stage_out=$(validate_rollout_stage_allocation "$candidate_pct")
+  if [[ "$val_stage_out" != "OK" ]]; then
+    log_error "CRITICAL_SAFETY_REJECTION: ${val_stage_out#ERR: }"
+    exit 1
+  fi
+
   local prod_pct=$(( 100 - candidate_pct ))
   local stage_label="${candidate_pct}% Canary (${PROD_REV}=${prod_pct}%, ${CANDIDATE_REV}=${candidate_pct}%)"
   local stage_alloc=""
@@ -969,6 +1102,16 @@ case "${1:-status}" in
     check_status
     ;;
   verify-candidate|--verify-candidate)
+    if [[ -z "${CANDIDATE_REV:-}" ]]; then
+      log_error "CRITICAL_SAFETY_REJECTION: Candidate verification requires an explicit CANDIDATE_REV."
+      exit 1
+    fi
+    for unh in $(echo "$KNOWN_UNHEALTHY_REVISIONS" | tr ',' ' '); do
+      if [[ "$CANDIDATE_REV" == "$unh" ]]; then
+        log_error "CRITICAL_SAFETY_REJECTION: Candidate revision '$CANDIDATE_REV' is listed in KNOWN_UNHEALTHY_REVISIONS ($KNOWN_UNHEALTHY_REVISIONS)."
+        exit 1
+      fi
+    done
     check_status
     verify_traffic_health "$CANDIDATE_TAG_URL" "Candidate Tag Pre-Verification"
     audit_application_logs "Candidate Tag Pre-Verification"

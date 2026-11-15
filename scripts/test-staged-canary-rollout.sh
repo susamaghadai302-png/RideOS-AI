@@ -11,6 +11,8 @@
 set -euo pipefail
 
 SCRIPT_UNDER_TEST="./scripts/staged-canary-rollout.sh"
+# Default candidate revision for standard migration regression tests (Tests 1-25, 28, 29, 31, 32)
+export CANDIDATE_REV="${CANDIDATE_REV:-rideos-backend-api-00009-4gt}"
 PASS_COUNT=0
 FAIL_COUNT=0
 
@@ -796,9 +798,9 @@ assert_contains "Saved baseline loaded from file" "$output" "Loaded verified sta
 assert_contains "PROD_REV resolved to saved baseline" "$output" "Active Production Baseline: PROD_REV=rideos-backend-api-00009-4gt"
 
 # ------------------------------------------------------------------------------
-# Test 27: Staged rollout allocations use saved stable baseline across stages (Task 3.4.2 Scenarios 3, 4, 5, 6, 11)
+# Test 27: Staged rollout allocations use saved stable baseline across stages & reject duplicate baseline/candidate (Task 3.4.2 & 3.4.3)
 # ------------------------------------------------------------------------------
-echo "Test 27: Staged rollout allocations use saved stable baseline across stages (Task 3.4.2 Scenarios 3, 4, 5, 6, 11)"
+echo "Test 27: Staged rollout allocations use saved stable baseline across stages & reject duplicate baseline/candidate (Task 3.4.2 & 3.4.3)"
 MOCK_LOG_DIR="$TEST_TMP_DIR/staged_with_saved_baseline"
 mkdir -p "$MOCK_LOG_DIR"
 touch "$MOCK_LOG_DIR/gcloud_mutations.log"
@@ -834,6 +836,36 @@ for stage in 5 25 50 100; do
     PASS_COUNT=$(( PASS_COUNT + 1 ))
   fi
 done
+
+# Part B: Candidate identical to baseline rejection
+set +e
+output_dup=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$SAVED_BASELINE_FILE" \
+  CANDIDATE_REV="rideos-backend-api-00009-4gt" \
+  "$SCRIPT_UNDER_TEST" stage 5 --dry-run 2>&1)
+exit_code_dup=$?
+set -e
+
+mutation_count_dup=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Candidate identical to baseline exits with code 1" "1" "$exit_code_dup"
+assert_eq "Candidate identical to baseline executes zero mutations" "0" "$mutation_count_dup"
+assert_contains "Duplicate candidate logs CRITICAL_SAFETY_REJECTION" "$output_dup" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Duplicate candidate logs identical revision error" "$output_dup" "identical to production baseline"
+
+# Part C: Candidate omitted/empty rejection
+set +e
+output_omitted=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$SAVED_BASELINE_FILE" \
+  CANDIDATE_REV="" \
+  "$SCRIPT_UNDER_TEST" stage 5 --dry-run 2>&1)
+exit_code_omitted=$?
+set -e
+
+mutation_count_omitted=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Omitted candidate exits with code 1" "1" "$exit_code_omitted"
+assert_eq "Omitted candidate executes zero mutations" "0" "$mutation_count_omitted"
+assert_contains "Omitted candidate logs CRITICAL_SAFETY_REJECTION" "$output_omitted" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Omitted candidate logs missing error" "$output_omitted" "Candidate revision is missing"
 
 # ------------------------------------------------------------------------------
 # Test 28: Missing baseline fails closed when default revision is unhealthy (Task 3.4.2 Scenario 7)
@@ -975,6 +1007,133 @@ set -e
 assert_eq "Fresh process status check exits 0" "0" "$exit_code_fresh"
 assert_contains "Fresh process loaded baseline" "$output_fresh" "Loaded verified stable production baseline: rideos-backend-api-00009-4gt"
 assert_contains "Fresh process PROD_REV is baseline" "$output_fresh" "Active Production Baseline: PROD_REV=rideos-backend-api-00009-4gt"
+
+# ------------------------------------------------------------------------------
+# Test 33: Candidate identity guard & rollout allocation safety (Task 3.4.3 Scenarios)
+# ------------------------------------------------------------------------------
+echo "Test 33: Candidate identity guard & rollout allocation safety (Task 3.4.3 Scenarios)"
+MOCK_LOG_DIR="$TEST_TMP_DIR/candidate_identity_guard"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+T33_BASELINE_FILE="$MOCK_LOG_DIR/stable_baseline"
+echo "rideos-backend-api-00009-4gt" > "$T33_BASELINE_FILE"
+
+# Scenario 1: Candidate revision is missing / empty with --confirm
+set +e
+output_s1=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T33_BASELINE_FILE" \
+  CANDIDATE_REV="" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_s1=$?
+set -e
+mutation_count_s1=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Missing candidate exits with code 1" "1" "$exit_code_s1"
+assert_eq "Missing candidate performs zero mutations" "0" "$mutation_count_s1"
+assert_contains "Missing candidate logs CRITICAL_SAFETY_REJECTION" "$output_s1" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Missing candidate error message present" "$output_s1" "Candidate revision is missing"
+
+# Scenario 2: Candidate revision with invalid syntax / characters
+set +e
+output_s2=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T33_BASELINE_FILE" \
+  CANDIDATE_REV="INVALID@@NAME##" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_s2=$?
+set -e
+mutation_count_s2=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Invalid candidate syntax exits with code 1" "1" "$exit_code_s2"
+assert_eq "Invalid candidate syntax performs zero mutations" "0" "$mutation_count_s2"
+assert_contains "Invalid candidate syntax logs CRITICAL_SAFETY_REJECTION" "$output_s2" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Invalid format error reported" "$output_s2" "invalid name format"
+
+# Scenario 3: Candidate revision belongs to KNOWN_UNHEALTHY_REVISIONS
+set +e
+output_s3=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T33_BASELINE_FILE" \
+  CANDIDATE_REV="rideos-backend-api-00004-xcj" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_s3=$?
+set -e
+mutation_count_s3=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Known unhealthy candidate exits with code 1" "1" "$exit_code_s3"
+assert_eq "Known unhealthy candidate performs zero mutations" "0" "$mutation_count_s3"
+assert_contains "Known unhealthy candidate logs CRITICAL_SAFETY_REJECTION" "$output_s3" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Known unhealthy candidate references KNOWN_UNHEALTHY_REVISIONS" "$output_s3" "KNOWN_UNHEALTHY_REVISIONS"
+
+# Scenario 4: Candidate identical to baseline with --confirm
+set +e
+output_s4=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T33_BASELINE_FILE" \
+  CANDIDATE_REV="rideos-backend-api-00009-4gt" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_s4=$?
+set -e
+mutation_count_s4=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Candidate identical to baseline exits with code 1" "1" "$exit_code_s4"
+assert_eq "Candidate identical to baseline performs zero mutations" "0" "$mutation_count_s4"
+assert_contains "Candidate identical to baseline logs CRITICAL_SAFETY_REJECTION" "$output_s4" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Candidate identical error message present" "$output_s4" "identical to production baseline"
+
+# Scenario 5: verify-candidate requires explicit CANDIDATE_REV and rejects unhealthy revision
+set +e
+output_vc_missing=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  CANDIDATE_REV="" \
+  "$SCRIPT_UNDER_TEST" verify-candidate 2>&1)
+exit_code_vc_missing=$?
+set -e
+assert_eq "verify-candidate with missing candidate exits with code 1" "1" "$exit_code_vc_missing"
+assert_contains "verify-candidate reports explicit candidate requirement" "$output_vc_missing" "Candidate verification requires an explicit CANDIDATE_REV"
+
+set +e
+output_vc_unh=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  CANDIDATE_REV="rideos-backend-api-00004-xcj" \
+  "$SCRIPT_UNDER_TEST" verify-candidate 2>&1)
+exit_code_vc_unh=$?
+set -e
+assert_eq "verify-candidate with unhealthy candidate exits with code 1" "1" "$exit_code_vc_unh"
+assert_contains "verify-candidate rejects unhealthy revision" "$output_vc_unh" "KNOWN_UNHEALTHY_REVISIONS"
+
+# Scenario 6: Status check runs cleanly when CANDIDATE_REV is unset
+set +e
+output_status_nocand=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T33_BASELINE_FILE" \
+  CANDIDATE_REV="" \
+  "$SCRIPT_UNDER_TEST" status 2>&1)
+exit_code_status_nocand=$?
+set -e
+assert_eq "Status without candidate exits with code 0" "0" "$exit_code_status_nocand"
+assert_contains "Status logs candidate unset notice" "$output_status_nocand" "No candidate revision specified (CANDIDATE_REV is unset)"
+
+# Scenario 7: Duplicate revision in Cloud Run status.traffic aborts with zero mutations
+MOCK_LOG_DIR_DUP="$TEST_TMP_DIR/duplicate_traffic_test"
+mkdir -p "$MOCK_LOG_DIR_DUP"
+touch "$MOCK_LOG_DIR_DUP/gcloud_mutations.log"
+cat <<'JSON' > "$MOCK_LOG_DIR_DUP/simulated_traffic.json"
+{
+  "apiVersion": "serving.knative.dev/v1",
+  "kind": "Service",
+  "metadata": { "name": "rideos-backend-api", "namespace": "rideos-ai" },
+  "status": {
+    "traffic": [
+      { "revisionName": "rideos-backend-api-00009-4gt", "percent": 50 },
+      { "revisionName": "rideos-backend-api-00009-4gt", "percent": 50 }
+    ]
+  }
+}
+JSON
+
+set +e
+output_dup_traffic=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR_DUP" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$T33_BASELINE_FILE" \
+  CANDIDATE_REV="rideos-backend-api-00010-xyz" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_dup_traffic=$?
+set -e
+mutation_count_dup_traffic=$(wc -l < "$MOCK_LOG_DIR_DUP/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Duplicate revision in traffic exits with code 1" "1" "$exit_code_dup_traffic"
+assert_eq "Duplicate revision in traffic performs zero mutations" "0" "$mutation_count_dup_traffic"
+assert_contains "Duplicate revision logs safety gate error" "$output_dup_traffic" "CRITICAL SAFETY GATE"
+assert_contains "Duplicate revision entry reported" "$output_dup_traffic" "Duplicate revision entry in status.traffic"
 
 # ------------------------------------------------------------------------------
 # Test 25: Master Invariant: No automatic 00004-xcj=100 rollback across entire suite (Requirement 11)

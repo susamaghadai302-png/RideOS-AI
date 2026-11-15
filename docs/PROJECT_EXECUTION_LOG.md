@@ -1250,6 +1250,119 @@ Verified that all critical stages use the authoritative baseline:
 - DNS / Secret Manager Modifications: **ZERO**.
 - Revisions Created: **ZERO**.
 
+---
+
+## 15. Task 3.4.3: Final Candidate Revision Identity Validation & Rollout Allocation Safety
+
+- **Execution Date**: November 15, 2026
+- **Feature Branch**: `feat/cloudrun-direct-vpc-static-egress`
+- **Lead Verification**: Senior Cloud Reliability & Systems Architect
+- **Scope**: Elimination of unsafe static candidate revision defaults, strict candidate identity guards, rollout allocation invariants (distinct revision identities, percentage validation, duplicate revision rejection), test suite expansion to 148 assertions, and live zero-mutation verification.
+
+### 15.1 Problem Statement & Code Review Finding
+Prior to Task 3.4.3:
+- In `scripts/staged-canary-rollout.sh`, `PROD_REV` correctly resolved to `rideos-backend-api-00009-4gt` when `.cloud-run-baseline` was present.
+- However, `CANDIDATE_REV` retained an unsafe static fallback: `CANDIDATE_REV="${CANDIDATE_REV:-rideos-backend-api-00009-4gt}"`.
+- Consequently, a fresh-process dry-run or unconfigured execution with a saved baseline produced an invalid duplicate allocation:
+  ```text
+  rideos-backend-api-00009-4gt=95, rideos-backend-api-00009-4gt=5
+  ```
+  The production baseline and the candidate were identical revisions. Cloud Run traffic splitting between identical revision identifiers is either rejected or produces indeterminate traffic weighting.
+
+### 15.2 Architectural Candidate Identity Guard (`validate_rollout_stage_allocation`)
+Implemented fail-closed pre-execution allocation validation in `scripts/staged-canary-rollout.sh`:
+1. **Removal of Static Default**:
+   - `CANDIDATE_REV` now strictly defaults to empty (`CANDIDATE_REV="${CANDIDATE_REV:-}"`).
+   - Staged rollout operations require an explicit, validated `CANDIDATE_REV`.
+2. **Explicit Candidate Presence Requirement**:
+   - If `CANDIDATE_REV` is empty or unset, the controller fails closed before any snapshots or dry-run execution:
+     `CRITICAL_SAFETY_REJECTION: Candidate revision is missing. Staged rollouts require an explicit CANDIDATE_REV.`
+     (Exit code 1, zero mutations).
+3. **Revision Name Syntax Enforcement**:
+   - `CANDIDATE_REV` and `PROD_REV` must match valid Cloud Run revision name regex: `^[a-z0-9][a-z0-9-]{0,62}$`.
+   - Invalid characters or malformed strings are rejected with exit code 1 (`invalid name format`).
+4. **Known-Unhealthy Revision Rejection**:
+   - Asserts that `CANDIDATE_REV` does not match any entry in `KNOWN_UNHEALTHY_REVISIONS` (`rideos-backend-api-00004-xcj`).
+   - Staging traffic to unhealthy revisions is strictly blocked with exit code 1 (`CRITICAL_SAFETY_REJECTION`).
+5. **Distinct Revision Identity Invariant**:
+   - Explicitly asserts `CANDIDATE_REV != PROD_REV`.
+   - Any attempt to split traffic between identical revisions is rejected:
+     `CRITICAL_SAFETY_REJECTION: Candidate revision ($CANDIDATE_REV) is identical to production baseline ($PROD_REV). Candidate and baseline must be distinct revisions (cannot allocate $PROD_REV=$prod_pct,$CANDIDATE_REV=$cand_pct).`
+     (Exit code 1, zero mutations).
+
+### 15.3 Rollout Allocation Validation & Duplicate Prevention
+1. **Stage Percentage Bounds & Sum**:
+   - Validates stage is in `(1, 5, 25, 50, 100)`.
+   - Validates `0 <= candidate_pct <= 100` and `0 <= prod_pct <= 100`.
+   - Asserts `prod_pct + candidate_pct == 100`.
+2. **Duplicate Entry Rejection in Traffic Parser (`parse_traffic_json`)**:
+   - Asserts `prodRev !== candRev`.
+   - Uses a `Set` to detect duplicate `revisionName` entries in the Cloud Run service traffic array.
+   - If duplicate revision entries appear, parser halts with: `ERR: Duplicate revision entry in traffic array: <rev>`.
+3. **Duplicate Entry Rejection in Snapshot Capture (`capture_traffic_snapshot`)**:
+   - Inspects `status.traffic` entries using a `Set`.
+   - Rejects duplicate revisions in live Cloud Run traffic before any canary mutation can proceed.
+4. **Duplicate Entry Rejection in Snapshot Matcher (`verify_snapshot_match`)**:
+   - Validates that neither `expected` allocation nor `actual` traffic contains duplicate revision entries.
+5. **Graceful Subcommand Handlers**:
+   - `check_status`: When `CANDIDATE_REV` is unset, queries Cloud Run traffic and logs a clean notice (`No candidate revision specified. Candidate health verification skipped.`), avoiding extraneous curl probe failures.
+   - `verify-candidate`: Requires an explicit `CANDIDATE_REV` and rejects known-unhealthy revisions.
+
+### 15.4 Test Suite Updates & Execution Evidence
+Updated `scripts/test-staged-canary-rollout.sh` with 34 new assertions across Test 27 and Test 33:
+- **Test 27**: Staged rollout allocations across stages 5, 25, 50, 100 with distinct candidate `00010-xyz`, plus rejection when candidate equals baseline (`00009-4gt`), plus rejection when candidate is omitted.
+- **Test 33 (New)**: Candidate identity guard & rollout allocation safety:
+  - Scenario 1: Missing candidate with `--confirm` &rarr; exits with code 1, 0 mutations, logs `CRITICAL_SAFETY_REJECTION`.
+  - Scenario 2: Invalid syntax candidate (`INVALID@@NAME##`) &rarr; exits with code 1, 0 mutations, logs format error.
+  - Scenario 3: Known-unhealthy candidate (`00004-xcj`) &rarr; exits with code 1, 0 mutations, logs `KNOWN_UNHEALTHY_REVISIONS`.
+  - Scenario 4: Candidate identical to baseline (`00009-4gt`) &rarr; exits with code 1, 0 mutations, logs identical revision error.
+  - Scenario 5: `verify-candidate` with missing and unhealthy candidate &rarr; exits with code 1.
+  - Scenario 6: Status check without candidate &rarr; exits cleanly with code 0.
+  - Scenario 7: Duplicate revision in Cloud Run `status.traffic` &rarr; aborts cleanly with code 1, 0 mutations, logs safety gate error.
+- **Test 25 (Master Invariant)**: Global assertion confirmed `--to-revisions=rideos-backend-api-00004-xcj=100` was executed **zero times** across all 148 test runs.
+
+| Test Suite | Command | Total Passed | Total Failed | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Canary Rollout Safety Suite** | `./scripts/test-staged-canary-rollout.sh` | **148 passed** | **0 failed** | **PASS** |
+| **Cloud Run Deployment Safety Suite** | `./scripts/test-cloud-run-deploy.sh` | **54 passed** | **0 failed** | **PASS** |
+| **Backend Unit Test Suite** | `cd apps/backend && npm test` | **136 passed (24 suites)** | **0 failed** | **PASS** |
+| **Rollout Script Syntax Check** | `bash -n scripts/staged-canary-rollout.sh` | Clean exit (code 0) | 0 | **PASS** |
+| **Test Script Syntax Check** | `bash -n scripts/test-staged-canary-rollout.sh` | Clean exit (code 0) | 0 | **PASS** |
+
+### 15.5 Live Isolated Simulation & Fail-Safe Verification Evidence
+1. **Simulation A — Default Configuration Without Candidate**:
+   - Command: `./scripts/staged-canary-rollout.sh stage 5 --dry-run`
+   - Output: `[ERROR] CRITICAL_SAFETY_REJECTION: Candidate revision is missing. Staged rollouts require an explicit CANDIDATE_REV.`
+   - Result: Exited with code 1, zero mutations performed.
+2. **Simulation B — Candidate Identical to Saved Baseline**:
+   - Command: `BASELINE_FILE="$TMP_BASE" CANDIDATE_REV="rideos-backend-api-00009-4gt" ./scripts/staged-canary-rollout.sh stage 5 --dry-run`
+   - Output: `[ERROR] CRITICAL_SAFETY_REJECTION: Candidate revision (rideos-backend-api-00009-4gt) is identical to production baseline (rideos-backend-api-00009-4gt). Candidate and baseline must be distinct revisions (cannot allocate rideos-backend-api-00009-4gt=95,rideos-backend-api-00009-4gt=5).`
+   - Result: Exited with code 1, zero mutations performed.
+3. **Simulation C — Saved Baseline 00009-4gt with Valid Distinct Candidate 00010-xyz**:
+   - Command: `BASELINE_FILE="$TMP_BASE" CANDIDATE_REV="rideos-backend-api-00010-xyz" ./scripts/staged-canary-rollout.sh stage 5 --dry-run`
+   - Output:
+     - `[ROLLOUT] Loaded verified stable production baseline: rideos-backend-api-00009-4gt`
+     - `[ROLLOUT] PREPARING TRAFFIC SHIFT TO: 5% Canary (rideos-backend-api-00009-4gt=95%, rideos-backend-api-00010-xyz=5%)`
+     - `[SUCCESS] Pre-shift traffic snapshot captured: rideos-backend-api-00004-xcj=99,rideos-backend-api-00009-4gt=1`
+     - `[ROLLOUT] [DRY-RUN] Planned traffic allocation: rideos-backend-api -> rideos-backend-api-00009-4gt=95,rideos-backend-api-00010-xyz=5`
+     - `[SUCCESS] Candidate readiness probe: HEALTHY (MongoDB status: healthy, ready: true)`
+     - `[SUCCESS] Candidate liveness probe: LIVE`
+     - `[SUCCESS] Candidate system health: UP (Database component: healthy)`
+     - `[SUCCESS] [DRY-RUN] Simulated stage 5% validation PASSED. Cloud Run traffic remains intact at rideos-backend-api-00004-xcj=99,rideos-backend-api-00009-4gt=1.`
+   - Result: Exited with code 0, zero mutations performed.
+
+### 15.6 Live Production State & Invariant Verification
+- Verified Cloud Run service status via read-only command:
+  `gcloud run services describe rideos-backend-api --region=us-central1 --project=rideos-ai --format="json(status.traffic)"`
+- Live Traffic Allocation:
+  - `rideos-backend-api-00004-xcj`: **99%**
+  - `rideos-backend-api-00009-4gt`: **1%** (Tagged: `candidate`)
+  - **Total Traffic**: Exactly **100%**.
+- Production Traffic Drift: **ZERO**.
+- Live Cloud Run Mutations: **ZERO**.
+- DNS / Secret Manager Modifications: **ZERO**.
+- Revisions Created: **ZERO**.
+
 
 
 
