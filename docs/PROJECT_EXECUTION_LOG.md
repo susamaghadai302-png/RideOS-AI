@@ -849,6 +849,90 @@ Both independent test suites were executed with 100% pass rates:
   - Cloud Mutations: **0** (strictly non-mutating execution).
 - Task 3.2.1 is fully completed and verified. Ready for commit and push.
 
+---
+
+## 10. Task 3.3 Production Website & Mobile Client API Connectivity Audit & Hardening
+
+- **Execution Date**: November 15, 2026
+- **Feature Branch**: `feat/cloudrun-direct-vpc-static-egress`
+- **Lead Verification**: Senior Cloud, Systems & Mobile Reliability Engineer
+- **Scope**: Comprehensive audit of production domain resolution, client configuration hardening for Android and Web release profiles, real browser E2E verification, production APK compilation verification, and zero-mutation safety validation.
+
+### 10.1 Step 1 & 2: Safe Baseline & API Domain Verification
+1. **DNS Resolution Status (`api.rideos.ai`)**:
+   - `dig api.rideos.ai`: Returns `NXDOMAIN` (Status 3, Answer 0).
+   - SOA record: `rideos.ai. IN SOA ns1-03.azure-dns.com. azuredns-hostmaster.microsoft.com.`
+   - Finding: The custom subdomain `api.rideos.ai` has no active DNS record in Azure DNS.
+2. **Cloud Run Domain Mapping Status**:
+   - Queried Cloud Run Domain Mappings REST API (`/apis/domains.cloudrun.com/v1/namespaces/rideos-ai/domainmappings`).
+   - Result: `DomainMappingList` returned 0 items (`items: []`).
+   - Finding: No custom domain mapping exists in Cloud Run for `api.rideos.ai`.
+3. **HTTPS Certificate Status**:
+   - Inactive / Unprovisionable until Cloud Run domain mapping is registered and Azure DNS CNAME points `api.rideos.ai` -> `ghs.googlehosted.com`.
+4. **Backend Direct Endpoint Verification**:
+   - Candidate Tag Endpoint (`https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app`):
+     - Liveness (`/api/v1/health/liveness`): HTTP 200 `LIVE` (application/json)
+     - Readiness (`/api/v1/health/readiness`): HTTP 200 `READY` (`ready: true`, `dependencies.mongodb.status: "healthy"`)
+     - System Health (`/api/v1/health`): HTTP 200 `UP`
+     - Maps Client Key (`/api/v1/maps/client-key`): HTTP 200 JSON returning Google Maps browser client key
+     - CORS GET: `access-control-allow-origin: https://rideos-ai.web.app`, `access-control-allow-credentials: true`
+     - CORS Preflight: `OPTIONS` returns HTTP 204 with `access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS` and allowed headers
+   - Production Weighted Endpoint (`https://rideos-backend-api-aeoxwaaccq-uc.a.run.app`):
+     - 99% of requests route to `00004-xcj` (disconnected database, 503 Service Unavailable).
+5. **Exact Missing Configuration Statement (Gate Triggered)**:
+   - **`api.rideos.ai` Domain Mapping**: Missing in Cloud Run project `rideos-ai`.
+   - **`api.rideos.ai` DNS Record**: Missing in Azure DNS (requires CNAME `api` -> `ghs.googlehosted.com`).
+   - **Enforcement**: In accordance with the prompt gate, zero DNS or Cloud Run domain mapping mutations were attempted.
+
+### 10.2 Step 3 & 4: Android & Website Client Configuration Hardening
+1. **Elimination of Silent Localhost/LAN Fallback**:
+   - Updated `apps/mobile/lib/core/network/api_config.dart`:
+     - Introduced `kDefaultProdApiBaseUrl = 'https://api.rideos.ai/api/v1'`.
+     - In `kReleaseMode` on mobile, `activeBaseUrl` defaults to `https://api.rideos.ai/api/v1` instead of `http://127.0.0.1:3000/api/v1`.
+     - In debug mode (`kReleaseMode == false`), preserves USB reverse tunnel (`127.0.0.1:3000`) and LAN Wi-Fi development modes.
+2. **Explicit Android Build Profiles ([scripts/build-apk.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/build-apk.sh))**:
+   - Implemented `--prod` / `--production` and `--dev` / `--development` build profile flags.
+   - `--prod`: Enforces `API_URL="https://api.rideos.ai/api/v1"` (or explicit public URL). Strictly rejects localhost (`127.0.0.1`) and private RFC1918 LAN IPs (`10.x`, `192.168.x`, `172.16-31.x`). Injects `--dart-define=API_BASE_URL=...`.
+   - `--dev`: Preserves local development behavior using `.env` or auto-detected Mac LAN IP.
+   - Protects sensitive credentials; never logs secret values to terminal output.
+3. **Enterprise CI/CD Workflow Hardening ([.github/workflows/deploy.yml](file:///Users/hitanshughadai/RideOS-AI/.github/workflows/deploy.yml))**:
+   - Configured `Build Android Release APK` step to explicitly inject `--dart-define="API_BASE_URL=https://api.rideos.ai/api/v1"`.
+4. **Website Release Configuration ([scripts/build-web.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/build-web.sh))**:
+   - Injects `--dart-define=API_BASE_URL="${API_BASE_URL:-https://api.rideos.ai/api/v1}"` into Flutter Web compilation.
+
+### 10.3 Step 5: Real Browser E2E Testing (Synthetic Test Traffic)
+Executed [scripts/puppeteer-tests/verify_web_preview_e2e.js](file:///Users/hitanshughadai/RideOS-AI/scripts/puppeteer-tests/verify_web_preview_e2e.js) against the live deployed website (`https://rideos-ai.web.app`):
+1. **Target Web URL**: `https://rideos-ai.web.app`
+2. **Execution Against `https://api.rideos.ai/api/v1` (Default Production Domain)**:
+   - 12 Passed, 0 Failed, 2 Blocked (`3b. Backend Live Health` and `8. Authentication API Error Rejection` blocked due to `api.rideos.ai` `NXDOMAIN`), 1 Skipped (staging login skipped per safety policy).
+   - Website loads with HTTP 200.
+   - Flutter canvas and engine render actively (1280x900, 768x1024, 390x844 viewports all verified).
+   - SPA fallback protection verified: `/api/**` returns 404 and does not leak the HTML index.
+   - Navigation: Protected route `/dashboard` strictly redirects to `/login`.
+   - Forms: `/login` (2 semantic inputs) and `/register` (5 semantic inputs) fully accessible.
+   - Zero console errors; zero asset network failures.
+3. **Execution Against Cloud Run Candidate Backend (`candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app`)**:
+   - **14 Passed, 0 Failed, 0 Blocked, 1 Skipped**.
+   - Step 3b (Backend API Live Health): HTTP 200 `UP` (`ready: true`).
+   - Step 8 (Authentication API Error Rejection): Returns HTTP 401 JSON error format with CORS headers.
+   - Proves full client-server capability when connected to the active candidate revision.
+   - Note: All traffic classified strictly as synthetic automated verification; zero customer records modified.
+
+### 10.4 Step 6: Android Production Build Verification
+- Executed `./scripts/build-apk.sh --prod`:
+  - Compiled release APK: `apps/mobile/build/app/outputs/flutter-apk/app-release.apk` (107MB, `ai.rideos.app`).
+  - Target API Endpoint: `https://api.rideos.ai/api/v1`.
+  - Profile: `PROD` (zero localhost/LAN fallback in release mode).
+  - Binary inspection verified `/api/v1` and `/api/v1/health` compiled in AOT snapshot.
+
+### 10.5 Step 7: Regressions & Test Results
+- `flutter analyze`: **No issues found!** (ran in 4.7s)
+- Flutter Network Unit Tests: **16 passed, 0 failed** (`api_config_connectivity_test.dart`, `api_config_health_test.dart`).
+- Backend Unit Tests: **24 test suites passed, 136 tests passed**.
+- Deployment Safety Tests: **54 passed, 0 failed** (`scripts/test-cloud-run-deploy.sh`).
+- Canary Safety Tests: **59 passed, 0 failed** (`scripts/test-staged-canary-rollout.sh`).
+- Live Cloud Run Traffic: Strictly preserved at **99% Production (`00004-xcj`) / 1% Candidate (`00009-4gt`)**. Total: **100%**. Zero traffic shifted. Zero deployments. Zero DNS mutations.
+
 
 
 

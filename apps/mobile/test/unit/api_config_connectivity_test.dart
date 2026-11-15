@@ -58,5 +58,15 @@ void main() {
       expect(result.isReachable, isFalse);
       expect(result.url, 'http://192.0.2.1:3000/api/v1');
     });
+
+    test('7. Production build profile endpoint constant is https://api.rideos.ai/api/v1', () {
+      expect(ApiConfig.kDefaultProdApiBaseUrl, 'https://api.rideos.ai/api/v1');
+    });
+
+    test('8. Explicit production endpoint override updates activeBaseUrl and ApiConstants', () async {
+      await ApiConfig.setBaseUrl(ApiConfig.kDefaultProdApiBaseUrl);
+      expect(ApiConfig.activeBaseUrl, 'https://api.rideos.ai/api/v1');
+      expect(ApiConstants.baseUrl, 'https://api.rideos.ai/api/v1');
+    });
   });
 }

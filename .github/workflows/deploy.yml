@@ -86,9 +86,10 @@ jobs:
       - name: Build Android Release APK
         env:
           ANDROID_GOOGLE_MAPS_API_KEY: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY || secrets.GOOGLE_MAPS_API_KEY }}
+          API_BASE_URL: 'https://api.rideos.ai/api/v1'
         run: |
           cd apps/mobile
-          dart_define_args=()
+          dart_define_args=(--dart-define="API_BASE_URL=$API_BASE_URL")
           if [ -n "${ANDROID_GOOGLE_MAPS_API_KEY:-}" ]; then
             dart_define_args+=(--dart-define="ANDROID_GOOGLE_MAPS_API_KEY=$ANDROID_GOOGLE_MAPS_API_KEY" --dart-define="GOOGLE_MAPS_API_KEY=$ANDROID_GOOGLE_MAPS_API_KEY")
           fi

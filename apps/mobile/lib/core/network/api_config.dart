@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb, kReleaseMode;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +19,7 @@ class ApiConfig {
   static const String kDefaultUsbBaseUrl = 'http://127.0.0.1:3000/api/v1';
   static const String kDefaultLanBaseUrl = String.fromEnvironment('LAN_API_BASE_URL', defaultValue: '');
   static const String kDefaultWebBaseUrl = 'http://localhost:3000/api/v1';
+  static const String kDefaultProdApiBaseUrl = 'https://api.rideos.ai/api/v1';
 
   static BackendConnectionMode _currentMode = BackendConnectionMode.auto;
   static String _activeBaseUrl = '';
@@ -35,7 +36,7 @@ class ApiConfig {
       return kDefaultWebBaseUrl;
     }
     // Never fall through to the static hosting origin (which serves the Flutter SPA)
-    return 'https://api.rideos.ai/api/v1';
+    return kDefaultProdApiBaseUrl;
   }
 
   static BackendConnectionMode get currentMode => _currentMode;
@@ -49,6 +50,10 @@ class ApiConfig {
     }
     if (kIsWeb) {
       return _resolveWebBaseUrl();
+    }
+    // In release mode on mobile, default to production endpoint rather than unreachable localhost
+    if (kReleaseMode) {
+      return kDefaultProdApiBaseUrl;
     }
     return kDefaultUsbBaseUrl;
   }
@@ -97,13 +102,15 @@ class ApiConfig {
       case BackendConnectionMode.lan:
         _activeBaseUrl = kDefaultLanBaseUrl.isNotEmpty
             ? kDefaultLanBaseUrl
-            : (_customBaseUrl.isNotEmpty ? _customBaseUrl : kDefaultUsbBaseUrl);
+            : (_customBaseUrl.isNotEmpty ? _customBaseUrl : (kReleaseMode ? kDefaultProdApiBaseUrl : kDefaultUsbBaseUrl));
         break;
       case BackendConnectionMode.custom:
-        _activeBaseUrl = _customBaseUrl.isNotEmpty ? _customBaseUrl : kDefaultLanBaseUrl;
+        _activeBaseUrl = _customBaseUrl.isNotEmpty
+            ? _customBaseUrl
+            : (kReleaseMode ? kDefaultProdApiBaseUrl : kDefaultLanBaseUrl);
         break;
       case BackendConnectionMode.auto:
-        _activeBaseUrl = kDefaultUsbBaseUrl; // Default to USB first on mobile
+        _activeBaseUrl = kReleaseMode ? kDefaultProdApiBaseUrl : kDefaultUsbBaseUrl;
         break;
     }
   }

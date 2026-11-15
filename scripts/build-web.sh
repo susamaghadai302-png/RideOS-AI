@@ -8,15 +8,18 @@ if [ -f "$ROOT_DIR/.env" ]; then
   GOOGLE_MAPS_KEY=$(grep -v '^#' "$ROOT_DIR/.env" | grep 'GOOGLE_MAPS_API_KEY' | cut -d '=' -f2- | tr -d '"' | tr -d "'" | xargs 2>/dev/null) || true
 fi
 
+API_URL="${API_BASE_URL:-https://api.rideos.ai/api/v1}"
+DART_DEFINES="--dart-define=API_BASE_URL=$API_URL"
+
 if [ -n "$GOOGLE_MAPS_KEY" ] && [ "$GOOGLE_MAPS_KEY" != "YOUR_ACTUAL_GOOGLE_MAPS_API_KEY_HERE" ] && [ "$GOOGLE_MAPS_KEY" != "YOUR_GOOGLE_MAPS_API_KEY_HERE" ]; then
-  echo "🗺️  Injecting GOOGLE_MAPS_API_KEY into Flutter Web release build..."
-  cd "$ROOT_DIR/apps/mobile"
-  flutter build web --release --dart-define=GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_KEY"
+  echo "🗺️  Injecting GOOGLE_MAPS_API_KEY and API_BASE_URL into Flutter Web release build..."
+  DART_DEFINES="$DART_DEFINES --dart-define=GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_KEY"
 else
-  echo "ℹ️  Building Flutter Web with local fallback routing configuration..."
-  cd "$ROOT_DIR/apps/mobile"
-  flutter build web --release
+  echo "ℹ️  Building Flutter Web with production API endpoint: $API_URL..."
 fi
+
+cd "$ROOT_DIR/apps/mobile"
+flutter build web --release $DART_DEFINES
 
 if [ -d "$ROOT_DIR/apps/mobile/assets" ]; then
   cp -rn "$ROOT_DIR/apps/mobile/assets/"* "$ROOT_DIR/apps/mobile/build/web/assets/" 2>/dev/null || true
