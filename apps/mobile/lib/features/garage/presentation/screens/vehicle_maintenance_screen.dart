@@ -9,6 +9,9 @@ import '../../../../core/vehicle_resolution/providers/active_vehicle_context_pro
 import '../../../../core/vehicle_health/services/maintenance_manager.dart';
 import '../../../../core/vehicle_health/models/maintenance_record_model.dart';
 import '../../../../core/graphics/global_3d_state_bridge.dart';
+import '../../../maintenance/presentation/screens/maintenance_hub_screen.dart';
+import '../../../maintenance/presentation/providers/maintenance_notifier.dart';
+import '../../../maintenance/domain/entities/maintenance_log_entity.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  VEHICLE MAINTENANCE — Futuristic 3D Service Bay & Predictive Upkeep
@@ -205,6 +208,22 @@ class _VehicleMaintenanceScreenState
 
                         await MaintenanceManager().addServiceRecord(record);
 
+                        final entity = MaintenanceLogEntity(
+                          id: record.id,
+                          bikeId: profile?.id ?? 'default-bike',
+                          taskType: selectedType.toUpperCase(),
+                          performedAtKm: km.toInt(),
+                          performedAtDate: DateTime.now(),
+                          nextDueKm: (km + 500).toInt(),
+                          notes: 'Logged via 3D Service Bay',
+                        );
+                        ref
+                            .read(maintenanceNotifierProvider.notifier)
+                            .addMaintenanceTask(
+                              entity,
+                              customIntervals: profile?.maintenanceIntervals,
+                            );
+
                         if (!mounted) return;
                         navigator.pop();
                         setState(() {});
@@ -279,6 +298,21 @@ class _VehicleMaintenanceScreenState
         actions: [
           IconButton(
             icon: const Icon(
+              Icons.history_edu_rounded,
+              color: RoadOSColors.cyberCyan,
+            ),
+            tooltip: 'Service History & Schedules',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MaintenanceHubScreen(vehicle: vehicle),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(
               Icons.add_circle_outline_rounded,
               color: RoadOSColors.cyberCyan,
             ),
@@ -320,7 +354,7 @@ class _VehicleMaintenanceScreenState
                 const SizedBox(height: 18),
 
                 // ── 4. AI Predictive Upkeep Assessment ────────────────────────
-                _buildAiPredictiveCard(),
+                _buildAiPredictiveCard(selectedTask, vehicle),
                 const SizedBox(height: 24),
               ],
             ),
@@ -553,48 +587,79 @@ class _VehicleMaintenanceScreenState
     );
   }
 
-  Widget _buildAiPredictiveCard() {
-    return RoadOSCard(
-      borderColor: RoadOSColors.neonViolet.withValues(alpha: 0.45),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RoadOSGradients.primaryViolet,
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
+  Widget _buildAiPredictiveCard(
+    ServiceScheduleItem? selectedTask,
+    VehicleProfile? vehicle,
+  ) {
+    final statusColor = selectedTask != null
+        ? _getColorForStatus(selectedTask.status)
+        : RoadOSColors.neonViolet;
+    final title = selectedTask != null
+        ? '${selectedTask.title.toUpperCase()} STATUS'
+        : 'MAINTENANCE ASSESSMENT';
+    final explanation = selectedTask != null
+        ? '${selectedTask.statusDetail}. ${selectedTask.explanation}'
+        : 'Telemetry monitoring active. Keep odometer updated to receive dynamic component wear estimates.';
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MaintenanceHubScreen(vehicle: vehicle),
           ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'AI WEAR PREDICTION ACTIVE',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Engine oil viscosity index high (94%). Next service recommended at 4,000 km mark.',
-                  style: TextStyle(
-                    color: RoadOSColors.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+        );
+      },
+      child: RoadOSCard(
+        borderColor: statusColor.withValues(alpha: 0.45),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RoadOSGradients.primaryViolet,
+                border: Border.all(color: statusColor.withValues(alpha: 0.5)),
+              ),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded,
+                          color: Colors.white54, size: 12),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    explanation,
+                    style: const TextStyle(
+                      color: RoadOSColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
