@@ -663,6 +663,63 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
      - `rideos-backend-api-00009-4gt`: **0% traffic** (tagged `candidate`).
    - Zero production traffic changes executed. Zero new revisions deployed.
 
+---
+
+## 7. Task 3 Production Canary Rollout — Initial 1% Stage Execution & Verification
+
+- **Execution Timestamp**: November 15, 2026 10:57:12 UTC (16:27:12 IST)
+- **Feature Branch**: `feat/cloudrun-direct-vpc-static-egress`
+- **Target Service**: `rideos-backend-api` (us-central1, project `rideos-ai`)
+- **Rollout Controller**: [scripts/staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/staged-canary-rollout.sh)
+- **Safety Test Suite**: [scripts/test-staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-staged-canary-rollout.sh) (59/59 assertions passed)
+
+### 7.1 Release Candidate Provenance & Preflight
+1. **Candidate Revision ID**: `rideos-backend-api-00009-4gt`
+2. **Container Image Digest**: `sha256:14d22fa8eddc19223d1b82cef2819f7aca13cbc3c79970d28511078108e0048b`
+3. **Artifact Registry Path**: `us-central1-docker.pkg.dev/rideos-ai/rideos-repo/rideos-backend-api:e0eb4f8`
+4. **Cloud Build Provenance**: Build ID `ea4b1963-ae27-4b3a-8f36-646a6b340598` (Status: `SUCCESS`, built from verified source `e0eb4f8` on `feat/cloudrun-direct-vpc-static-egress`).
+5. **Secret Manager Audit**: All 5 required secrets (`rideos-google-maps-api-key`, `rideos-google-routes-api-key`, `rideos-jwt-refresh-secret`, `rideos-jwt-secret`, `rideos-mongo-uri`) confirmed version 1 in `enabled` state. Zero secrets logged or exposed.
+6. **Pre-Shift Baseline Check**:
+   - Production revision `rideos-backend-api-00004-xcj`: 100%
+   - Candidate revision `rideos-backend-api-00009-4gt`: 0% (tag: `candidate`)
+   - Total traffic: 100%
+7. **Dry-Run Validation**: `./scripts/staged-canary-rollout.sh stage 1 --dry-run` passed cleanly with exit code 0 and confirmed zero live mutations.
+
+### 7.2 Stage 1 (1% Canary) Execution Evidence
+1. **Traffic Shift Execution**:
+   - Command: `./scripts/staged-canary-rollout.sh stage 1 --confirm`
+   - Traffic Target Mutation: `--to-revisions=rideos-backend-api-00004-xcj=99,rideos-backend-api-00009-4gt=1`
+   - Real-time Allocation Verification: Evaluated machine-readable Cloud Run JSON via `parse_traffic_json`:
+     `OK: prod=99, cand=1, total=100`.
+2. **Observation Window**:
+   - 30-second observation window observed with `TRAFFIC_SHIFT_ACTIVE=1` fully armed.
+3. **Live Health & Latency Verification**:
+   - Weighted Production Endpoint (`https://rideos-backend-api-aeoxwaaccq-uc.a.run.app/api/v1/health/liveness`):
+     - Sample 1: HTTP 200 (579ms)
+     - Sample 2: HTTP 200 (1599ms)
+     - Sample 3: HTTP 200 (527ms)
+     - Sample 4: HTTP 200 (567ms)
+     - Sample 5: HTTP 200 (575ms)
+     - Average Latency: **769ms** (Threshold: 3000ms — PASSED).
+   - Candidate Direct Tag Endpoint (`https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app`):
+     - Readiness (`/api/v1/health/readiness`): HTTP 200 `READY` (`ready: true`, `mongodb.status: healthy`, `error: null`).
+     - Liveness (`/api/v1/health/liveness`): HTTP 200 `LIVE`.
+     - System Health (`/api/v1/health`): HTTP 200 `UP` (`ready: true`, `components.database: healthy`).
+4. **Cloud Logging Audit**:
+   - Candidate revision `rideos-backend-api-00009-4gt` queried for the observation period:
+     - `MongoServerSelectionError`: 0
+     - Database/SSL connectivity errors: 0
+     - 5xx Server Errors: 0
+5. **Rollback Controller Verification**:
+   - The automated emergency rollback mechanism was proven fully operational in live testing (verifying automatic restore to 100% prod upon network probe failure and post-rollback percentage verification).
+
+### 7.3 Final Stable State & Stop Condition
+- **Production Revision (`rideos-backend-api-00004-xcj`)**: **99%**
+- **Candidate Revision (`rideos-backend-api-00009-4gt`)**: **1%** (Tag: `candidate`, URL: `https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app`)
+- **Total Traffic**: **100%**
+- **Traffic Progression Halted**: Strictly stopped at 1% canary as commanded. Zero progression to 5%, 25%, 50%, or 100%. Zero new container builds or revision deployments.
+
+
 
 
 

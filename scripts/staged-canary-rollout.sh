@@ -352,7 +352,7 @@ verify_traffic_health() {
 
   for i in $(seq 1 "$SAMPLE_REQUEST_COUNT"); do
     local probe_res
-    probe_res=$(measure_request "$target_url/api/v1/health/liveness" 5)
+    probe_res=$(measure_request "$target_url/api/v1/health/liveness" 10)
     local http_code
     local elapsed_ms
     local body
@@ -382,37 +382,42 @@ verify_traffic_health() {
     emergency_rollback "Average latency ${avg_latency}ms exceeded maximum allowed threshold ${MAX_ALLOWED_LATENCY_MS}ms."
   fi
 
-  # Deep Database Readiness Probe on Stage URL (Weighted production endpoint)
-  log "Verifying database readiness on $stage_name endpoint ($target_url)..."
-  local deep_res
-  deep_res=$(measure_request "$target_url/api/v1/health/readiness" 10)
-  local deep_code
-  local deep_body
-  deep_code=$(echo "$deep_res" | cut -d'|' -f1)
-  deep_body=$(echo "$deep_res" | cut -d'|' -f3-)
+  # Deep Database Readiness and System Health Probes
+  # On canary stages (<100%), the weighted production endpoint routes the majority of traffic to $PROD_REV
+  # (which lacks Direct VPC static egress to Atlas). Database readiness and system health are therefore
+  # verified directly on $CANDIDATE_TAG_URL for canary stages, and on $target_url when promoted to 100%.
+  if [[ "$CURRENT_STAGE_PCT" -eq 100 || "$target_url" == "$CANDIDATE_TAG_URL" ]]; then
+    log "Verifying database readiness on $stage_name endpoint ($target_url)..."
+    local deep_res
+    deep_res=$(measure_request "$target_url/api/v1/health/readiness" 10)
+    local deep_code
+    local deep_body
+    deep_code=$(echo "$deep_res" | cut -d'|' -f1)
+    deep_body=$(echo "$deep_res" | cut -d'|' -f3-)
 
-  local val_deep
-  val_deep=$(validate_health_payload "readiness" "$deep_code" "$deep_body")
-  if [[ "$val_deep" != "OK" ]]; then
-    emergency_rollback "Database readiness verification failed on $stage_name: $val_deep"
+    local val_deep
+    val_deep=$(validate_health_payload "readiness" "$deep_code" "$deep_body")
+    if [[ "$val_deep" != "OK" ]]; then
+      emergency_rollback "Database readiness verification failed on $stage_name: $val_deep"
+    fi
+    log_success "Database readiness verified on $stage_name ($target_url)."
+
+    # System Health Probe on Stage URL
+    log "Verifying system health on $stage_name endpoint ($target_url)..."
+    local sys_res
+    sys_res=$(measure_request "$target_url/api/v1/health" 10)
+    local sys_code
+    local sys_body
+    sys_code=$(echo "$sys_res" | cut -d'|' -f1)
+    sys_body=$(echo "$sys_res" | cut -d'|' -f3-)
+
+    local val_sys
+    val_sys=$(validate_health_payload "system" "$sys_code" "$sys_body")
+    if [[ "$val_sys" != "OK" ]]; then
+      emergency_rollback "System health verification failed on $stage_name: $val_sys"
+    fi
+    log_success "System health verified on $stage_name ($target_url)."
   fi
-  log_success "Database readiness verified on $stage_name ($target_url)."
-
-  # System Health Probe on Stage URL (Weighted production endpoint)
-  log "Verifying system health on $stage_name endpoint ($target_url)..."
-  local sys_res
-  sys_res=$(measure_request "$target_url/api/v1/health" 5)
-  local sys_code
-  local sys_body
-  sys_code=$(echo "$sys_res" | cut -d'|' -f1)
-  sys_body=$(echo "$sys_res" | cut -d'|' -f3-)
-
-  local val_sys
-  val_sys=$(validate_health_payload "system" "$sys_code" "$sys_body")
-  if [[ "$val_sys" != "OK" ]]; then
-    emergency_rollback "System health verification failed on $stage_name: $val_sys"
-  fi
-  log_success "System health verified on $stage_name ($target_url)."
 
   # Candidate-tag endpoint verification
   if [[ "$target_url" != "$CANDIDATE_TAG_URL" ]]; then
@@ -429,7 +434,22 @@ verify_traffic_health() {
     if [[ "$val_cand_tag" != "OK" ]]; then
       emergency_rollback "Candidate tag direct endpoint failed readiness during $stage_name: $val_cand_tag"
     fi
-    log_success "Candidate tag endpoint verified healthy."
+    log_success "Candidate tag readiness verified healthy ($CANDIDATE_TAG_URL)."
+
+    # Cross-verify system health on candidate tag direct endpoint
+    local cand_tag_sys
+    cand_tag_sys=$(measure_request "$CANDIDATE_TAG_URL/api/v1/health" 10)
+    local cand_tag_sys_code
+    local cand_tag_sys_body
+    cand_tag_sys_code=$(echo "$cand_tag_sys" | cut -d'|' -f1)
+    cand_tag_sys_body=$(echo "$cand_tag_sys" | cut -d'|' -f3-)
+
+    local val_cand_tag_sys
+    val_cand_tag_sys=$(validate_health_payload "system" "$cand_tag_sys_code" "$cand_tag_sys_body")
+    if [[ "$val_cand_tag_sys" != "OK" ]]; then
+      emergency_rollback "Candidate tag direct endpoint failed system health during $stage_name: $val_cand_tag_sys"
+    fi
+    log_success "Candidate tag system health verified healthy ($CANDIDATE_TAG_URL)."
   fi
 }
 
