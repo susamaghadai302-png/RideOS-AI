@@ -19,11 +19,7 @@ KNOWN_UNHEALTHY_REVISIONS="${KNOWN_UNHEALTHY_REVISIONS:-rideos-backend-api-00004
 
 # Discover or read verified stable baseline if present
 STABLE_PROD_REV="${STABLE_PROD_REV:-}"
-if [[ -z "$STABLE_PROD_REV" && -f "$BASELINE_FILE" ]]; then
-  STABLE_PROD_REV=$(cat "$BASELINE_FILE" 2>/dev/null | tr -d '[:space:]' || echo "")
-fi
-
-PROD_REV="${PROD_REV:-rideos-backend-api-00004-xcj}"
+PROD_REV="${PROD_REV:-}"
 CANDIDATE_REV="${CANDIDATE_REV:-rideos-backend-api-00009-4gt}"
 PROD_URL="${PROD_URL:-https://rideos-backend-api-aeoxwaaccq-uc.a.run.app}"
 CANDIDATE_TAG_URL="${CANDIDATE_TAG_URL:-https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app}"
@@ -61,6 +57,112 @@ log_warn() {
 log_error() {
   echo -e "\033[1;31m[$(date -u +"%Y-%m-%dT%H:%M:%SZ")][ERROR]\033[0m $*"
 }
+
+# Validates whether a revision name is structurally valid and not in KNOWN_UNHEALTHY_REVISIONS
+validate_baseline_revision() {
+  local rev="$1"
+  local allow_unhealthy="${2:-0}"
+
+  if [[ -z "$rev" ]]; then
+    echo "ERR: Revision name cannot be empty"
+    return 0
+  fi
+
+  if [[ ! "$rev" =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]]; then
+    echo "ERR: Revision name '$rev' does not match valid Cloud Run revision format"
+    return 0
+  fi
+
+  if [[ "$allow_unhealthy" -ne 1 ]]; then
+    for unh in $(echo "$KNOWN_UNHEALTHY_REVISIONS" | tr ',' ' '); do
+      if [[ "$rev" == "$unh" ]]; then
+        echo "ERR: Revision '$rev' is listed in KNOWN_UNHEALTHY_REVISIONS ($KNOWN_UNHEALTHY_REVISIONS). Cannot be used as stable baseline."
+        return 0
+      fi
+    done
+  fi
+
+  echo "OK"
+  return 0
+}
+
+initialize_baseline() {
+  local explicit_prod="${PROD_REV:-}"
+  local baseline_source=""
+
+  # 1. Attempt to load from BASELINE_FILE
+  if [[ -f "$BASELINE_FILE" ]]; then
+    local file_content
+    file_content=$(head -n 1 "$BASELINE_FILE" 2>/dev/null | tr -d '[:space:]' || echo "")
+    if [[ -n "$file_content" ]]; then
+      local val_file
+      val_file=$(validate_baseline_revision "$file_content" 0)
+      if [[ "$val_file" == "OK" ]]; then
+        STABLE_PROD_REV="$file_content"
+        baseline_source="$BASELINE_FILE"
+      else
+        log_error "CRITICAL_SAFETY_REJECTION: Baseline file ($BASELINE_FILE) contains invalid or unhealthy revision: $val_file"
+        exit 2
+      fi
+    else
+      log_warn "Baseline file ($BASELINE_FILE) is empty."
+    fi
+  fi
+
+  # 2. Check STABLE_PROD_REV from environment if not loaded from file
+  if [[ -n "${STABLE_PROD_REV:-}" && -z "$baseline_source" ]]; then
+    local val_env
+    val_env=$(validate_baseline_revision "$STABLE_PROD_REV" 0)
+    if [[ "$val_env" == "OK" ]]; then
+      baseline_source="STABLE_PROD_REV environment variable"
+    else
+      log_error "CRITICAL_SAFETY_REJECTION: Environment variable STABLE_PROD_REV ($STABLE_PROD_REV) is invalid or unhealthy: $val_env"
+      exit 2
+    fi
+  fi
+
+  # 3. Establish authoritative PROD_REV
+  if [[ -n "$STABLE_PROD_REV" ]]; then
+    if [[ -n "$explicit_prod" ]]; then
+      local val_exp
+      val_exp=$(validate_baseline_revision "$explicit_prod" 1)
+      if [[ "$val_exp" == "OK" ]]; then
+        PROD_REV="$explicit_prod"
+        log "Explicit PROD_REV override active: $PROD_REV (Saved baseline: $STABLE_PROD_REV from $baseline_source)"
+      else
+        log_error "CRITICAL_SAFETY_REJECTION: Explicit PROD_REV ($explicit_prod) has invalid name format."
+        exit 1
+      fi
+    else
+      PROD_REV="$STABLE_PROD_REV"
+      log "Loaded verified stable production baseline: $STABLE_PROD_REV (from $baseline_source)"
+    fi
+  else
+    # Baseline is missing
+    if [[ -n "$explicit_prod" ]]; then
+      local val_exp
+      val_exp=$(validate_baseline_revision "$explicit_prod" 1)
+      if [[ "$val_exp" == "OK" ]]; then
+        PROD_REV="$explicit_prod"
+        log "Explicit PROD_REV active: $PROD_REV (No stable baseline established)"
+      else
+        log_error "CRITICAL_SAFETY_REJECTION: Explicit PROD_REV ($explicit_prod) has invalid name format."
+        exit 1
+      fi
+    else
+      # Check if strict baseline safety is required
+      if [[ "${REQUIRE_STABLE_BASELINE:-0}" -eq 1 ]]; then
+        log_error "CRITICAL_SAFETY_REJECTION: Missing stable baseline file ($BASELINE_FILE) and default revision is in KNOWN_UNHEALTHY_REVISIONS ($KNOWN_UNHEALTHY_REVISIONS). Failing closed."
+        exit 1
+      else
+        log_warn "NOTICE: No stable baseline established in $BASELINE_FILE. Falling back to initial transition revision: rideos-backend-api-00004-xcj (Caution: marked in KNOWN_UNHEALTHY_REVISIONS)."
+        PROD_REV="rideos-backend-api-00004-xcj"
+      fi
+    fi
+  fi
+}
+
+initialize_baseline
 
 # Portable latency measurement using curl's built-in timing
 measure_request() {
@@ -409,6 +511,23 @@ emergency_rollback() {
   if [[ "$rollback_cmd_failed" -eq 0 && "$verify_res" == OK:* ]]; then
     TRAFFIC_SHIFT_ACTIVE=0
     log_success "Rollback verified successfully: Pre-shift allocation safely restored ($PRE_SHIFT_SNAPSHOT)."
+
+    local has_unhealthy_in_snapshot=0
+    for unh in $(echo "$KNOWN_UNHEALTHY_REVISIONS" | tr ',' ' '); do
+      if [[ "$PRE_SHIFT_SNAPSHOT" == *"$unh"* ]]; then
+        has_unhealthy_in_snapshot=1
+        break
+      fi
+    done
+
+    if [[ "$has_unhealthy_in_snapshot" -eq 1 ]]; then
+      log_warn "DEGRADED_AVAILABILITY_ALERT: Restored pre-shift allocation ($PRE_SHIFT_SNAPSHOT) contains degraded revision(s) ($KNOWN_UNHEALTHY_REVISIONS)."
+      log_warn "TRAFFIC_RESTORATION_ONLY: Restoring traffic distribution DOES NOT equal application health recovery."
+      log_warn "Production service availability remains degraded until a verified healthy revision is established and promoted to 100%."
+    else
+      log_success "Restored pre-shift allocation ($PRE_SHIFT_SNAPSHOT) consists of verified healthy revision(s)."
+    fi
+
     log_warn "NOTE: Traffic allocation restored to pre-shift state. This recovers the previous traffic distribution but does not imply underlying application health recovery on degraded revisions."
     exit 1
   else
@@ -432,6 +551,7 @@ trap handle_interrupt SIGINT SIGTERM
 
 # 1. Current Status & Pre-flight Health Verification
 check_status() {
+  log "Active Production Baseline: PROD_REV=$PROD_REV (STABLE_PROD_REV=${STABLE_PROD_REV:-none})"
   log "Inspecting Cloud Run service traffic configuration..."
   $GCLOUD_CMD run services describe "$SERVICE" \
     --region="$REGION" \
@@ -833,8 +953,12 @@ apply_stage() {
   # Step H: If successfully promoted to 100%, record new stable baseline
   if [[ "$candidate_pct" -eq 100 ]]; then
     log "Recording $CANDIDATE_REV as the new verified stable production baseline..."
-    echo "$CANDIDATE_REV" > "$BASELINE_FILE"
+    local tmp_baseline="${BASELINE_FILE}.tmp.$$"
+    echo "$CANDIDATE_REV" > "$tmp_baseline"
+    mv -f "$tmp_baseline" "$BASELINE_FILE"
+    chmod 644 "$BASELINE_FILE" 2>/dev/null || true
     STABLE_PROD_REV="$CANDIDATE_REV"
+    PROD_REV="$CANDIDATE_REV"
     log_success "NEW STABLE BASELINE ESTABLISHED: $CANDIDATE_REV (recorded in $BASELINE_FILE)"
   fi
 }

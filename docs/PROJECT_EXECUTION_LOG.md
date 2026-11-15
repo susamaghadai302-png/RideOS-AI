@@ -1169,6 +1169,88 @@ Updated `scripts/test-staged-canary-rollout.sh` with a comprehensive stateful mo
 - DNS / Secret Manager Modifications: **ZERO**.
 - Revisions Created: **ZERO**.
 
+---
+
+## 14. Task 3.4.2: Final Stable Baseline Wiring & Production Recovery Safety Verification
+
+- **Execution Date**: November 15, 2026
+- **Feature Branch**: `feat/cloudrun-direct-vpc-static-egress`
+- **Lead Verification**: Senior Cloud Reliability & Systems Architect
+- **Scope**: Authoritative stable baseline initialization in `scripts/staged-canary-rollout.sh`, eliminating decoupled defaults, atomic baseline file persistence (`.cloud-run-baseline`), strict recovery policy enforcement with degraded availability alerts, and 39 additional automated safety assertions across 7 new regression scenarios (114/114 total passed).
+
+### 14.1 Problem Statement & Code Review Finding
+Prior to Task 3.4.2:
+- `STABLE_PROD_REV` was loaded from `BASELINE_FILE`, but `PROD_REV` independently defaulted to `rideos-backend-api-00004-xcj`.
+- In `apply_stage()`, the stage allocation string (`stage_alloc`) and display label (`stage_label`) used `PROD_REV`.
+- Consequently, even after candidate promotion established a new verified stable baseline in `.cloud-run-baseline`, subsequent process invocations would continue allocating traffic using the retired, degraded revision `00004-xcj`.
+
+### 14.2 Authoritative Baseline Initialization & Validation (`initialize_baseline`)
+Re-architected the controller startup sequence with unified, fail-closed validation:
+1. **Persistent Baseline Loading**:
+   - Inspects `BASELINE_FILE` (`.cloud-run-baseline`).
+   - Validates revision name syntax and asserts that the stored revision is **not** listed in `KNOWN_UNHEALTHY_REVISIONS`.
+   - If the file contains an unhealthy or malformed revision, the controller halts immediately with exit code 2 (`CRITICAL_SAFETY_REJECTION`) and executes zero mutations.
+2. **Authoritative `PROD_REV` Assignment**:
+   - When a valid `STABLE_PROD_REV` is present, `PROD_REV` is initialized directly from it (`PROD_REV="$STABLE_PROD_REV"`).
+   - Explicit `PROD_REV` overrides are preserved only when validated against syntax rules.
+3. **Fail-Closed on Unsafe Rollout Operations**:
+   - If no stable baseline file exists, and `REQUIRE_STABLE_BASELINE=1` is active, any attempt to run a staged rollout with an unhealthy default halts immediately with exit code 1 (`CRITICAL_SAFETY_REJECTION`).
+   - In transitional cutover mode (`REQUIRE_STABLE_BASELINE=0`), the script issues an explicit warning (`NOTICE: Falling back to initial transition revision: rideos-backend-api-00004-xcj (Caution: marked in KNOWN_UNHEALTHY_REVISIONS)`) instead of silently defaulting.
+
+### 14.3 Atomic Persistence Strategy
+- When 100% stage verification and observation windows succeed:
+  - Controller writes candidate revision to a PID-tagged temporary file (`${BASELINE_FILE}.tmp.$$`).
+  - Performs atomic rename (`mv -f`) to ensure crash consistency and avoid partial reads.
+  - Enforces readable file permissions (`chmod 644`).
+  - Updates in-memory variables `STABLE_PROD_REV="$CANDIDATE_REV"` and `PROD_REV="$CANDIDATE_REV"`.
+
+### 14.4 Rollout Allocation Consistency
+Verified that all critical stages use the authoritative baseline:
+- `stage_label`: Correctly reflects `${PROD_REV}` and `${CANDIDATE_REV}`.
+- `stage_alloc`: Correctly computes `${PROD_REV}=${prod_pct},${CANDIDATE_REV}=${candidate_pct}`.
+- Allocation verification (`verify_actual_traffic_allocation`): Compares actual Cloud Run JSON against `${PROD_REV}`.
+- Manual rollback (`manual_rollback`): Directly targets `${STABLE_PROD_REV}=100` when a saved baseline is active.
+
+### 14.5 Recovery Policy Hardening
+- Strengthened `emergency_rollback()`:
+  - If the restored pre-shift snapshot contains any revision listed in `KNOWN_UNHEALTHY_REVISIONS` (such as `00004-xcj` in the 99/1 snapshot):
+    - Explicitly issues: `DEGRADED_AVAILABILITY_ALERT: Restored pre-shift allocation contains degraded revision(s)`.
+    - Explicitly issues: `TRAFFIC_RESTORATION_ONLY: Restoring traffic distribution DOES NOT equal application health recovery`.
+    - Explicitly issues: `Production service availability remains degraded until a verified healthy revision is established and promoted to 100%`.
+  - Strictly prevents operators from conflating traffic restoration with application health.
+
+### 14.6 Test Execution Evidence
+
+| Test Suite | Command | Total Passed | Total Failed | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Canary Rollout Safety Suite** | `./scripts/test-staged-canary-rollout.sh` | **114 passed** | **0 failed** | **PASS** |
+| **Cloud Run Deployment Safety Suite** | `./scripts/test-cloud-run-deploy.sh` | **54 passed** | **0 failed** | **PASS** |
+| **Backend Unit Test Suite** | `cd apps/backend && npm test` | **136 passed (24 suites)** | **0 failed** | **PASS** |
+| **Rollout Script Syntax Check** | `bash -n scripts/staged-canary-rollout.sh` | Clean exit (code 0) | 0 | **PASS** |
+| **Test Script Syntax Check** | `bash -n scripts/test-staged-canary-rollout.sh` | Clean exit (code 0) | 0 | **PASS** |
+
+#### New Scenarios Verified in Test Suite (Tests 26–32):
+- **Test 26**: Fresh-process loading of saved baseline & `PROD_REV` resolution (exit code 0).
+- **Test 27**: Staged rollout allocations use saved baseline across stages 5%, 25%, 50%, 100%, with zero references to retired `00004-xcj`.
+- **Test 28**: Missing baseline fails closed with exit code 1 when default revision is unhealthy.
+- **Test 29**: Stored baseline with unhealthy revision (`00004-xcj`) or corrupted syntax is rejected with exit code 2 and zero mutations.
+- **Test 30**: Manual rollback targets validated stable baseline (`00009-4gt=100`).
+- **Test 31**: Emergency rollback explicitly reports degraded availability alert and rejects claiming application health recovery.
+- **Test 32**: Atomic persistence and fresh process recovery verified.
+- **Test 25 (Master Invariant)**: Global assertion confirmed `--to-revisions=rideos-backend-api-00004-xcj=100` was executed **zero times** across all 114 test runs.
+
+### 14.7 Live Production State & Zero-Mutation Invariant Verification
+- Live Cloud Run service status query: `gcloud run services describe rideos-backend-api --region=us-central1 --project=rideos-ai --format="yaml(status.traffic)"`
+- Live Traffic Distribution:
+  - `rideos-backend-api-00004-xcj`: **99%**
+  - `rideos-backend-api-00009-4gt`: **1%** (Tagged: `candidate`)
+  - **Total Traffic**: Exactly **100%**.
+- Production Traffic Drift: **ZERO**.
+- Live Cloud Run Mutations: **ZERO**.
+- DNS / Secret Manager Modifications: **ZERO**.
+- Revisions Created: **ZERO**.
+
+
 
 
 

@@ -776,6 +776,207 @@ else
 fi
 
 # ------------------------------------------------------------------------------
+# Test 26: Fresh-process loading of saved baseline & PROD_REV resolution (Task 3.4.2 Scenarios 1, 2)
+# ------------------------------------------------------------------------------
+echo "Test 26: Fresh-process loading of saved baseline & PROD_REV resolution (Task 3.4.2 Scenarios 1, 2)"
+MOCK_LOG_DIR="$TEST_TMP_DIR/fresh_process_baseline"
+mkdir -p "$MOCK_LOG_DIR"
+FRESH_BASELINE_FILE="$MOCK_LOG_DIR/stable_baseline"
+echo "rideos-backend-api-00009-4gt" > "$FRESH_BASELINE_FILE"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$FRESH_BASELINE_FILE" \
+  "$SCRIPT_UNDER_TEST" status 2>&1)
+exit_code=$?
+set -e
+
+assert_eq "Fresh-process status exits with code 0" "0" "$exit_code"
+assert_contains "Saved baseline loaded from file" "$output" "Loaded verified stable production baseline: rideos-backend-api-00009-4gt"
+assert_contains "PROD_REV resolved to saved baseline" "$output" "Active Production Baseline: PROD_REV=rideos-backend-api-00009-4gt"
+
+# ------------------------------------------------------------------------------
+# Test 27: Staged rollout allocations use saved stable baseline across stages (Task 3.4.2 Scenarios 3, 4, 5, 6, 11)
+# ------------------------------------------------------------------------------
+echo "Test 27: Staged rollout allocations use saved stable baseline across stages (Task 3.4.2 Scenarios 3, 4, 5, 6, 11)"
+MOCK_LOG_DIR="$TEST_TMP_DIR/staged_with_saved_baseline"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+SAVED_BASELINE_FILE="$MOCK_LOG_DIR/active_baseline"
+echo "rideos-backend-api-00009-4gt" > "$SAVED_BASELINE_FILE"
+
+# Candidate for next deployment
+NEW_CANDIDATE="rideos-backend-api-00010-xyz"
+
+for stage in 5 25 50 100; do
+  prod_pct=$(( 100 - stage ))
+  set +e
+  output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+    BASELINE_FILE="$SAVED_BASELINE_FILE" \
+    CANDIDATE_REV="$NEW_CANDIDATE" \
+    "$SCRIPT_UNDER_TEST" stage "$stage" --dry-run 2>&1)
+  exit_code=$?
+  set -e
+
+  assert_eq "Stage $stage dry-run exits with code 0" "0" "$exit_code"
+  if [[ "$stage" -eq 100 ]]; then
+    assert_contains "Stage 100 sets candidate=100" "$output" "Planned traffic allocation: rideos-backend-api -> $NEW_CANDIDATE=100"
+  else
+    assert_contains "Stage $stage uses saved baseline 00009-4gt=$prod_pct and cand $NEW_CANDIDATE=$stage" "$output" "Planned traffic allocation: rideos-backend-api -> rideos-backend-api-00009-4gt=$prod_pct,$NEW_CANDIDATE=$stage"
+  fi
+  # Verify 00004-xcj is NOT present in planned traffic allocation
+  planned_alloc=$(echo "$output" | grep "Planned traffic allocation" || echo "")
+  if [[ "$planned_alloc" == *"rideos-backend-api-00004-xcj"* ]]; then
+    echo "  [FAIL] Stage $stage accidentally allocated traffic to retired revision 00004-xcj"
+    FAIL_COUNT=$(( FAIL_COUNT + 1 ))
+  else
+    echo "  [PASS] Stage $stage strictly excluded retired revision 00004-xcj from planned traffic"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
+  fi
+done
+
+# ------------------------------------------------------------------------------
+# Test 28: Missing baseline fails closed when default revision is unhealthy (Task 3.4.2 Scenario 7)
+# ------------------------------------------------------------------------------
+echo "Test 28: Missing baseline fails closed when default revision is unhealthy (Task 3.4.2 Scenario 7)"
+MOCK_LOG_DIR="$TEST_TMP_DIR/fail_closed_missing_baseline"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+NON_EXISTENT_BASELINE="$MOCK_LOG_DIR/does_not_exist.baseline"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$NON_EXISTENT_BASELINE" \
+  REQUIRE_STABLE_BASELINE=1 \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code=$?
+set -e
+
+mutation_count=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Exits with code 1 on missing baseline with unhealthy default" "1" "$exit_code"
+assert_eq "Zero traffic mutations executed" "0" "$mutation_count"
+assert_contains "Safety rejection logged" "$output" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Missing baseline logged" "$output" "Missing stable baseline file"
+
+# ------------------------------------------------------------------------------
+# Test 29: Invalid or unhealthy baseline is rejected (Task 3.4.2 Scenario 8)
+# ------------------------------------------------------------------------------
+echo "Test 29: Invalid or unhealthy baseline is rejected (Task 3.4.2 Scenario 8)"
+# Part A: Stored baseline contains known-unhealthy revision 00004-xcj
+MOCK_LOG_DIR="$TEST_TMP_DIR/unhealthy_stored_baseline"
+mkdir -p "$MOCK_LOG_DIR"
+UNHEALTHY_BASELINE_FILE="$MOCK_LOG_DIR/unhealthy_baseline"
+echo "rideos-backend-api-00004-xcj" > "$UNHEALTHY_BASELINE_FILE"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$UNHEALTHY_BASELINE_FILE" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code=$?
+set -e
+
+mutation_count=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Exits with code 2 on unhealthy stored baseline" "2" "$exit_code"
+assert_eq "Zero traffic mutations executed" "0" "$mutation_count"
+assert_contains "Unhealthy baseline rejection logged" "$output" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Unhealthy revision listed in rejection" "$output" "KNOWN_UNHEALTHY_REVISIONS"
+
+# Part B: Stored baseline contains invalid format
+MOCK_LOG_DIR_B="$TEST_TMP_DIR/corrupt_stored_baseline"
+mkdir -p "$MOCK_LOG_DIR_B"
+CORRUPT_BASELINE_FILE="$MOCK_LOG_DIR_B/corrupt_baseline"
+echo "CORRUPT@@@BAD_REVISION###" > "$CORRUPT_BASELINE_FILE"
+touch "$MOCK_LOG_DIR_B/gcloud_mutations.log"
+
+set +e
+output_b=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR_B" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$CORRUPT_BASELINE_FILE" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code_b=$?
+set -e
+
+mutation_count_b=$(wc -l < "$MOCK_LOG_DIR_B/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Exits with code 2 on corrupt baseline format" "2" "$exit_code_b"
+assert_eq "Zero traffic mutations executed on corrupt format" "0" "$mutation_count_b"
+assert_contains "Corrupt baseline rejection logged" "$output_b" "CRITICAL_SAFETY_REJECTION"
+assert_contains "Format error reported" "$output_b" "does not match valid Cloud Run revision format"
+
+# ------------------------------------------------------------------------------
+# Test 30: Manual rollback uses validated stable baseline (Task 3.4.2 Scenario 9)
+# ------------------------------------------------------------------------------
+echo "Test 30: Manual rollback uses validated stable baseline (Task 3.4.2 Scenario 9)"
+MOCK_LOG_DIR="$TEST_TMP_DIR/manual_rollback_saved_baseline"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+SAVED_BASELINE_FILE="$MOCK_LOG_DIR/saved_baseline"
+echo "rideos-backend-api-00009-4gt" > "$SAVED_BASELINE_FILE"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$SAVED_BASELINE_FILE" \
+  CANDIDATE_REV="rideos-backend-api-00010-xyz" \
+  "$SCRIPT_UNDER_TEST" rollback 2>&1)
+exit_code=$?
+set -e
+
+mutations=$(cat "$MOCK_LOG_DIR/gcloud_mutations.log")
+assert_eq "Manual rollback exits with code 0" "0" "$exit_code"
+assert_contains "Rollback targets validated stable baseline 00009-4gt=100" "$mutations" "--to-revisions=rideos-backend-api-00009-4gt=100"
+assert_contains "Rollback logs safe destination" "$output" "Executing manual rollback to verified safe destination: rideos-backend-api-00009-4gt=100"
+
+# ------------------------------------------------------------------------------
+# Test 31: Emergency restoration explicitly reports degraded availability (Task 3.4.2 Scenario 10)
+# ------------------------------------------------------------------------------
+echo "Test 31: Emergency restoration explicitly reports degraded availability (Task 3.4.2 Scenario 10)"
+MOCK_LOG_DIR="$TEST_TMP_DIR/recovery_policy_test"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/fail_5xx"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code=$?
+set -e
+
+assert_eq "Exits with code 1 on emergency rollback" "1" "$exit_code"
+assert_contains "Degraded availability alert logged" "$output" "DEGRADED_AVAILABILITY_ALERT"
+assert_contains "Traffic restoration distinction logged" "$output" "TRAFFIC_RESTORATION_ONLY: Restoring traffic distribution DOES NOT equal application health recovery"
+assert_contains "Degraded service warning present" "$output" "Production service availability remains degraded until a verified healthy revision is established"
+
+# ------------------------------------------------------------------------------
+# Test 32: Baseline persistence survives fresh process invocation & atomic file replacement (Task 3.4.2 Scenarios 1, 2)
+# ------------------------------------------------------------------------------
+echo "Test 32: Baseline persistence survives fresh process invocation & atomic file replacement (Task 3.4.2 Scenarios 1, 2)"
+MOCK_LOG_DIR="$TEST_TMP_DIR/atomic_persistence_test"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+PERSIST_BASELINE="$MOCK_LOG_DIR/persisted.baseline"
+
+# 1. Run stage 100 with confirm to establish baseline
+set +e
+output_promo=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$PERSIST_BASELINE" \
+  "$SCRIPT_UNDER_TEST" stage 100 --confirm 2>&1)
+set -e
+
+assert_contains "Establish baseline logged" "$output_promo" "NEW STABLE BASELINE ESTABLISHED: rideos-backend-api-00009-4gt"
+assert_eq "Baseline file exists" "true" "$([[ -f "$PERSIST_BASELINE" ]] && echo true || echo false)"
+
+# 2. In a completely separate, clean subshell/process invocation, load the baseline
+set +e
+output_fresh=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" GLOBAL_MUTATIONS_LOG="$GLOBAL_MUTATIONS_LOG" \
+  BASELINE_FILE="$PERSIST_BASELINE" \
+  "$SCRIPT_UNDER_TEST" status 2>&1)
+exit_code_fresh=$?
+set -e
+
+assert_eq "Fresh process status check exits 0" "0" "$exit_code_fresh"
+assert_contains "Fresh process loaded baseline" "$output_fresh" "Loaded verified stable production baseline: rideos-backend-api-00009-4gt"
+assert_contains "Fresh process PROD_REV is baseline" "$output_fresh" "Active Production Baseline: PROD_REV=rideos-backend-api-00009-4gt"
+
+# ------------------------------------------------------------------------------
 # Test 25: Master Invariant: No automatic 00004-xcj=100 rollback across entire suite (Requirement 11)
 # ------------------------------------------------------------------------------
 echo "Test 25: Master Invariant: Global assertion across all test runs (Requirement 11)"
