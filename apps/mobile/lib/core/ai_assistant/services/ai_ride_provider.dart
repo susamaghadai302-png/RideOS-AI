@@ -265,7 +265,7 @@ class CloudBackendAIRideProvider implements AIRideProvider {
 
       final res = await gateway.processQuery(req);
       if (res.isOfflineFallback) {
-        return _localFallback.processQuery(textQuery: textQuery, context: context);
+        return await _localFallback.processQuery(textQuery: textQuery, context: context);
       }
 
       return AssistantResponse(
@@ -277,7 +277,7 @@ class CloudBackendAIRideProvider implements AIRideProvider {
         isOfflineAi: false,
       );
     } catch (_) {
-      return _localFallback.processQuery(textQuery: textQuery, context: context);
+      return await _localFallback.processQuery(textQuery: textQuery, context: context);
     }
   }
 
