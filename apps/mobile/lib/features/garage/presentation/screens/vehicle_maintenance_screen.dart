@@ -598,7 +598,7 @@ class _VehicleMaintenanceScreenState
         ? '${selectedTask.title.toUpperCase()} STATUS'
         : 'MAINTENANCE ASSESSMENT';
     final explanation = selectedTask != null
-        ? '${selectedTask.statusDetail}. ${selectedTask.explanation}'
+        ? '${selectedTask.statusDetail}. Predictive assessment synchronized with odometer.'
         : 'Telemetry monitoring active. Keep odometer updated to receive dynamic component wear estimates.';
 
     return InkWell(
