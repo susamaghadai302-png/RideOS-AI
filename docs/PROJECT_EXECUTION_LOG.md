@@ -775,6 +775,80 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
    - `rideos-backend-api-00009-4gt`: **1%**
    - Total traffic: **100%**
 
+---
+
+## 9. Task 3.2.1 Final Deployment Safety Code Review & Hardening Verification
+
+- **Execution Date**: November 15, 2026
+- **Feature Branch**: `feat/cloudrun-direct-vpc-static-egress`
+- **Lead Verification**: Senior Cloud Systems & Release Reliability Engineer
+- **Scope**: Rigorous resolution of all deployment safety code-review findings in [docker/cloud-run-deploy.sh](file:///Users/hitanshughadai/RideOS-AI/docker/cloud-run-deploy.sh) and expanded test harness in [scripts/test-cloud-run-deploy.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-cloud-run-deploy.sh). Zero live mutations, zero container builds, strict 99/1 traffic preservation.
+
+### 9.1 Addressed Code Review Findings & Hardening Implemented
+1. **Fail-Closed Pre-Deployment Inspection**:
+   - Eliminated the fail-open trap where failed `gcloud run services describe` commands swallowed stderr (`2>/dev/null`) and defaulted to an empty object `{}` (`exists: false`), risking unintended service initialization on permission, network, or authentication failures.
+   - Explicitly captures command stdout, stderr, and exit code.
+   - Distinguishes verified `NOT_FOUND` errors (e.g. `Cannot find service`, `not found`) from authentication (`PERMISSION_DENIED`, `unauthorized`), network (`timed out`, `connection error`), and unverified errors. Any non-zero exit code with uncertainty aborts with exit code 1.
+   - Implemented strict Node.js JSON parsing: malformed JSON, empty outputs, or missing `status.traffic` arrays immediately trigger `CRITICAL SAFETY GATE` failure with exit code 1.
+2. **Verified Post-Deployment Rollback**:
+   - Replaced unverified restoration (`update-traffic || true`) with an active, verified rollback controller.
+   - On detected traffic drift after deployment, executes `gcloud run services update-traffic --to-revisions` using captured pre-deployment allocations.
+   - Immediately queries Cloud Run `run services describe` to read back actual live allocations.
+   - Verifies each pre-deployment revision percentage matches and total traffic equals exactly 100%.
+   - If the restoration command fails, describe command fails, or read-back allocations mismatch, immediately reports `CRITICAL SAFETY ALERT: CRITICAL_TRAFFIC_RESTORATION_UNVERIFIED` and exits with code 1.
+   - Reports restoration success only when verified by read-back evidence.
+3. **Strict Candidate Readiness Verification**:
+   - Mandates that the dedicated candidate tagged URL exists in `status.traffic` following deployment (`--tag=candidate`).
+   - Verifies that candidate tag maps to `status.latestCreatedRevisionName` and has `percent == 0`.
+   - Replaced fragile substring checking with strict Node.js JSON payload validation probing `${CANDIDATE_URL}/api/v1/health/readiness`:
+     - HTTP Status: `200`
+     - Content-Type: `application/json`
+     - Body: `status == "READY"` or `"healthy"`, `ready === true`, and `dependencies.mongodb.status === "healthy"`.
+   - Missing candidate URL, missing tag, or unready probe strictly aborts deployment with exit code 1.
+   - Prevents false-positive summary logs; never prints `READY` when probe is skipped or failed.
+4. **Comprehensive Read-Only `--audit-only` Mode**:
+   - Expanded `--audit-only` to cover the entire deployment boundary with zero mutations:
+     - Secret Manager audit (verifies all required secrets exist, have enabled versions, and valid payloads).
+     - Artifact Registry repository audit (verifies repository exists and is accessible; never mutates).
+     - Cloud Run service & traffic audit (verifies service existence, parses live allocations, verifies 100% total).
+   - Bypasses any `gcloud config set project` mutations during audit.
+   - Fails immediately with exit code 1 if any individual check fails.
+
+### 9.2 Automated Test Coverage Verification
+Both independent test suites were executed with 100% pass rates:
+1. **Deployment Safety Suite ([scripts/test-cloud-run-deploy.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-cloud-run-deploy.sh))**:
+   - **54 passed, 0 failed** across 16 scenarios:
+     - Test 1: Existing 99/1 allocation preserved in deployment plan (5 assertions)
+     - Test 2: No hardcoded 100/0 traffic reset in manifest or scripts (3 assertions)
+     - Test 3: Dry-run performs zero cloud mutations (3 assertions)
+     - Test 4: Missing confirmation blocks deployment even with `--skip-build` (3 assertions)
+     - Test 5: Deployment uses verified no-traffic mechanism and validates candidate health (5 assertions)
+     - Test 6: Runtime configuration and Direct VPC egress preserved (4 assertions)
+     - Test 7: Post-deployment traffic mismatch is detected and verified restoration attempted (4 assertions)
+     - Test 8: Unsafe deployment with inconsistent pre-deployment traffic is rejected (3 assertions)
+     - Test 9: Failed deployment does not silently promote a revision (2 assertions)
+     - Test 10: Fail-closed pre-deployment inspection rejects describe command failure / permissions error (3 assertions)
+     - Test 11: Fail-closed pre-deployment inspection rejects malformed JSON (3 assertions)
+     - Test 12: Audit-only mode performs read-only checks with zero mutations (6 assertions)
+     - Test 13: Audit-only mode fails when Artifact Registry repository does not exist (3 assertions)
+     - Test 14: Post-deployment restoration verification failure reports `CRITICAL_TRAFFIC_RESTORATION_UNVERIFIED` (2 assertions)
+     - Test 15: Post-deployment missing candidate URL fails deployment (2 assertions)
+     - Test 16: Failed candidate readiness probe fails deployment and never prints `READY` (3 assertions)
+2. **Canary Rollout Controller Suite ([scripts/test-staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-staged-canary-rollout.sh))**:
+   - **59 passed, 0 failed** across 21 scenarios.
+3. **Total Automated Assertions**: **113 passed, 0 failed** (100% passing).
+
+### 9.3 Live Production State Verification (Read-Only)
+- Verified live GCP environment using `./docker/cloud-run-deploy.sh --audit-only` and `./docker/cloud-run-deploy.sh --dry-run`:
+  - Secret Manager: All required secrets enabled and valid.
+  - Artifact Registry: `rideos-repo` repository verified in `us-central1`.
+  - Cloud Run Service: `rideos-backend-api` live traffic allocations:
+    - `rideos-backend-api-00004-xcj`: **99%**
+    - `rideos-backend-api-00009-4gt`: **1%** (Tag: `candidate`)
+    - Total Traffic: **100%**
+  - Cloud Mutations: **0** (strictly non-mutating execution).
+- Task 3.2.1 is fully completed and verified. Ready for commit and push.
+
 
 
 

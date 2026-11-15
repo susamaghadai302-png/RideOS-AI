@@ -82,11 +82,11 @@ echo "=================================================================="
 # 1. Verify gcloud authenticated account and project
 CURRENT_PROJECT=$($GCLOUD_CMD config get-value project 2>/dev/null || echo "")
 if [[ -n "${CURRENT_PROJECT}" && "${CURRENT_PROJECT}" != "${PROJECT_ID}" ]]; then
-  if [[ "${CONFIRMED}" == "true" ]]; then
+  if [[ "${CONFIRMED}" == "true" && "${AUDIT_ONLY}" != "true" ]]; then
     echo "Setting active gcloud project to ${PROJECT_ID}..."
     $GCLOUD_CMD config set project "${PROJECT_ID}"
   else
-    echo "[PLAN] Would set active gcloud project to ${PROJECT_ID} (currently ${CURRENT_PROJECT})."
+    echo "[PLAN/AUDIT] Active gcloud project is ${CURRENT_PROJECT} (target is ${PROJECT_ID})."
   fi
 fi
 
@@ -172,47 +172,115 @@ fi
 
 echo "✅ All required production secrets validated in Secret Manager."
 
-if [[ "${AUDIT_ONLY}" == "true" ]]; then
-  echo "✅ Secrets audit completed successfully. Exiting due to --audit-only flag."
-  exit 0
+# 3. Artifact Registry Repository Audit
+echo "Auditing Artifact Registry repository '${REPO_NAME}' in ${REGION}..."
+REPO_EXISTS=false
+if $GCLOUD_CMD artifacts repositories describe "${REPO_NAME}" --location="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+  REPO_EXISTS=true
+  echo "✅ Artifact Registry repository '${REPO_NAME}' exists and is accessible."
+else
+  if [[ "${AUDIT_ONLY}" == "true" ]]; then
+    echo "❌ CRITICAL SAFETY GATE: Artifact Registry repository '${REPO_NAME}' not found in ${REGION}."
+    exit 1
+  elif [[ "${CONFIRMED}" != "true" ]]; then
+    echo "[PLAN] Artifact Registry repository '${REPO_NAME}' not found; would be created during deployment."
+  else
+    echo "Creating Artifact Registry repository '${REPO_NAME}'..."
+    $GCLOUD_CMD artifacts repositories create "${REPO_NAME}" \
+      --repository-format=docker \
+      --location="${REGION}" \
+      --description="RideOS AI Production Container Registry" \
+      --project="${PROJECT_ID}"
+    REPO_EXISTS=true
+  fi
 fi
 
-# 3. Capture Pre-Deployment Live Traffic Configuration
+# 4. Capture Pre-Deployment Live Traffic Configuration (Fail-Closed)
 echo "Inspecting live Cloud Run traffic configuration for ${SERVICE_NAME}..."
-BEFORE_SERVICE_JSON=$($GCLOUD_CMD run services describe "${SERVICE_NAME}" \
+DESCRIBE_TMP=$(mktemp "${TMPDIR:-/tmp}/rideos_describe_XXXXXX")
+DESCRIBE_EXIT=0
+if $GCLOUD_CMD run services describe "${SERVICE_NAME}" \
   --region="${REGION}" \
   --project="${PROJECT_ID}" \
-  --format="json" 2>/dev/null || echo "{}")
+  --format="json" >"${DESCRIBE_TMP}.out" 2>"${DESCRIBE_TMP}.err"; then
+  DESCRIBE_EXIT=0
+else
+  DESCRIBE_EXIT=$?
+fi
 
-PARSED_BEFORE_TRAFFIC=$(node -e '
-  try {
-    const raw = process.argv[1];
-    if (!raw || raw.trim() === "{}" || raw.trim().length === 0) {
-      console.log(JSON.stringify({ exists: false, total: 0, allocations: [] }));
-      process.exit(0);
-    }
-    const data = JSON.parse(raw);
-    const traffic = (data.status && Array.isArray(data.status.traffic)) ? data.status.traffic : [];
-    let total = 0;
-    const allocations = [];
-    for (const t of traffic) {
-      const pct = parseInt(t.percent || 0, 10);
-      total += pct;
-      allocations.push({
-        revisionName: t.revisionName || "unknown",
-        percent: pct,
-        tag: t.tag || null,
-        url: t.url || null
-      });
-    }
-    console.log(JSON.stringify({ exists: true, total, allocations }));
-  } catch (e) {
-    console.log(JSON.stringify({ exists: false, error: e.message, total: 0, allocations: [] }));
-  }
-' "$BEFORE_SERVICE_JSON")
+BEFORE_SERVICE_JSON=$(cat "${DESCRIBE_TMP}.out" 2>/dev/null || echo "")
+BEFORE_DESCRIBE_ERR=$(cat "${DESCRIBE_TMP}.err" 2>/dev/null || echo "")
+rm -f "${DESCRIBE_TMP}.out" "${DESCRIBE_TMP}.err" "${DESCRIBE_TMP}" 2>/dev/null || true
 
-SERVICE_EXISTS=$(node -e 'console.log(JSON.parse(process.argv[1]).exists)' "$PARSED_BEFORE_TRAFFIC")
-BEFORE_TOTAL_PCT=$(node -e 'console.log(JSON.parse(process.argv[1]).total)' "$PARSED_BEFORE_TRAFFIC")
+SERVICE_EXISTS=false
+PARSED_BEFORE_TRAFFIC=""
+
+if [[ "$DESCRIBE_EXIT" -ne 0 ]]; then
+  ERR_LOWER=$(echo "$BEFORE_DESCRIBE_ERR" | tr '[:upper:]' '[:lower:]')
+  if [[ "$ERR_LOWER" == *"permission"* || "$ERR_LOWER" == *"unauthorized"* || "$ERR_LOWER" == *"reauthentication"* || "$ERR_LOWER" == *"timed out"* || "$ERR_LOWER" == *"timeout"* || "$ERR_LOWER" == *"connection"* || "$ERR_LOWER" == *"failed to connect"* ]]; then
+    echo "❌ CRITICAL SAFETY GATE: Cloud Run service describe failed due to authentication, network, or permission error."
+    echo "Exit code: ${DESCRIBE_EXIT}"
+    echo "Error output: ${BEFORE_DESCRIBE_ERR}"
+    exit 1
+  elif [[ "$ERR_LOWER" == *"cannot find service"* || "$ERR_LOWER" == *"not found"* || "$ERR_LOWER" == *"notfound"* ]]; then
+    echo "ℹ️  Service ${SERVICE_NAME} not found. Verified non-existent service."
+    SERVICE_EXISTS=false
+    PARSED_BEFORE_TRAFFIC='{"exists":false,"total":0,"allocations":[]}'
+  else
+    echo "❌ CRITICAL SAFETY GATE: Cloud Run service describe failed with unverified error (Exit code: ${DESCRIBE_EXIT})."
+    echo "Error output: ${BEFORE_DESCRIBE_ERR}"
+    echo "Pre-deployment inspection must fail closed on any uncertainty."
+    exit 1
+  fi
+else
+  if [[ -z "${BEFORE_SERVICE_JSON//[[:space:]]/}" ]]; then
+    echo "❌ CRITICAL SAFETY GATE: Cloud Run describe returned empty JSON output."
+    exit 1
+  fi
+
+  PARSED_BEFORE_TRAFFIC=$(node -e '
+    try {
+      const raw = process.argv[1];
+      const data = JSON.parse(raw);
+      if (!data || typeof data !== "object") {
+        console.log(JSON.stringify({ error: "Invalid JSON object structure" }));
+        process.exit(1);
+      }
+      if (!data.status || !Array.isArray(data.status.traffic)) {
+        console.log(JSON.stringify({ error: "Missing status.traffic array in service JSON" }));
+        process.exit(1);
+      }
+      const traffic = data.status.traffic;
+      let total = 0;
+      const allocations = [];
+      for (const t of traffic) {
+        const pct = parseInt(t.percent || 0, 10);
+        total += pct;
+        allocations.push({
+          revisionName: t.revisionName || "unknown",
+          percent: pct,
+          tag: t.tag || null,
+          url: t.url || null
+        });
+      }
+      console.log(JSON.stringify({ exists: true, total, allocations, latestRevision: data.status.latestCreatedRevisionName || null }));
+    } catch (e) {
+      console.log(JSON.stringify({ error: "JSON parse failure: " + e.message }));
+      process.exit(1);
+    }
+  ' "$BEFORE_SERVICE_JSON" 2>/dev/null || echo '{"error":"Node parser execution error"}')
+
+  PARSE_ERR=$(node -e 'try { const d = JSON.parse(process.argv[1]); console.log(d.error || ""); } catch(e) { console.log(e.message); }' "$PARSED_BEFORE_TRAFFIC")
+  if [[ -n "$PARSE_ERR" ]]; then
+    echo "❌ CRITICAL SAFETY GATE: Malformed Cloud Run service JSON detected: ${PARSE_ERR}"
+    echo "Pre-deployment inspection must fail closed on malformed service configuration."
+    exit 1
+  fi
+
+  SERVICE_EXISTS=true
+fi
+
+BEFORE_TOTAL_PCT=$(node -e 'console.log(JSON.parse(process.argv[1]).total || 0)' "$PARSED_BEFORE_TRAFFIC")
 
 if [[ "$SERVICE_EXISTS" == "true" ]]; then
   echo "Current Live Traffic Allocations:"
@@ -229,11 +297,27 @@ if [[ "$SERVICE_EXISTS" == "true" ]]; then
     echo "Refusing to proceed with deployment on an inconsistent traffic state."
     exit 1
   fi
-else
-  echo "ℹ️  Service ${SERVICE_NAME} not found. This deployment will initialize a new service."
 fi
 
-# 4. Safety Confirmation Gate
+# Audit-Only Completion Gate
+if [[ "${AUDIT_ONLY}" == "true" ]]; then
+  echo ""
+  echo "=================================================================="
+  echo "🛡️  AUDIT-ONLY COMPLETE: All production configurations verified"
+  echo "=================================================================="
+  echo "1. Secret Manager:     PASSED (all required production secrets present & valid)"
+  echo "2. Artifact Registry:  PASSED (repository ${REPO_NAME} verified in ${REGION})"
+  if [[ "$SERVICE_EXISTS" == "true" ]]; then
+    echo "3. Cloud Run Service:  PASSED (${SERVICE_NAME} verified, total traffic = ${BEFORE_TOTAL_PCT}%)"
+  else
+    echo "3. Cloud Run Service:  PASSED (${SERVICE_NAME} verified non-existent)"
+  fi
+  echo "4. Cloud Mutations:    ZERO (strictly read-only audit)"
+  echo "=================================================================="
+  exit 0
+fi
+
+# 5. Safety Confirmation Gate
 if [[ "${CONFIRMED}" != "true" ]]; then
   echo ""
   echo "=================================================================="
@@ -257,15 +341,17 @@ if [[ "${CONFIRMED}" != "true" ]]; then
   exit 0
 fi
 
-# 5. Build and Push Container using Google Cloud Build (only when --confirm is present)
-echo "Ensuring Artifact Registry repository '${REPO_NAME}' exists..."
-if ! $GCLOUD_CMD artifacts repositories describe "${REPO_NAME}" --location="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
-  echo "Creating Artifact Registry repository '${REPO_NAME}'..."
-  $GCLOUD_CMD artifacts repositories create "${REPO_NAME}" \
-    --repository-format=docker \
-    --location="${REGION}" \
-    --description="RideOS AI Production Container Registry" \
-    --project="${PROJECT_ID}"
+# 6. Build and Push Container using Google Cloud Build (only when --confirm is present)
+if [[ "$REPO_EXISTS" != "true" ]]; then
+  echo "Ensuring Artifact Registry repository '${REPO_NAME}' exists..."
+  if ! $GCLOUD_CMD artifacts repositories describe "${REPO_NAME}" --location="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+    echo "Creating Artifact Registry repository '${REPO_NAME}'..."
+    $GCLOUD_CMD artifacts repositories create "${REPO_NAME}" \
+      --repository-format=docker \
+      --location="${REGION}" \
+      --description="RideOS AI Production Container Registry" \
+      --project="${PROJECT_ID}"
+  fi
 fi
 
 if [[ "${SKIP_BUILD}" == "true" ]]; then
@@ -283,7 +369,7 @@ else
     --project="${PROJECT_ID}"
 fi
 
-# 6. Deploy Candidate Revision using Documented No-Traffic Semantics
+# 7. Deploy Candidate Revision using Documented No-Traffic Semantics
 # Uses official Cloud Run --no-traffic and --tag=candidate to guarantee zero unexpected traffic mutations
 echo "Deploying candidate revision to Cloud Run with --no-traffic --tag=candidate..."
 $GCLOUD_CMD run deploy "${SERVICE_NAME}" \
@@ -301,17 +387,28 @@ $GCLOUD_CMD run services add-iam-policy-binding "${SERVICE_NAME}" \
   --role="roles/run.invoker" \
   --project="${PROJECT_ID}" >/dev/null 2>&1 || true
 
-# 7. Post-Deployment Traffic Preservation Verification
+# 8. Post-Deployment Traffic Preservation Verification
 echo "Verifying post-deployment traffic preservation (read-back check)..."
-AFTER_SERVICE_JSON=$($GCLOUD_CMD run services describe "${SERVICE_NAME}" \
+AFTER_DESCRIBE_TMP=$(mktemp "${TMPDIR:-/tmp}/rideos_after_XXXXXX")
+if $GCLOUD_CMD run services describe "${SERVICE_NAME}" \
   --region="${REGION}" \
   --project="${PROJECT_ID}" \
-  --format="json" 2>/dev/null || echo "{}")
+  --format="json" >"${AFTER_DESCRIBE_TMP}.out" 2>"${AFTER_DESCRIBE_TMP}.err"; then
+  AFTER_SERVICE_JSON=$(cat "${AFTER_DESCRIBE_TMP}.out")
+  rm -f "${AFTER_DESCRIBE_TMP}.out" "${AFTER_DESCRIBE_TMP}.err" "${AFTER_DESCRIBE_TMP}" 2>/dev/null || true
+else
+  AFTER_SERVICE_JSON=""
+  rm -f "${AFTER_DESCRIBE_TMP}.out" "${AFTER_DESCRIBE_TMP}.err" "${AFTER_DESCRIBE_TMP}" 2>/dev/null || true
+fi
 
 VERIFY_RESULT=$(node -e '
   try {
     const beforeData = JSON.parse(process.argv[1]);
     const afterRaw = process.argv[2];
+    if (!afterRaw || afterRaw.trim().length === 0) {
+      console.log("ERR: Failed to retrieve Cloud Run service after deployment");
+      process.exit(0);
+    }
     const afterData = JSON.parse(afterRaw);
 
     if (!beforeData.exists) {
@@ -345,10 +442,25 @@ VERIFY_RESULT=$(node -e '
       }
     }
 
-    // Verify candidate tag has 0% traffic
+    // Verify candidate tag exists, has 0% traffic, and has a valid URL
     const candidateTarget = afterTraffic.find(t => t.tag === "candidate");
-    if (candidateTarget && parseInt(candidateTarget.percent || 0, 10) !== 0) {
+    if (!candidateTarget) {
+      console.log("ERR: Candidate tag not found in post-deployment traffic array");
+      process.exit(0);
+    }
+    if (parseInt(candidateTarget.percent || 0, 10) !== 0) {
       console.log(`ERR: Candidate tag received ${candidateTarget.percent}%, expected 0%`);
+      process.exit(0);
+    }
+    if (!candidateTarget.url || candidateTarget.url.trim().length === 0) {
+      console.log("ERR: Candidate tagged URL is missing or empty");
+      process.exit(0);
+    }
+
+    // Verify candidate tag maps to latest created revision if reported
+    const latestCreated = (afterData.status && afterData.status.latestCreatedRevisionName) || "";
+    if (latestCreated && candidateTarget.revisionName !== latestCreated) {
+      console.log(`ERR: Candidate tag revision mismatch: expected ${latestCreated}, found ${candidateTarget.revisionName}`);
       process.exit(0);
     }
 
@@ -365,66 +477,174 @@ if [[ "$VERIFY_RESULT" != OK:* ]]; then
 
   # Build restoration argument
   RESTORE_ARG=$(node -e '
-    const before = JSON.parse(process.argv[1]);
-    const pairs = before.allocations.filter(a => a.percent > 0).map(a => `${a.revisionName}=${a.percent}`);
-    console.log(pairs.join(","));
+    try {
+      const before = JSON.parse(process.argv[1]);
+      const pairs = before.allocations.filter(a => a.percent > 0).map(a => `${a.revisionName}=${a.percent}`);
+      console.log(pairs.join(","));
+    } catch(e) {
+      console.log("");
+    }
   ' "$PARSED_BEFORE_TRAFFIC")
 
+  RESTORE_STATUS=0
   if [[ -n "$RESTORE_ARG" ]]; then
-    $GCLOUD_CMD run services update-traffic "${SERVICE_NAME}" \
+    if ! $GCLOUD_CMD run services update-traffic "${SERVICE_NAME}" \
       --to-revisions="${RESTORE_ARG}" \
       --region="${REGION}" \
       --project="${PROJECT_ID}" \
-      --quiet || true
+      --quiet; then
+      RESTORE_STATUS=1
+    fi
+  else
+    RESTORE_STATUS=1
   fi
 
-  echo "❌ DEPLOYMENT FAILED: CRITICAL_TRAFFIC_PRESERVATION_FAILED"
-  exit 1
-fi
+  # Verified Post-Deployment Rollback: read Cloud Run traffic again
+  echo "Verifying actual traffic allocation following emergency restoration..."
+  RESTORE_TMP=$(mktemp "${TMPDIR:-/tmp}/rideos_restore_XXXXXX")
+  if $GCLOUD_CMD run services describe "${SERVICE_NAME}" \
+    --region="${REGION}" \
+    --project="${PROJECT_ID}" \
+    --format="json" >"${RESTORE_TMP}.out" 2>"${RESTORE_TMP}.err"; then
+    RESTORE_JSON=$(cat "${RESTORE_TMP}.out")
+    rm -f "${RESTORE_TMP}.out" "${RESTORE_TMP}.err" "${RESTORE_TMP}" 2>/dev/null || true
+  else
+    RESTORE_JSON=""
+    rm -f "${RESTORE_TMP}.out" "${RESTORE_TMP}.err" "${RESTORE_TMP}" 2>/dev/null || true
+  fi
 
-echo "✅ Post-deployment traffic preservation verified: ${VERIFY_RESULT}"
+  RESTORE_VERIFY=$(node -e '
+    try {
+      const beforeData = JSON.parse(process.argv[1]);
+      const restoreRaw = process.argv[2];
+      if (!restoreRaw || restoreRaw.trim().length === 0) {
+        console.log("ERR: Empty describe response after restoration");
+        process.exit(0);
+      }
+      const restoreData = JSON.parse(restoreRaw);
+      const traffic = (restoreData.status && Array.isArray(restoreData.status.traffic)) ? restoreData.status.traffic : [];
+      let total = 0;
+      const trafficMap = {};
+      for (const t of traffic) {
+        const pct = parseInt(t.percent || 0, 10);
+        total += pct;
+        trafficMap[t.revisionName] = (trafficMap[t.revisionName] || 0) + pct;
+      }
+      if (total !== 100) {
+        console.log(`ERR: Restored total traffic is ${total}%, expected 100%`);
+        process.exit(0);
+      }
+      for (const b of beforeData.allocations) {
+        if (b.percent > 0) {
+          const actualPct = trafficMap[b.revisionName] || 0;
+          if (actualPct !== b.percent) {
+            console.log(`ERR: Revision ${b.revisionName} has ${actualPct}%, expected ${b.percent}%`);
+            process.exit(0);
+          }
+        }
+      }
+      console.log("OK: Restored allocations verified");
+    } catch(e) {
+      console.log("ERR: " + e.message);
+    }
+  ' "$PARSED_BEFORE_TRAFFIC" "$RESTORE_JSON")
 
-# 8. Retrieve URLs & Candidate Readiness Verification
-SERVICE_URL=$($GCLOUD_CMD run services describe "${SERVICE_NAME}" --region="${REGION}" --project="${PROJECT_ID}" --format='value(status.url)' 2>/dev/null || echo "")
-CANDIDATE_URL=$($GCLOUD_CMD run services describe "${SERVICE_NAME}" --region="${REGION}" --project="${PROJECT_ID}" --format='value(status.traffic.filter(tag=candidate).url)' 2>/dev/null || echo "")
-
-echo "Production Weighted URL: ${SERVICE_URL}"
-echo "Candidate Tagged URL:    ${CANDIDATE_URL}"
-
-# If candidate URL is found, probe candidate readiness
-if [[ -n "${CANDIDATE_URL}" ]]; then
-  echo "Verifying candidate readiness probe on ${CANDIDATE_URL}/api/v1/health/readiness..."
-  MAX_RETRIES=12
-  RETRY_DELAY=5
-  HEALTHY=false
-  LAST_STATUS="000"
-  LAST_BODY=""
-
-  for i in $(seq 1 $MAX_RETRIES); do
-    echo "Attempt $i of $MAX_RETRIES: Checking ${CANDIDATE_URL}/api/v1/health/readiness..."
-    HTTP_RESPONSE=$($CURL_CMD -s -w "\n%{http_code}\n%{content_type}" "${CANDIDATE_URL}/api/v1/health/readiness" || echo -e "\n000\nerror")
-    LAST_STATUS=$(echo "$HTTP_RESPONSE" | tail -n 2 | head -n 1)
-    LAST_BODY=$(echo "$HTTP_RESPONSE" | sed '$d' | sed '$d')
-
-    if [[ "$LAST_STATUS" == "200" ]] && [[ "$LAST_BODY" == *"\"READY\""* ]] && [[ "$LAST_BODY" == *"\"ready\":true"* ]]; then
-      echo "✅ Candidate readiness verified: HTTP 200 OK (MongoDB healthy, ready: true)"
-      HEALTHY=true
-      break
-    fi
-
-    echo "Waiting ${RETRY_DELAY}s (Current Status: ${LAST_STATUS})..."
-    $SLEEP_CMD $RETRY_DELAY
-  done
-
-  if [[ "$HEALTHY" != "true" ]]; then
-    echo "❌ WARNING: Candidate readiness probe failed on ${CANDIDATE_URL}."
-    echo "Last HTTP Status: ${LAST_STATUS}, Response: ${LAST_BODY}"
-    echo "Candidate revision was deployed with 0% traffic; production traffic remains safe and unimpacted."
+  if [[ "$RESTORE_STATUS" -eq 0 && "$RESTORE_VERIFY" == OK:* ]]; then
+    echo "✅ Emergency traffic restoration verified: Pre-deployment allocations successfully restored."
+    echo "❌ DEPLOYMENT FAILED: CRITICAL_TRAFFIC_PRESERVATION_FAILED"
+    exit 1
+  else
+    echo "❌ CRITICAL SAFETY ALERT: CRITICAL_TRAFFIC_RESTORATION_UNVERIFIED"
+    echo "Details: update-traffic exit=${RESTORE_STATUS}, verification=${RESTORE_VERIFY}"
+    echo "Manual operator intervention required immediately to inspect live Cloud Run traffic!"
     exit 1
   fi
 fi
 
-# 9. Custom Domain Mapping & DNS Status Audit
+echo "✅ Post-deployment traffic preservation verified: ${VERIFY_RESULT}"
+
+# 9. Strict Candidate Readiness Verification
+SERVICE_URL=$(node -e 'try { const d = JSON.parse(process.argv[1]); console.log(d.status?.url || ""); } catch(e) { console.log(""); }' "$AFTER_SERVICE_JSON")
+CANDIDATE_URL=$(node -e 'try { const d = JSON.parse(process.argv[1]); const t = (d.status?.traffic || []).find(x => x.tag === "candidate"); console.log(t?.url || ""); } catch(e) { console.log(""); }' "$AFTER_SERVICE_JSON")
+
+if [[ -z "${SERVICE_URL}" ]]; then
+  SERVICE_URL=$($GCLOUD_CMD run services describe "${SERVICE_NAME}" --region="${REGION}" --project="${PROJECT_ID}" --format='value(status.url)' 2>/dev/null || echo "")
+fi
+if [[ -z "${CANDIDATE_URL}" ]]; then
+  CANDIDATE_URL=$($GCLOUD_CMD run services describe "${SERVICE_NAME}" --region="${REGION}" --project="${PROJECT_ID}" --format='value(status.traffic.filter(tag=candidate).url)' 2>/dev/null || echo "")
+fi
+
+echo "Production Weighted URL: ${SERVICE_URL}"
+echo "Candidate Tagged URL:    ${CANDIDATE_URL}"
+
+# Require candidate URL to exist after deployment
+if [[ -z "${CANDIDATE_URL}" ]]; then
+  echo "❌ CRITICAL SAFETY FAILURE: Candidate URL not found on service ${SERVICE_NAME}."
+  echo "Candidate revision was expected with tag 'candidate' and dedicated URL."
+  exit 1
+fi
+
+echo "Verifying candidate readiness probe on ${CANDIDATE_URL}/api/v1/health/readiness..."
+MAX_RETRIES=12
+RETRY_DELAY=5
+HEALTHY=false
+LAST_STATUS="000"
+LAST_CT=""
+LAST_BODY=""
+
+for i in $(seq 1 $MAX_RETRIES); do
+  echo "Attempt $i of $MAX_RETRIES: Checking ${CANDIDATE_URL}/api/v1/health/readiness..."
+  HTTP_RESPONSE=$($CURL_CMD -s -w "\n%{http_code}\n%{content_type}" "${CANDIDATE_URL}/api/v1/health/readiness" || echo -e "\n000\nerror")
+  LAST_STATUS=$(echo "$HTTP_RESPONSE" | tail -n 2 | head -n 1)
+  LAST_CT=$(echo "$HTTP_RESPONSE" | tail -n 1)
+  LAST_BODY=$(echo "$HTTP_RESPONSE" | sed '$d' | sed '$d')
+
+  PROBE_CHECK=$(node -e '
+    try {
+      const code = process.argv[1];
+      const ct = (process.argv[2] || "").toLowerCase();
+      const body = process.argv[3] || "";
+      if (code !== "200") {
+        console.log("ERR: Non-200 HTTP code: " + code);
+        process.exit(0);
+      }
+      if (!ct.includes("json")) {
+        console.log("ERR: Content-Type is not JSON: " + ct);
+        process.exit(0);
+      }
+      const data = JSON.parse(body);
+      const statusOk = (data.status === "READY" || data.status === "healthy");
+      const readyOk = (data.ready === true);
+      const mongoOk = (data.dependencies && data.dependencies.mongodb && data.dependencies.mongodb.status === "healthy");
+      if (statusOk && readyOk && mongoOk) {
+        console.log("OK");
+      } else {
+        console.log("ERR: Invalid readiness payload fields: " + JSON.stringify({ status: data.status, ready: data.ready, mongodb: data.dependencies?.mongodb?.status }));
+      }
+    } catch(e) {
+      console.log("ERR: JSON parse error: " + e.message);
+    }
+  ' "$LAST_STATUS" "$LAST_CT" "$LAST_BODY")
+
+  if [[ "$PROBE_CHECK" == "OK" ]]; then
+    echo "✅ Candidate readiness verified: HTTP 200 OK (Content-Type: ${LAST_CT}, MongoDB healthy, ready: true)"
+    HEALTHY=true
+    break
+  fi
+
+  echo "Waiting ${RETRY_DELAY}s (Probe status: ${PROBE_CHECK})..."
+  $SLEEP_CMD $RETRY_DELAY
+done
+
+if [[ "$HEALTHY" != "true" ]]; then
+  echo "❌ CRITICAL SAFETY FAILURE: Candidate readiness probe failed on ${CANDIDATE_URL}."
+  echo "Last HTTP Status: ${LAST_STATUS}, Content-Type: ${LAST_CT}"
+  echo "Last Response Body: ${LAST_BODY}"
+  echo "Candidate revision failed readiness verification; deployment rejected."
+  exit 1
+fi
+
+# 10. Custom Domain Mapping & DNS Status Audit
 echo "Auditing custom domain mapping and DNS status for api.rideos.ai..."
 DOMAIN_MAPPED=false
 DNS_RESOLVED=false

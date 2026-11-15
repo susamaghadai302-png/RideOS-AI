@@ -249,6 +249,7 @@ case "$*" in
     cat <<'JSON' > "$STATE_FILE"
 {
   "status": {
+    "latestCreatedRevisionName": "rideos-backend-api-00010-new",
     "traffic": [
       { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
       { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt" },
@@ -309,13 +310,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 [[ -n "$out_file" ]] && echo '{"status":"READY","ready":true,"dependencies":{"mongodb":{"status":"healthy"}}}' > "$out_file"
-echo -e "{\"status\":\"READY\",\"ready\":true}\n200\napplication/json"
+echo -e '{"status":"READY","ready":true,"dependencies":{"mongodb":{"status":"healthy"}}}\n200\napplication/json'
 exit 0
 EOF
 chmod +x "$MOCK_BIN/curl"
 
 set +e
-output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="true" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
   "$DEPLOY_SCRIPT" --confirm --skip-build 2>&1)
 exit_code=$?
 set -e
@@ -325,6 +326,7 @@ assert_eq "Deployment exits with code 0" "0" "$exit_code"
 assert_contains "Deployment command uses --no-traffic" "$deploy_mutation" "--no-traffic"
 assert_contains "Deployment command uses --tag=candidate" "$deploy_mutation" "--tag=candidate"
 assert_contains "Post-deployment traffic preservation verified" "$output" "Traffic allocations perfectly preserved"
+assert_contains "Candidate Direct Health READY" "$output" "Candidate Direct Health:       READY"
 
 # ------------------------------------------------------------------------------
 # Test 6: Runtime configuration and Direct VPC egress preserved
@@ -337,9 +339,9 @@ assert_contains "Execution environment gen2 specified" "$yaml_content" "run.goog
 assert_contains "Dedicated runtime service account preserved" "$yaml_content" "serviceAccountName: rideos-backend-runner@rideos-ai.iam.gserviceaccount.com"
 
 # ------------------------------------------------------------------------------
-# Test 7: Post-deployment traffic mismatch is detected
+# Test 7: Post-deployment traffic mismatch is detected and verified restoration attempted
 # ------------------------------------------------------------------------------
-echo "Test 7: Post-deployment traffic mismatch is detected and rejected"
+echo "Test 7: Post-deployment traffic mismatch is detected and verified restoration attempted"
 MOCK_LOG_DIR="$TEST_TMP_DIR/test7"
 mkdir -p "$MOCK_LOG_DIR"
 touch "$MOCK_LOG_DIR/gcloud_mutations.log"
@@ -353,6 +355,7 @@ case "$*" in
     ;;
   *"services update-traffic"*)
     echo "RESTORE: $*" >> "$MOCK_LOG_DIR/gcloud_mutations.log"
+    touch "$MOCK_LOG_DIR/restored"
     exit 0
     ;;
   *"config get-value project"*)
@@ -378,8 +381,19 @@ case "$*" in
     exit 0
     ;;
   *"run services describe"*)
-    # First describe call: pre-deployment 99/1
-    if [[ ! -f "$MOCK_LOG_DIR/deployed" ]]; then
+    if [[ -f "$MOCK_LOG_DIR/restored" ]]; then
+      # Third call: after restoration, return pre-deployment 99/1 allocations
+      cat <<'JSON'
+{
+  "status": {
+    "traffic": [
+      { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
+      { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt", "tag": "candidate" }
+    ]
+  }
+}
+JSON
+    elif [[ ! -f "$MOCK_LOG_DIR/deployed" ]]; then
       touch "$MOCK_LOG_DIR/deployed"
       cat <<'JSON'
 {
@@ -392,7 +406,7 @@ case "$*" in
 }
 JSON
     else
-      # Post-deployment: simulate unwanted traffic drift (e.g. 100% on candidate)
+      # Second call (post-deployment): simulate unwanted traffic drift (e.g. 100% on candidate)
       cat <<'JSON'
 {
   "status": {
@@ -414,7 +428,7 @@ EOF
 chmod +x "$MOCK_BIN/gcloud"
 
 set +e
-output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="true" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
   "$DEPLOY_SCRIPT" --confirm --skip-build 2>&1)
 exit_code=$?
 set -e
@@ -423,6 +437,7 @@ mutations=$(cat "$MOCK_LOG_DIR/gcloud_mutations.log")
 assert_eq "Exits with error code 1 on traffic mismatch" "1" "$exit_code"
 assert_contains "Mismatch error detected" "$output" "Traffic drift on revision rideos-backend-api-00004-xcj"
 assert_contains "Restoration attempted" "$mutations" "RESTORE: run services update-traffic"
+assert_contains "Restoration verified" "$output" "Emergency traffic restoration verified: Pre-deployment allocations successfully restored"
 
 # ------------------------------------------------------------------------------
 # Test 8: Unsafe deployment with inconsistent pre-deployment traffic is rejected
@@ -550,6 +565,492 @@ set -e
 
 assert_eq "Exits with non-zero failure code" "1" "$exit_code"
 assert_contains "Deploy failure caught safely" "$output" "Simulated Cloud Run deploy network error"
+
+# ------------------------------------------------------------------------------
+# Test 10: Fail-closed pre-deployment inspection rejects describe command failure
+# ------------------------------------------------------------------------------
+echo "Test 10: Fail-closed pre-deployment inspection rejects describe command failure"
+MOCK_LOG_DIR="$TEST_TMP_DIR/test10"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+
+cat <<'EOF' > "$MOCK_BIN/gcloud"
+#!/usr/bin/env bash
+case "$*" in
+  *"run deploy"*|*"builds submit"*)
+    echo "UNSAFE_MUTATION: $*" >> "$MOCK_LOG_DIR/gcloud_mutations.log"
+    exit 0
+    ;;
+  *"config get-value project"*)
+    echo "rideos-ai"
+    exit 0
+    ;;
+  *"secrets describe"*)
+    exit 0
+    ;;
+  *"secrets versions list"*)
+    echo "1"
+    exit 0
+    ;;
+  *"secrets versions access"*)
+    echo "mongodb+srv://user:pass@cluster.mongodb.net/rideos"
+    exit 0
+    ;;
+  *"artifacts repositories describe"*)
+    exit 0
+    ;;
+  *"run services describe"*)
+    echo "ERROR: (gcloud.run.services.describe) PERMISSION_DENIED: The caller does not have permission" >&2
+    exit 1
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+EOF
+chmod +x "$MOCK_BIN/gcloud"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+  "$DEPLOY_SCRIPT" --confirm --skip-build 2>&1)
+exit_code=$?
+set -e
+
+mutation_count=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Exits with code 1 on describe failure" "1" "$exit_code"
+assert_eq "Zero deploy mutations performed on describe failure" "0" "$mutation_count"
+assert_contains "Permission error detected and blocked" "$output" "Cloud Run service describe failed due to authentication, network, or permission error"
+
+# ------------------------------------------------------------------------------
+# Test 11: Fail-closed pre-deployment inspection rejects malformed JSON
+# ------------------------------------------------------------------------------
+echo "Test 11: Fail-closed pre-deployment inspection rejects malformed JSON"
+MOCK_LOG_DIR="$TEST_TMP_DIR/test11"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+
+cat <<'EOF' > "$MOCK_BIN/gcloud"
+#!/usr/bin/env bash
+case "$*" in
+  *"run deploy"*|*"builds submit"*)
+    echo "UNSAFE_MUTATION: $*" >> "$MOCK_LOG_DIR/gcloud_mutations.log"
+    exit 0
+    ;;
+  *"config get-value project"*)
+    echo "rideos-ai"
+    exit 0
+    ;;
+  *"secrets describe"*)
+    exit 0
+    ;;
+  *"secrets versions list"*)
+    echo "1"
+    exit 0
+    ;;
+  *"secrets versions access"*)
+    echo "mongodb+srv://user:pass@cluster.mongodb.net/rideos"
+    exit 0
+    ;;
+  *"artifacts repositories describe"*)
+    exit 0
+    ;;
+  *"run services describe"*)
+    echo "{ malformed_json_without_closing_brackets: [ true, "
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+EOF
+chmod +x "$MOCK_BIN/gcloud"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+  "$DEPLOY_SCRIPT" --confirm --skip-build 2>&1)
+exit_code=$?
+set -e
+
+mutation_count=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Exits with code 1 on malformed JSON" "1" "$exit_code"
+assert_eq "Zero deploy mutations performed on malformed JSON" "0" "$mutation_count"
+assert_contains "Malformed JSON error detected" "$output" "Malformed Cloud Run service JSON detected"
+
+# ------------------------------------------------------------------------------
+# Test 12: Audit-only mode performs read-only checks with zero mutations
+# ------------------------------------------------------------------------------
+echo "Test 12: Audit-only mode performs read-only checks with zero mutations"
+MOCK_LOG_DIR="$TEST_TMP_DIR/test12"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+
+cat <<'EOF' > "$MOCK_BIN/gcloud"
+#!/usr/bin/env bash
+case "$*" in
+  *"run deploy"*|*"builds submit"*|*"services update-traffic"*|*"repositories create"*|*"config set project"*)
+    echo "MUTATION: $*" >> "$MOCK_LOG_DIR/gcloud_mutations.log"
+    exit 0
+    ;;
+  *"config get-value project"*)
+    echo "rideos-ai"
+    exit 0
+    ;;
+  *"secrets describe"*)
+    exit 0
+    ;;
+  *"secrets versions list"*)
+    echo "1"
+    exit 0
+    ;;
+  *"secrets versions access"*)
+    echo "mongodb+srv://user:pass@cluster.mongodb.net/rideos"
+    exit 0
+    ;;
+  *"artifacts repositories describe"*)
+    exit 0
+    ;;
+  *"run services describe"*)
+    cat <<'JSON'
+{
+  "status": {
+    "traffic": [
+      { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
+      { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt", "tag": "candidate" }
+    ]
+  }
+}
+JSON
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+EOF
+chmod +x "$MOCK_BIN/gcloud"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+  "$DEPLOY_SCRIPT" --audit-only 2>&1)
+exit_code=$?
+set -e
+
+mutation_count=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Audit-only exits with code 0" "0" "$exit_code"
+assert_eq "Zero mutations executed in audit-only" "0" "$mutation_count"
+assert_contains "Audit summary present" "$output" "AUDIT-ONLY COMPLETE: All production configurations verified"
+assert_contains "Secret Manager passed" "$output" "Secret Manager:     PASSED"
+assert_contains "Artifact Registry passed" "$output" "Artifact Registry:  PASSED"
+assert_contains "Cloud Run Service passed" "$output" "Cloud Run Service:  PASSED"
+
+# ------------------------------------------------------------------------------
+# Test 13: Audit-only mode fails when Artifact Registry repository does not exist
+# ------------------------------------------------------------------------------
+echo "Test 13: Audit-only mode fails when Artifact Registry repository does not exist"
+MOCK_LOG_DIR="$TEST_TMP_DIR/test13"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+
+cat <<'EOF' > "$MOCK_BIN/gcloud"
+#!/usr/bin/env bash
+case "$*" in
+  *"repositories create"*|*"run deploy"*|*"builds submit"*)
+    echo "UNSAFE_MUTATION: $*" >> "$MOCK_LOG_DIR/gcloud_mutations.log"
+    exit 0
+    ;;
+  *"config get-value project"*)
+    echo "rideos-ai"
+    exit 0
+    ;;
+  *"secrets describe"*)
+    exit 0
+    ;;
+  *"secrets versions list"*)
+    echo "1"
+    exit 0
+    ;;
+  *"secrets versions access"*)
+    echo "mongodb+srv://user:pass@cluster.mongodb.net/rideos"
+    exit 0
+    ;;
+  *"artifacts repositories describe"*)
+    exit 1
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+EOF
+chmod +x "$MOCK_BIN/gcloud"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+  "$DEPLOY_SCRIPT" --audit-only 2>&1)
+exit_code=$?
+set -e
+
+mutation_count=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Audit-only exits with code 1 on missing repository" "1" "$exit_code"
+assert_eq "Zero repository create mutations performed" "0" "$mutation_count"
+assert_contains "Artifact Registry failure reported" "$output" "Artifact Registry repository 'rideos-repo' not found in us-central1"
+
+# ------------------------------------------------------------------------------
+# Test 14: Post-deployment restoration verification failure reports CRITICAL_TRAFFIC_RESTORATION_UNVERIFIED
+# ------------------------------------------------------------------------------
+echo "Test 14: Post-deployment restoration verification failure reports CRITICAL_TRAFFIC_RESTORATION_UNVERIFIED"
+MOCK_LOG_DIR="$TEST_TMP_DIR/test14"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+
+cat <<'EOF' > "$MOCK_BIN/gcloud"
+#!/usr/bin/env bash
+case "$*" in
+  *"run deploy"*)
+    echo "DEPLOY" >> "$MOCK_LOG_DIR/gcloud_mutations.log"
+    exit 0
+    ;;
+  *"services update-traffic"*)
+    echo "RESTORE: $*" >> "$MOCK_LOG_DIR/gcloud_mutations.log"
+    touch "$MOCK_LOG_DIR/restored"
+    # Simulate update-traffic failing or completing with ambiguous state
+    exit 1
+    ;;
+  *"config get-value project"*)
+    echo "rideos-ai"
+    exit 0
+    ;;
+  *"secrets describe"*)
+    exit 0
+    ;;
+  *"secrets versions list"*)
+    echo "1"
+    exit 0
+    ;;
+  *"secrets versions access"*)
+    echo "mongodb+srv://user:pass@cluster.mongodb.net/rideos"
+    exit 0
+    ;;
+  *"artifacts repositories describe"*)
+    exit 0
+    ;;
+  *"artifacts docker images list"*)
+    echo "image_present"
+    exit 0
+    ;;
+  *"run services describe"*)
+    if [[ ! -f "$MOCK_LOG_DIR/deployed" ]]; then
+      touch "$MOCK_LOG_DIR/deployed"
+      cat <<'JSON'
+{
+  "status": {
+    "traffic": [
+      { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
+      { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt", "tag": "candidate" }
+    ]
+  }
+}
+JSON
+    else
+      # Post-deployment: drift state
+      cat <<'JSON'
+{
+  "status": {
+    "traffic": [
+      { "percent": 0, "revisionName": "rideos-backend-api-00004-xcj" },
+      { "percent": 100, "revisionName": "rideos-backend-api-00010-new", "tag": "candidate" }
+    ]
+  }
+}
+JSON
+    fi
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+EOF
+chmod +x "$MOCK_BIN/gcloud"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="true" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+  "$DEPLOY_SCRIPT" --confirm --skip-build 2>&1)
+exit_code=$?
+set -e
+
+assert_eq "Exits with code 1 on unverified restoration" "1" "$exit_code"
+assert_contains "Reports CRITICAL_TRAFFIC_RESTORATION_UNVERIFIED" "$output" "CRITICAL_TRAFFIC_RESTORATION_UNVERIFIED"
+
+# ------------------------------------------------------------------------------
+# Test 15: Post-deployment missing candidate URL fails deployment
+# ------------------------------------------------------------------------------
+echo "Test 15: Post-deployment missing candidate URL fails deployment"
+MOCK_LOG_DIR="$TEST_TMP_DIR/test15"
+mkdir -p "$MOCK_LOG_DIR"
+
+cat <<'EOF' > "$MOCK_BIN/gcloud"
+#!/usr/bin/env bash
+case "$*" in
+  *"run deploy"*)
+    exit 0
+    ;;
+  *"config get-value project"*)
+    echo "rideos-ai"
+    exit 0
+    ;;
+  *"secrets describe"*)
+    exit 0
+    ;;
+  *"secrets versions list"*)
+    echo "1"
+    exit 0
+    ;;
+  *"secrets versions access"*)
+    echo "mongodb+srv://user:pass@cluster.mongodb.net/rideos"
+    exit 0
+    ;;
+  *"artifacts repositories describe"*)
+    exit 0
+    ;;
+  *"artifacts docker images list"*)
+    echo "image_present"
+    exit 0
+    ;;
+  *"run services describe"*)
+    if [[ ! -f "$MOCK_LOG_DIR/deployed" ]]; then
+      touch "$MOCK_LOG_DIR/deployed"
+      cat <<'JSON'
+{
+  "status": {
+    "traffic": [
+      { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
+      { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt", "tag": "candidate" }
+    ]
+  }
+}
+JSON
+    else
+      # Post-deployment: candidate tag exists with 0% traffic, but empty url
+      cat <<'JSON'
+{
+  "status": {
+    "latestCreatedRevisionName": "rideos-backend-api-00010-new",
+    "traffic": [
+      { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
+      { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt" },
+      { "percent": 0, "revisionName": "rideos-backend-api-00010-new", "tag": "candidate", "url": "" }
+    ],
+    "url": "https://rideos-backend-api-aeoxwaaccq-uc.a.run.app"
+  }
+}
+JSON
+    fi
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+EOF
+chmod +x "$MOCK_BIN/gcloud"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="true" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+  "$DEPLOY_SCRIPT" --confirm --skip-build 2>&1)
+exit_code=$?
+set -e
+
+assert_eq "Exits with code 1 on missing candidate URL" "1" "$exit_code"
+assert_contains "Missing candidate URL error reported" "$output" "Candidate tagged URL is missing or empty"
+
+# ------------------------------------------------------------------------------
+# Test 16: Failed candidate readiness probe fails deployment and never prints READY
+# ------------------------------------------------------------------------------
+echo "Test 16: Failed candidate readiness probe fails deployment and never prints READY"
+MOCK_LOG_DIR="$TEST_TMP_DIR/test16"
+mkdir -p "$MOCK_LOG_DIR"
+
+cat <<'EOF' > "$MOCK_BIN/gcloud"
+#!/usr/bin/env bash
+case "$*" in
+  *"run deploy"*)
+    exit 0
+    ;;
+  *"config get-value project"*)
+    echo "rideos-ai"
+    exit 0
+    ;;
+  *"secrets describe"*)
+    exit 0
+    ;;
+  *"secrets versions list"*)
+    echo "1"
+    exit 0
+    ;;
+  *"secrets versions access"*)
+    echo "mongodb+srv://user:pass@cluster.mongodb.net/rideos"
+    exit 0
+    ;;
+  *"artifacts repositories describe"*)
+    exit 0
+    ;;
+  *"artifacts docker images list"*)
+    echo "image_present"
+    exit 0
+    ;;
+  *"run services describe"*)
+    if [[ ! -f "$MOCK_LOG_DIR/deployed" ]]; then
+      touch "$MOCK_LOG_DIR/deployed"
+      cat <<'JSON'
+{
+  "status": {
+    "traffic": [
+      { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
+      { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt", "tag": "candidate" }
+    ]
+  }
+}
+JSON
+    else
+      cat <<'JSON'
+{
+  "status": {
+    "latestCreatedRevisionName": "rideos-backend-api-00010-new",
+    "traffic": [
+      { "percent": 99, "revisionName": "rideos-backend-api-00004-xcj" },
+      { "percent": 1, "revisionName": "rideos-backend-api-00009-4gt" },
+      { "percent": 0, "revisionName": "rideos-backend-api-00010-new", "tag": "candidate", "url": "https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app" }
+    ],
+    "url": "https://rideos-backend-api-aeoxwaaccq-uc.a.run.app"
+  }
+}
+JSON
+    fi
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+EOF
+chmod +x "$MOCK_BIN/gcloud"
+
+cat <<'EOF' > "$MOCK_BIN/curl"
+#!/usr/bin/env bash
+echo -e '{"status":"unhealthy","ready":false,"dependencies":{"mongodb":{"status":"unhealthy"}}}\n500\napplication/json'
+exit 0
+EOF
+chmod +x "$MOCK_BIN/curl"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="true" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+  "$DEPLOY_SCRIPT" --confirm --skip-build 2>&1)
+exit_code=$?
+set -e
+
+assert_eq "Exits with code 1 on failed readiness probe" "1" "$exit_code"
+assert_contains "Readiness probe failure logged" "$output" "Candidate readiness probe failed"
+assert_not_contains "Does not print candidate READY" "$output" "Candidate Direct Health:       READY"
 
 echo ""
 echo "=================================================================="
