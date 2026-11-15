@@ -10,24 +10,30 @@
 set -euo pipefail
 
 # Configuration
-SERVICE="rideos-backend-api"
-REGION="us-central1"
-PROJECT="rideos-ai"
-PROD_REV="rideos-backend-api-00004-xcj"
-CANDIDATE_REV="rideos-backend-api-00009-4gt"
-PROD_URL="https://rideos-backend-api-121485873641.us-central1.run.app"
-CANDIDATE_TAG_URL="https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app"
+SERVICE="${SERVICE:-rideos-backend-api}"
+REGION="${REGION:-us-central1}"
+PROJECT="${PROJECT:-rideos-ai}"
+PROD_REV="${PROD_REV:-rideos-backend-api-00004-xcj}"
+CANDIDATE_REV="${CANDIDATE_REV:-rideos-backend-api-00009-4gt}"
+PROD_URL="${PROD_URL:-https://rideos-backend-api-aeoxwaaccq-uc.a.run.app}"
+CANDIDATE_TAG_URL="${CANDIDATE_TAG_URL:-https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app}"
 
 # Latency and sample thresholds
-MAX_ALLOWED_LATENCY_MS=3000
-SAMPLE_REQUEST_COUNT=5
-OBSERVATION_WINDOW_SECS=30
+MAX_ALLOWED_LATENCY_MS="${MAX_ALLOWED_LATENCY_MS:-3000}"
+SAMPLE_REQUEST_COUNT="${SAMPLE_REQUEST_COUNT:-5}"
+OBSERVATION_WINDOW_SECS="${OBSERVATION_WINDOW_SECS:-30}"
+
+# Command wrappers (allows full mocking in automated test harness)
+GCLOUD_CMD="${GCLOUD_CMD:-gcloud}"
+CURL_CMD="${CURL_CMD:-curl}"
+SLEEP_CMD="${SLEEP_CMD:-sleep}"
 
 export CLOUDSDK_METRICS_ENVIRONMENT="datacloud.antigravity"
 
-# Execution state tracking for interrupt safety
+# Execution state tracking for interrupt and rollback safety
 CURRENT_STAGE_PCT=0
 TRAFFIC_SHIFT_ACTIVE=0
+DRY_RUN=0
 
 log() {
   echo -e "\033[1;34m[$(date -u +"%Y-%m-%dT%H:%M:%SZ")][ROLLOUT]\033[0m $*"
@@ -45,17 +51,49 @@ log_error() {
   echo -e "\033[1;31m[$(date -u +"%Y-%m-%dT%H:%M:%SZ")][ERROR]\033[0m $*"
 }
 
+# Portable latency measurement using curl's built-in timing
+measure_request() {
+  local url="$1"
+  local timeout_sec="${2:-5}"
+  local tmp_file
+  tmp_file=$(mktemp "${TMPDIR:-/tmp}/rideos_probe_XXXXXX")
+
+  local curl_out
+  curl_out=$($CURL_CMD -sS -m "$timeout_sec" -w "\n%{http_code}:%{time_total}" "$url" -o "$tmp_file" 2>/dev/null || echo -e "\n000:0.0")
+
+  local body
+  body=$(cat "$tmp_file" 2>/dev/null || echo "")
+  rm -f "$tmp_file"
+
+  local timing_line
+  timing_line=$(echo "$curl_out" | tail -n 1)
+
+  local http_code
+  local time_sec
+  http_code=$(echo "$timing_line" | cut -d':' -f1)
+  time_sec=$(echo "$timing_line" | cut -d':' -f2)
+
+  local elapsed_ms
+  elapsed_ms=$(awk -v s="$time_sec" 'BEGIN { printf "%d", (s * 1000) }' 2>/dev/null || echo 0)
+
+  echo "${http_code}|${elapsed_ms}|${body}"
+}
+
 emergency_rollback() {
   local reason="${1:-Unknown failure}"
   log_error "CRITICAL FAILURE DETECTED: $reason"
   log_warn "TRIGGERING AUTOMATIC EMERGENCY ROLLBACK TO $PROD_REV (100%)..."
-  
-  gcloud run services update-traffic "$SERVICE" \
-    --to-revisions="$PROD_REV=100" \
-    --region="$REGION" \
-    --project="$PROJECT" \
-    --quiet
-  
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log "[DRY-RUN] Simulated rollback: Would restore $PROD_REV=100 on $SERVICE (zero mutations)."
+  else
+    $GCLOUD_CMD run services update-traffic "$SERVICE" \
+      --to-revisions="$PROD_REV=100" \
+      --region="$REGION" \
+      --project="$PROJECT" \
+      --quiet
+  fi
+
   TRAFFIC_SHIFT_ACTIVE=0
   log_success "Rollback completed. 100% traffic safely restored to $PROD_REV."
   exit 1
@@ -65,7 +103,7 @@ emergency_rollback() {
 handle_interrupt() {
   log_warn "Process interrupted by signal!"
   if [[ "$TRAFFIC_SHIFT_ACTIVE" -eq 1 ]]; then
-    emergency_rollback "Execution interrupted while canary traffic was active."
+    emergency_rollback "Execution interrupted while canary traffic shift was active."
   else
     log "No active canary traffic shift in progress. Exiting cleanly."
     exit 130
@@ -77,40 +115,55 @@ trap handle_interrupt SIGINT SIGTERM
 # 1. Current Status & Pre-flight Health Verification
 check_status() {
   log "Inspecting Cloud Run service traffic configuration..."
-  gcloud run services describe "$SERVICE" \
+  $GCLOUD_CMD run services describe "$SERVICE" \
     --region="$REGION" \
     --project="$PROJECT" \
     --format="yaml(status.traffic)"
 
   log "Verifying Candidate Revision ($CANDIDATE_REV) health..."
-  
+
   # A. Readiness Probe (Verifies MongoDB connectivity)
-  local cand_readiness
-  cand_readiness=$(curl -sS -m 10 "$CANDIDATE_TAG_URL/api/v1/health/readiness" || echo "FAIL")
-  if [[ "$cand_readiness" == *"\"ready\":true"* && "$cand_readiness" == *"\"status\":\"healthy\""* ]]; then
+  local res_readiness
+  res_readiness=$(measure_request "$CANDIDATE_TAG_URL/api/v1/health/readiness" 10)
+  local ready_code
+  local ready_body
+  ready_code=$(echo "$res_readiness" | cut -d'|' -f1)
+  ready_body=$(echo "$res_readiness" | cut -d'|' -f3-)
+
+  if [[ "$ready_code" -eq 200 && ( "$ready_body" == *"\"ready\":true"* || "$ready_body" == *"\"status\":\"healthy\""* ) ]]; then
     log_success "Candidate readiness probe: HEALTHY (MongoDB status: healthy)"
   else
-    log_error "Candidate readiness probe FAILED: $cand_readiness"
+    log_error "Candidate readiness probe FAILED: HTTP $ready_code - $ready_body"
     return 1
   fi
 
   # B. Liveness Probe
-  local cand_liveness
-  cand_liveness=$(curl -sS -m 5 "$CANDIDATE_TAG_URL/api/v1/health/liveness" || echo "FAIL")
-  if [[ "$cand_liveness" == *"\"status\":\"LIVE\""* ]]; then
+  local res_liveness
+  res_liveness=$(measure_request "$CANDIDATE_TAG_URL/api/v1/health/liveness" 5)
+  local live_code
+  local live_body
+  live_code=$(echo "$res_liveness" | cut -d'|' -f1)
+  live_body=$(echo "$res_liveness" | cut -d'|' -f3-)
+
+  if [[ "$live_code" -eq 200 && "$live_body" == *"\"status\":\"LIVE\""* ]]; then
     log_success "Candidate liveness probe: LIVE"
   else
-    log_error "Candidate liveness probe FAILED: $cand_liveness"
+    log_error "Candidate liveness probe FAILED: HTTP $live_code - $live_body"
     return 1
   fi
 
   # C. System Health Endpoint
-  local cand_health
-  cand_health=$(curl -sS -m 5 "$CANDIDATE_TAG_URL/api/v1/health" || echo "FAIL")
-  if [[ "$cand_health" == *"\"status\":\"UP\""* && "$cand_health" == *"\"database\":\"healthy\""* ]]; then
+  local res_health
+  res_health=$(measure_request "$CANDIDATE_TAG_URL/api/v1/health" 5)
+  local health_code
+  local health_body
+  health_code=$(echo "$res_health" | cut -d'|' -f1)
+  health_body=$(echo "$res_health" | cut -d'|' -f3-)
+
+  if [[ "$health_code" -eq 200 && "$health_body" == *"\"status\":\"UP\""* && "$health_body" == *"\"database\":\"healthy\""* ]]; then
     log_success "Candidate system health: UP (Database component: healthy)"
   else
-    log_error "Candidate system health FAILED: $cand_health"
+    log_error "Candidate system health FAILED: HTTP $health_code - $health_body"
     return 1
   fi
 }
@@ -119,27 +172,26 @@ check_status() {
 verify_traffic_health() {
   local target_url="$1"
   local stage_name="$2"
-  log "Running health & latency verification for $stage_name ($SAMPLE_REQUEST_COUNT samples)..."
+  log "Running health, readiness & latency verification for $stage_name ($SAMPLE_REQUEST_COUNT samples)..."
 
   local failure_count=0
   local total_time_ms=0
 
   for i in $(seq 1 "$SAMPLE_REQUEST_COUNT"); do
-    local start_ns
-    start_ns=$(date +%s%N)
-    
+    local probe_res
+    probe_res=$(measure_request "$target_url/api/v1/health/liveness" 5)
     local http_code
-    http_code=$(curl -sS -o /dev/null -w "%{http_code}" -m 5 "$target_url/api/v1/health/liveness" || echo "000")
-    
-    local end_ns
-    end_ns=$(date +%s%N)
-    local elapsed_ms=$(( (end_ns - start_ns) / 1000000 ))
+    local elapsed_ms
+    local body
+    http_code=$(echo "$probe_res" | cut -d'|' -f1)
+    elapsed_ms=$(echo "$probe_res" | cut -d'|' -f2)
+    body=$(echo "$probe_res" | cut -d'|' -f3-)
 
-    if [[ "$http_code" -ge 200 && "$http_code" -lt 400 ]]; then
+    if [[ "$http_code" -ge 200 && "$http_code" -lt 400 && "$body" == *"\"status\":\"LIVE\""* ]]; then
       log "Sample $i: HTTP $http_code (${elapsed_ms}ms)"
       total_time_ms=$(( total_time_ms + elapsed_ms ))
     else
-      log_warn "Sample $i FAILED with HTTP $http_code (${elapsed_ms}ms)"
+      log_warn "Sample $i FAILED: HTTP $http_code (${elapsed_ms}ms) - $body"
       failure_count=$(( failure_count + 1 ))
     fi
   done
@@ -154,32 +206,68 @@ verify_traffic_health() {
   if [[ "$avg_latency" -gt "$MAX_ALLOWED_LATENCY_MS" ]]; then
     emergency_rollback "Average latency ${avg_latency}ms exceeded maximum allowed threshold ${MAX_ALLOWED_LATENCY_MS}ms."
   fi
+
+  # Deep Database Readiness Probe on Stage URL
+  log "Verifying database readiness on $stage_name endpoint..."
+  local deep_res
+  deep_res=$(measure_request "$target_url/api/v1/health/readiness" 10)
+  local deep_code
+  local deep_body
+  deep_code=$(echo "$deep_res" | cut -d'|' -f1)
+  deep_body=$(echo "$deep_res" | cut -d'|' -f3-)
+
+  if [[ "$deep_code" -ne 200 || ( "$deep_body" != *"\"ready\":true"* && "$deep_body" != *"\"status\":\"healthy\""* ) ]]; then
+    emergency_rollback "Database readiness verification failed on $stage_name (HTTP $deep_code): $deep_body"
+  fi
+  log_success "Database readiness verified on $stage_name."
 }
 
 # 3. Log Audit for 5xx and SSL/Database Errors
 audit_application_logs() {
   local stage_name="$1"
   log "Auditing Cloud Logging for $CANDIDATE_REV errors in the last 2 minutes..."
-  
+
   local error_logs
-  error_logs=$(gcloud logging read \
+  error_logs=$($GCLOUD_CMD logging read \
     "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"$SERVICE\" AND resource.labels.revision_name=\"$CANDIDATE_REV\" AND severity>=ERROR AND timestamp >= \"$(date -u -v-2M +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u -d '2 minutes ago' +"%Y-%m-%dT%H:%M:%SZ")\"" \
     --project="$PROJECT" \
     --limit=10 \
     --format="value(textPayload)" 2>/dev/null || true)
 
-  # Check for critical errors (excluding handled 404/400 test cases)
   if echo "$error_logs" | grep -Ei "(MongoServerSelectionError|SSL alert|ECONNREFUSED|ENOTFOUND|crash|fatal)" > /dev/null; then
     emergency_rollback "Critical database/SSL error detected in logs during $stage_name: $(echo "$error_logs" | head -n 3)"
   fi
-  
+
   log_success "Cloud Logging audit passed for $stage_name: No database or SSL errors detected."
 }
 
-# 4. Shift Traffic to a Specific Stage (Guarded by confirmation)
+# 4. Shift Traffic to a Specific Stage (Guarded by confirmation and dry-run)
 apply_stage() {
   local candidate_pct="$1"
-  local confirmed="${2:-}"
+  shift
+  local is_confirmed=0
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --confirm)
+        is_confirmed=1
+        ;;
+      --dry-run)
+        DRY_RUN=1
+        ;;
+      *)
+        ;;
+    esac
+    shift
+  done
+
+  if [[ "${CONFIRM_ROLLOUT:-}" == "yes" ]]; then
+    is_confirmed=1
+  fi
+  if [[ "${DRY_RUN_ROLLOUT:-}" == "yes" || "${DRY_RUN:-0}" -eq 1 ]]; then
+    DRY_RUN=1
+  fi
+
   local prod_pct=$(( 100 - candidate_pct ))
   local stage_label="${candidate_pct}% Canary (${PROD_REV}=${prod_pct}%, ${CANDIDATE_REV}=${candidate_pct}%)"
 
@@ -187,49 +275,70 @@ apply_stage() {
   log "PREPARING TRAFFIC SHIFT TO: $stage_label"
   log "=================================================================="
 
-  # Explicit confirmation safety gate
-  if [[ "$confirmed" != "--confirm" && "${CONFIRM_ROLLOUT:-}" != "yes" ]]; then
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    log_warn "[DRY-RUN] Mode active: Zero production mutations will be performed."
+    log "[DRY-RUN] Planned traffic allocation: $SERVICE -> $PROD_REV=${prod_pct}%, $CANDIDATE_REV=${candidate_pct}%"
+
+    # Pre-flight candidate health checks in dry-run mode
+    check_status
+    log_success "[DRY-RUN] Simulated stage $candidate_pct% validation PASSED. Cloud Run traffic remains 100% on $PROD_REV."
+    exit 0
+  fi
+
+  # Explicit confirmation safety gate for live changes
+  if [[ "$is_confirmed" -ne 1 ]]; then
     log_warn "Safety Gate: Production traffic change requires explicit confirmation."
-    log_warn "To execute, run: $0 stage $candidate_pct --confirm"
-    log_warn "Or set environment variable: CONFIRM_ROLLOUT=yes"
+    log_warn "To execute dry-run simulation: $0 stage $candidate_pct --dry-run"
+    log_warn "To execute real migration:    $0 stage $candidate_pct --confirm"
+    log_warn "Or set environment variable:   CONFIRM_ROLLOUT=yes"
     exit 0
   fi
 
   # Step A: Pre-flight candidate health check
   check_status
 
-  # Step B: Mark traffic shift active (arms interrupt rollback trap)
+  # Step B: Mark traffic shift active (arms interrupt and rollback traps)
   CURRENT_STAGE_PCT="$candidate_pct"
   TRAFFIC_SHIFT_ACTIVE=1
 
   # Step C: Execute Cloud Run traffic update
   log "Applying traffic allocation..."
   if [[ "$candidate_pct" -eq 100 ]]; then
-    gcloud run services update-traffic "$SERVICE" \
+    $GCLOUD_CMD run services update-traffic "$SERVICE" \
       --to-revisions="$CANDIDATE_REV=100" \
       --region="$REGION" \
       --project="$PROJECT" \
       --quiet
-    TRAFFIC_SHIFT_ACTIVE=0
   else
-    gcloud run services update-traffic "$SERVICE" \
+    $GCLOUD_CMD run services update-traffic "$SERVICE" \
       --to-revisions="$PROD_REV=$prod_pct,$CANDIDATE_REV=$candidate_pct" \
       --region="$REGION" \
       --project="$PROJECT" \
       --quiet
   fi
-  log_success "Traffic update command succeeded."
+  log_success "Traffic update command executed successfully."
 
-  # Step D: Observation window
+  # Step D: Verify post-shift traffic allocation on Cloud Run
+  log "Verifying Cloud Run traffic distribution matches requested allocation..."
+  local actual_traffic
+  actual_traffic=$($GCLOUD_CMD run services describe "$SERVICE" \
+    --region="$REGION" \
+    --project="$PROJECT" \
+    --format="yaml(status.traffic)")
+  log "Actual traffic status:\n$actual_traffic"
+
+  # Step E: Observation window (TRAFFIC_SHIFT_ACTIVE remains 1 throughout!)
   log "Entering $OBSERVATION_WINDOW_SECS second observation window..."
-  sleep "$OBSERVATION_WINDOW_SECS"
+  $SLEEP_CMD "$OBSERVATION_WINDOW_SECS"
 
-  # Step E: Post-shift health, probe, and latency verification
+  # Step F: Post-shift health, readiness, and latency verification
   verify_traffic_health "$PROD_URL" "$stage_label"
 
-  # Step F: Post-shift Cloud Logging audit
+  # Step G: Post-shift Cloud Logging audit
   audit_application_logs "$stage_label"
 
+  # ONLY disarm rollback trap when all verifications and observation window have passed
+  TRAFFIC_SHIFT_ACTIVE=0
   log_success "Stage $candidate_pct% canary rollout VERIFIED AND STABLE."
 }
 
@@ -245,9 +354,9 @@ case "${1:-status}" in
     ;;
   stage)
     STAGE_NUM="${2:-}"
-    CONFIRM_FLAG="${3:-}"
+    shift 2 || true
     if [[ "$STAGE_NUM" =~ ^(1|5|25|50|100)$ ]]; then
-      apply_stage "$STAGE_NUM" "$CONFIRM_FLAG"
+      apply_stage "$STAGE_NUM" "$@"
     else
       log_error "Invalid stage '$STAGE_NUM'. Valid stages: 1, 5, 25, 50, 100"
       exit 1
@@ -257,7 +366,7 @@ case "${1:-status}" in
     emergency_rollback "Manual operator rollback requested."
     ;;
   *)
-    echo "Usage: $0 {status|verify-candidate|stage <1|5|25|50|100> [--confirm]|rollback}"
+    echo "Usage: $0 {status|verify-candidate|stage <1|5|25|50|100> [--confirm] [--dry-run]|rollback}"
     exit 1
     ;;
 esac

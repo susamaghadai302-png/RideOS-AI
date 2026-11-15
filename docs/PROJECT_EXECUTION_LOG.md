@@ -463,8 +463,8 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
 | **Frontend Website (Firebase)** | `COMPLETED_AND_VERIFIED` | Live at `https://rideos-ai.web.app`; 12/15 executable E2E checks passed, responsive, 0 console errors. |
 | **Backend Production Container** | `COMPLETED_AND_VERIFIED` | Multi-stage image compiled and pushed to Artifact Registry `rideos-repo` (Build duration 1m11s, digest `sha256:f7d8...`). |
 | **Secret Manager Secrets (JWT & Maps)** | `COMPLETED_AND_VERIFIED` | `rideos-jwt-secret`, `rideos-jwt-refresh-secret`, `rideos-google-routes-api-key`, `rideos-google-maps-api-key` all provisioned & enabled. |
-| **MongoDB Atlas Connection** | `BLOCKED_BY_MISSING_CREDENTIALS` | Requires production MongoDB cluster URI stored in `rideos-mongo-uri`. |
-| **Live Cloud Run Service Startup** | `IMPLEMENTED_NOT_LIVE` | Deployment manifest and scripts ready; blocked from startup readiness until `rideos-mongo-uri` is provisioned. |
+| **MongoDB Atlas Connection** | `COMPLETED_AND_VERIFIED` *(Historical: BLOCKED_BY_MISSING_CREDENTIALS)* | Reconciled Nov 15, 2026: Production MongoDB Atlas cluster URI provisioned in Secret Manager `rideos-mongo-uri` v1. SRV DNS, authentication, and isolated read/write/delete cycle verified. |
+| **Live Cloud Run Service Startup** | `COMPLETED_AND_VERIFIED` *(Historical: IMPLEMENTED_NOT_LIVE)* | Reconciled Nov 15, 2026: Candidate revision `rideos-backend-api-00009-4gt` deployed with Direct VPC Egress (`34.172.212.158`), verified healthy (`ready: true`, `mongodb: healthy`). Production traffic 100% pinned on `00004-xcj`. |
 | **Custom API Domain (`api.rideos.ai`)** | `BLOCKED_BY_USER_AUTHORIZATION` | Azure DNS manages `rideos.ai`; CNAME `api` -> `ghs.googlehosted.com` required. |
 | **Google Web OAuth 2.0** | `BLOCKED_BY_MISSING_CREDENTIALS` | Requires Web OAuth Client ID created in GCP Console. Login screen shows fallback. |
 | **Apple Sign-In** | `BLOCKED_BY_USER_AUTHORIZATION` | Requires Apple Developer Program credentials (iOS only). |
@@ -482,8 +482,8 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
   - Audited macOS Keychain and system toolchains; confirmed no active MongoDB Atlas CLI session or Atlas API keys are configured.
   - Checked GitHub repository secrets (`ANDROID_GOOGLE_MAPS_API_KEY`, `GOOGLE_MAPS_API_KEY`); no MongoDB URI configured.
 - Verified Secret Manager in project `rideos-ai`: 4 of 5 required secrets are enabled and verified (`rideos-jwt-secret`, `rideos-jwt-refresh-secret`, `rideos-google-routes-api-key`, `rideos-google-maps-api-key`).
-- Confirmed single remaining blocker: **`rideos-mongo-uri` — BLOCKED_BY_MISSING_CREDENTIALS**.
-- Halted safely at this exact dependency without fabricating credentials or substituting localhost. Deploying will immediately proceed via `./docker/cloud-run-deploy.sh --skip-build` once the user provisions `rideos-mongo-uri`.
+- Confirmed single remaining blocker: **`rideos-mongo-uri` — BLOCKED_BY_MISSING_CREDENTIALS** *(RECONCILED Nov 15, 2026: `rideos-mongo-uri` version 1 enabled in Secret Manager, Atlas static NAT IP allowlisted as `34.172.212.158/32`, probe read/write passed, candidate Cloud Run revision `rideos-backend-api-00009-4gt` verified UP and healthy)*.
+- Halted safely at this exact dependency without fabricating credentials or substituting localhost. Deploying will immediately proceed via `./docker/cloud-run-deploy.sh --skip-build` once the user provisions `rideos-mongo-uri`. *(Resolved Nov 15, 2026: Direct VPC egress deployed to candidate revision `00009-4gt`)*.
 
 ---
 
@@ -549,4 +549,64 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
 - **Flutter Mobile Tests**: **910 passed, 0 failed** across all unit, bloc, service, and widget suites.
 - **Flutter Web Build**: Compiled in 32.2s (`build/web`).
 - **Production Android App Bundle**: `apps/mobile/build/app/outputs/bundle/release/app-release.aab` (88.6MB, signed).
+
+---
+
+## 6. Task 1 MongoDB Production Connection Verification & Task 2 Canary Rollout Hardening
+
+- **Execution Date**: November 15, 2026
+- **Lead Verification**: Senior Systems & Cloud Infrastructure Lead
+- **Git Feature Branch**: `feat/cloudrun-direct-vpc-static-egress`
+
+### 6.1 Task 1: Real MongoDB Production Connection Verification Evidence
+1. **Secret Provisioning & Validation**:
+   - Google Secret Manager secret `rideos-mongo-uri` version 1 enabled in project `rideos-ai`.
+   - Injected into Cloud Run candidate revision `rideos-backend-api-00009-4gt` via container secret environment binding.
+   - Zero credentials printed or logged.
+2. **DNS & Network Reachability**:
+   - Host: `hitanshu.wl9zytg.mongodb.net`
+   - SRV records successfully resolved to 3 replica hosts:
+     - `ac-tm8mhdx-shard-00-00.wl9zytg.mongodb.net:27017`
+     - `ac-tm8mhdx-shard-00-01.wl9zytg.mongodb.net:27017`
+     - `ac-tm8mhdx-shard-00-02.wl9zytg.mongodb.net:27017`
+3. **Database Selection & Ping**:
+   - Authenticated against cluster and selected database: `rideos`.
+   - Admin ping response: `{"ok": 1}`.
+4. **End-to-End Isolated Probe Read / Write / Delete**:
+   - Target collection: `_rideos_health_test_probe` (isolated test collection; production collections untouched).
+   - Insert probe document: `probe_1794735596042` (`insertOne` acknowledged: true).
+   - Read probe document: `findOne` retrieved matching document.
+   - Delete probe document: `deleteOne` cleaned up document (`deletedCount: 1`).
+5. **Live Application Layer Verification**:
+   - Cloud Run candidate revision `rideos-backend-api-00009-4gt` probed via `https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app/api/v1/health`:
+     `{"status":"UP","ready":true,"database":"healthy","dependencies":{"mongodb":{"status":"healthy","required":true,"error":null}}}`.
+   - Backend unit tests: 24/24 suites passed (136 tests passed, 0 failed).
+   - Backend build: `nest build` completed with 0 errors.
+
+### 6.2 Task 2: Canary Rollout Safety Audit & Hardening Evidence
+1. **Genuine `--dry-run` Mode**:
+   - Implemented `--dry-run` flag in [scripts/staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/staged-canary-rollout.sh).
+   - Displays exact planned allocations (e.g. `95%` prod, `5%` candidate).
+   - Fully isolated: bypasses `gcloud run services update-traffic`. Zero mutations verified via automated test harness.
+2. **Portable Latency Timing**:
+   - Replaced non-portable `date +%s%N` with POSIX-standard `curl -w "%{time_total}"` and POSIX `awk` millisecond calculations.
+   - Compatible across macOS (BSD) and Linux (GNU).
+   - Safely captures timeouts and failures (`000` status, zero elapsed time).
+3. **Rollback Protection Across Observation Windows**:
+   - Fixed safety defect where Stage 100 previously disarmed `TRAFFIC_SHIFT_ACTIVE` before observation.
+   - `TRAFFIC_SHIFT_ACTIVE=1` is preserved across all stages (including 100%) through traffic shift, observation window, and post-shift health/readiness/latency/logging audits.
+   - Handled `SIGINT` and `SIGTERM` signals via trap to restore `rideos-backend-api-00004-xcj=100` immediately if interrupted.
+4. **Post-Shift Health & Database Readiness Verification**:
+   - Multi-sample latency probe (`SAMPLE_REQUEST_COUNT=5`, threshold `MAX_ALLOWED_LATENCY_MS=3000`).
+   - Deep database readiness probe on stage URL (`/api/v1/health/readiness`).
+   - Cloud Logging audit for `MongoServerSelectionError` and critical SSL/connectivity errors in candidate revision.
+   - Post-shift Cloud Run traffic distribution verification via `gcloud run services describe`.
+5. **Automated Safety Test Suite ([scripts/test-staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-staged-canary-rollout.sh))**:
+   - 13 comprehensive test scenarios executing with mocked gcloud/curl/sleep.
+   - Result: **33 passed, 0 failed**.
+   - Zero production traffic modifications executed during tests.
+6. **Production Traffic Invariance Confirmation**:
+   - Production traffic remains **100% on `rideos-backend-api-00004-xcj`**.
+   - Candidate revision `rideos-backend-api-00009-4gt` remains at **0% traffic** (tag `candidate`).
+
 
