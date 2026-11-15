@@ -1070,6 +1070,106 @@ A rigorous comparison between `00004-xcj` and `00009-4gt` revealed the exact mec
   - **No new container build or revision deployment is needed**.
   - A staged progression (5% &rarr; 25% &rarr; 50% &rarr; 100%) or direct emergency promotion can be safely executed whenever authorized.
 
+---
+
+## 13. Task 3.4.1: Critical Canary Rollback Safety Re-Architecture
+
+- **Execution Date**: November 15, 2026
+- **Feature Branch**: `feat/cloudrun-direct-vpc-static-egress`
+- **Lead Verification**: Senior Cloud Reliability & Systems Architect
+- **Scope**: Re-architecture of `scripts/staged-canary-rollout.sh` and its automated safety test suite `scripts/test-staged-canary-rollout.sh` to permanently eliminate hardcoded blind rollback to the known-unhealthy revision `rideos-backend-api-00004-xcj`.
+
+### 13.1 Rollback Architecture Audit & Failure Path Identification
+1. **Architectural Vulnerability Identified**:
+   - In prior revisions, `emergency_rollback()` and `manual_rollback()` defaulted to executing:
+     ```bash
+     gcloud run services update-traffic rideos-backend-api --to-revisions="rideos-backend-api-00004-xcj=100"
+     ```
+   - In Task 3.4, `rideos-backend-api-00004-xcj` was conclusively proven to be **UNHEALTHY** (lacks Direct VPC egress, returns HTTP 503 / 500 on all MongoDB Atlas queries).
+   - In any failure during progressive canary promotion (e.g. from 99/1 to 95/5), blindly executing `00004-xcj=100` would take the healthy 1% candidate completely offline, funneling 100% of user traffic to an inoperable revision and catastrophically worsening outage severity.
+2. **Audit of All Rollback Paths**:
+   - `emergency_rollback()`: Previously hardcoded `--to-revisions="$PROD_REV=100"`.
+   - `handle_interrupt()`: Triggered `emergency_rollback` on SIGINT/SIGTERM during the observation window, also falling back to `00004-xcj=100`.
+   - `manual_rollback()`: Previously defaulted to `--to-revisions="$PROD_REV=100"`.
+   - `apply_stage()` update-traffic failure handler: Executed `emergency_rollback` to `00004-xcj=100`.
+   - All paths have been completely audited and re-architected.
+
+### 13.2 Pre-Shift Traffic Snapshot Architecture
+Before ANY traffic modification command is executed in `staged-canary-rollout.sh`:
+1. **Live Query & Validation (`capture_traffic_snapshot`)**:
+   - Queries Cloud Run live `status.traffic` in machine-readable JSON.
+   - Validates that `status.traffic` is a non-empty array of objects.
+   - Asserts that every revision name is a valid, non-empty string.
+   - Asserts that percentage values parse correctly and their sum equals **exactly 100%**.
+   - Asserts that at least one active non-zero revision is present.
+2. **Snapshot Persistence (`PRE_SHIFT_SNAPSHOT`)**:
+   - Encodes the verified live allocation as a deterministic string (e.g. `rideos-backend-api-00004-xcj=99,rideos-backend-api-00009-4gt=1`).
+   - If Cloud Run describe fails, returns malformed JSON, or returns percentages not summing to 100%:
+     - The controller **ABORTS IMMEDIATELY** with exit code 1.
+     - Performs **ZERO** traffic mutations.
+
+### 13.3 Safe Recovery Behavior & Known-Unhealthy Target Rejection
+1. **Never Route 100% Traffic to Known-Unhealthy Revisions**:
+   - Maintained `KNOWN_UNHEALTHY_REVISIONS="rideos-backend-api-00004-xcj"`.
+   - Added `is_known_unhealthy_100_target()`: Checks if any recovery target routes 100% traffic to any known-unhealthy revision.
+   - If an operator explicitly attempts `rollback rideos-backend-api-00004-xcj=100`:
+     - Controller logs `CRITICAL_SAFETY_REJECTION` and `CRITICAL_ROLLBACK_BLOCKED`.
+     - Exits immediately with exit code 2 and executes zero mutations.
+2. **Emergency Rollback Restores Exact Pre-Shift Snapshot**:
+   - During canary migration, if any failure occurs (probe 5xx, high latency, database log error, traffic mismatch, or process interrupt):
+     - `emergency_rollback()` restores the exact `PRE_SHIFT_SNAPSHOT` (e.g. `99/1`).
+     - Preserves whatever verified canary proportion was active before the failed stage, preventing cascading outages.
+3. **Verified Allocation Restoration**:
+   - After emergency rollback, Cloud Run `status.traffic` is queried again in machine-readable JSON.
+   - `verify_snapshot_match()` confirms that each revision's live percentage matches `PRE_SHIFT_SNAPSHOT`.
+   - If restoration cannot be confirmed: Controller reports `CRITICAL_ROLLBACK_UNVERIFIED` and exits with exit code 2.
+4. **Separation of Allocation Restoration from Health Recovery**:
+   - Explicitly logs: `NOTE: Traffic allocation restored to pre-shift state. This recovers the previous traffic distribution but does not imply underlying application health recovery on degraded revisions.`
+
+### 13.4 New Baseline Architecture & Permanent Retirement of 00004-xcj
+1. **Dynamic Baseline Persistence (`BASELINE_FILE=".cloud-run-baseline"`)**:
+   - When candidate promotion successfully completes and verifies at the 100% stage:
+     - `rideos-backend-api-00009-4gt` is recorded into `.cloud-run-baseline` as the new verified stable production baseline.
+     - The degraded revision `00004-xcj` is permanently retired.
+   - Future staged releases from subsequent builds will automatically treat `00009-4gt` as their safe rollback baseline.
+
+### 13.5 Comprehensive Regression Test Suite & Verification Results
+Updated `scripts/test-staged-canary-rollout.sh` with a comprehensive stateful mock harness covering all 12 required regression scenarios across 25 rigorous test blocks:
+1. **Existing 99/1 allocation snapshot capture**: Verified script reads and stores 99/1 allocation.
+2. **Failure before traffic mutation**: Verified abort cleanly with zero mutations on pre-flight failure.
+3. **Failure after partial traffic mutation**: Verified emergency rollback restores exact 99/1 snapshot, NOT 100% to `00004-xcj`.
+4. **Interrupt (SIGINT/SIGTERM) during canary observation**: Verified restore to 99/1, NOT 100% to `00004-xcj`.
+5. **Failure during 100% promotion**: Verified restore to previous staged allocation (99/1), retaining rollback protection.
+6. **Restoration of exact previous allocation**: Verified revision names and percentages match pre-shift state.
+7. **Malformed traffic snapshot rejection**: Verified abort with zero traffic mutations if pre-shift describe fails or returns corrupted JSON.
+8. **Known-unhealthy rollback destination rejection**: Verified explicit attempt to rollback to `00004-xcj=100` is rejected with `CRITICAL_ROLLBACK_BLOCKED` and `CRITICAL_SAFETY_REJECTION` (exit code 2).
+9. **Unverified restoration handling**: Verified that describe mismatch or command failure during rollback reports `CRITICAL_ROLLBACK_UNVERIFIED` (exit code 2).
+10. **Future stable baseline behavior**: Verified that after a successful 100% promotion, the new baseline is recorded as `00009-4gt`.
+11. **Master Invariant (No automatic 00004-xcj=100 rollback)**: Global assertion across all test logs confirmed that `grep -c -- '--to-revisions=rideos-backend-api-00004-xcj=100'` was **EXACTLY 0** across the entire test suite.
+12. **Zero mutations in dry-run mode**: Verified dry-run preserves 99/1 and executes zero mutations.
+
+### 13.6 Test Execution Evidence
+
+| Test Suite | Command | Total Passed | Total Failed | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Canary Rollout Safety Suite** | `./scripts/test-staged-canary-rollout.sh` | **75 passed** | **0 failed** | **PASS** |
+| **Cloud Run Deployment Safety Suite** | `./scripts/test-cloud-run-deploy.sh` | **54 passed** | **0 failed** | **PASS** |
+| **Backend Unit Test Suite** | `cd apps/backend && npm test` | **136 passed (24 suites)** | **0 failed** | **PASS** |
+| **Rollout Script Syntax Check** | `bash -n scripts/staged-canary-rollout.sh` | Clean exit (code 0) | 0 | **PASS** |
+| **Test Script Syntax Check** | `bash -n scripts/test-staged-canary-rollout.sh` | Clean exit (code 0) | 0 | **PASS** |
+
+### 13.7 Strict Live Traffic Preservation Verification
+- Executed read-only query: `gcloud run services describe rideos-backend-api --region=us-central1 --project=rideos-ai --format="yaml(status.traffic)"`
+- Live Cloud Run Traffic Status:
+  - `rideos-backend-api-00004-xcj`: **99%**
+  - `rideos-backend-api-00009-4gt`: **1%** (Tagged: `candidate`)
+  - **Total**: Exactly **100%**.
+- Production Traffic Drift: **ZERO**.
+- Live Cloud Run Mutations: **ZERO**.
+- DNS / Secret Manager Modifications: **ZERO**.
+- Revisions Created: **ZERO**.
+
+
 
 
 

@@ -3,7 +3,8 @@
 # RideOS AI — Automated Staged Canary Rollout & Rollback Controller
 # ==============================================================================
 # Controlled traffic progression: 1% -> 5% -> 25% -> 50% -> 100%
-# With automated health, latency, 5xx error monitoring, interrupt traps,
+# With pre-shift snapshot capture, known-unhealthy destination rejection,
+# automated health, latency, 5xx monitoring, interrupt traps,
 # actual traffic allocation verification, and verified emergency rollback.
 # ==============================================================================
 
@@ -13,6 +14,15 @@ set -euo pipefail
 SERVICE="${SERVICE:-rideos-backend-api}"
 REGION="${REGION:-us-central1}"
 PROJECT="${PROJECT:-rideos-ai}"
+BASELINE_FILE="${BASELINE_FILE:-.cloud-run-baseline}"
+KNOWN_UNHEALTHY_REVISIONS="${KNOWN_UNHEALTHY_REVISIONS:-rideos-backend-api-00004-xcj}"
+
+# Discover or read verified stable baseline if present
+STABLE_PROD_REV="${STABLE_PROD_REV:-}"
+if [[ -z "$STABLE_PROD_REV" && -f "$BASELINE_FILE" ]]; then
+  STABLE_PROD_REV=$(cat "$BASELINE_FILE" 2>/dev/null | tr -d '[:space:]' || echo "")
+fi
+
 PROD_REV="${PROD_REV:-rideos-backend-api-00004-xcj}"
 CANDIDATE_REV="${CANDIDATE_REV:-rideos-backend-api-00009-4gt}"
 PROD_URL="${PROD_URL:-https://rideos-backend-api-aeoxwaaccq-uc.a.run.app}"
@@ -34,6 +44,7 @@ export CLOUDSDK_METRICS_ENVIRONMENT="datacloud.antigravity"
 CURRENT_STAGE_PCT=0
 TRAFFIC_SHIFT_ACTIVE=0
 DRY_RUN=0
+PRE_SHIFT_SNAPSHOT=""
 
 log() {
   echo -e "\033[1;34m[$(date -u +"%Y-%m-%dT%H:%M:%SZ")][ROLLOUT]\033[0m $*"
@@ -135,6 +146,147 @@ validate_health_payload() {
   ' "$kind" "$http_code" "$raw_json" 2>/dev/null || echo "ERR: Health validation script execution failure"
 }
 
+# Capture and validate current live traffic snapshot from Cloud Run
+capture_traffic_snapshot() {
+  local raw_json
+  raw_json=$($GCLOUD_CMD run services describe "$SERVICE" \
+    --region="$REGION" \
+    --project="$PROJECT" \
+    --format="json" 2>/dev/null || echo "")
+
+  if [[ -z "$raw_json" ]]; then
+    echo "ERR: Empty response from Cloud Run describe"
+    return 0
+  fi
+
+  node -e '
+    try {
+      const raw = process.argv[1];
+      const parsed = JSON.parse(raw);
+      let traffic = null;
+      if (Array.isArray(parsed)) {
+        traffic = parsed;
+      } else if (parsed && parsed.status && Array.isArray(parsed.status.traffic)) {
+        traffic = parsed.status.traffic;
+      } else {
+        console.log("ERR: status.traffic array not found in Cloud Run JSON");
+        process.exit(0);
+      }
+
+      if (!traffic || traffic.length === 0) {
+        console.log("ERR: status.traffic array is empty");
+        process.exit(0);
+      }
+
+      let totalPct = 0;
+      const entries = [];
+
+      for (const t of traffic) {
+        if (!t.revisionName || typeof t.revisionName !== "string" || t.revisionName.trim().length === 0) {
+          console.log("ERR: Missing or invalid revisionName in traffic entry");
+          process.exit(0);
+        }
+        const pct = parseInt(t.percent !== undefined ? t.percent : 0, 10);
+        if (isNaN(pct) || pct < 0) {
+          console.log(`ERR: Invalid percentage ${t.percent} for revision ${t.revisionName}`);
+          process.exit(0);
+        }
+        totalPct += pct;
+        if (pct > 0) {
+          entries.push(`${t.revisionName.trim()}=${pct}`);
+        }
+      }
+
+      if (totalPct !== 100) {
+        console.log(`ERR: Total traffic allocation is ${totalPct}%, expected exactly 100%`);
+        process.exit(0);
+      }
+
+      if (entries.length === 0) {
+        console.log("ERR: No active non-zero traffic allocations found");
+        process.exit(0);
+      }
+
+      console.log("OK:" + entries.join(","));
+    } catch (e) {
+      console.log("ERR: Failed to parse Cloud Run JSON: " + e.message);
+    }
+  ' "$raw_json" 2>/dev/null || echo "ERR: Snapshot parser execution failed"
+}
+
+# Check if a candidate rollback destination routes 100% to a known-unhealthy revision
+is_known_unhealthy_100_target() {
+  local target_alloc="$1"
+  for unh in $(echo "$KNOWN_UNHEALTHY_REVISIONS" | tr ',' ' '); do
+    if [[ "$target_alloc" == "${unh}=100" || "$target_alloc" == "${unh}=100%" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Verify that Cloud Run live JSON matches expected snapshot allocations
+verify_snapshot_match() {
+  local raw_json="$1"
+  local expected_alloc="$2"
+
+  node -e '
+    try {
+      const raw = process.argv[1];
+      const expected = process.argv[2];
+
+      if (!raw || raw.trim().length === 0) {
+        console.log("ERR: Empty response from Cloud Run describe");
+        process.exit(0);
+      }
+
+      const parsed = JSON.parse(raw);
+      let traffic = null;
+      if (Array.isArray(parsed)) {
+        traffic = parsed;
+      } else if (parsed && parsed.status && Array.isArray(parsed.status.traffic)) {
+        traffic = parsed.status.traffic;
+      } else {
+        console.log("ERR: status.traffic array not found in Cloud Run JSON");
+        process.exit(0);
+      }
+
+      const expectedMap = {};
+      for (const pair of expected.split(",")) {
+        const [rev, pctStr] = pair.split("=");
+        const pct = parseInt(pctStr, 10);
+        expectedMap[rev.trim()] = pct;
+      }
+
+      const actualMap = {};
+      let actualTotal = 0;
+      for (const t of traffic) {
+        const rev = (t.revisionName || "").trim();
+        const pct = parseInt(t.percent !== undefined ? t.percent : 0, 10);
+        actualMap[rev] = (actualMap[rev] || 0) + pct;
+        actualTotal += pct;
+      }
+
+      if (actualTotal !== 100) {
+        console.log(`ERR: Actual total traffic is ${actualTotal}%, expected 100%`);
+        process.exit(0);
+      }
+
+      for (const [rev, expPct] of Object.entries(expectedMap)) {
+        const actPct = actualMap[rev] || 0;
+        if (actPct !== expPct) {
+          console.log(`ERR: Mismatch for ${rev}: actual=${actPct}%, expected=${expPct}%`);
+          process.exit(0);
+        }
+      }
+
+      console.log(`OK: verified restoration of ${expected}`);
+    } catch (e) {
+      console.log("ERR: Failed to verify snapshot match: " + e.message);
+    }
+  ' "$raw_json" "$expected_alloc" 2>/dev/null || echo "ERR: Snapshot verifier execution failure"
+}
+
 # Parser for full Cloud Run service resource or traffic array
 parse_traffic_json() {
   local raw_json="$1"
@@ -205,10 +357,30 @@ parse_traffic_json() {
 emergency_rollback() {
   local reason="${1:-Unknown failure}"
   log_error "CRITICAL FAILURE DETECTED: $reason"
-  log_warn "TRIGGERING AUTOMATIC EMERGENCY ROLLBACK TO $PROD_REV (100%)..."
+
+  # Reject automatic rollback if no pre-shift snapshot is available
+  if [[ -z "${PRE_SHIFT_SNAPSHOT:-}" ]]; then
+    # Try capturing snapshot if not yet set
+    local snap_res
+    snap_res=$(capture_traffic_snapshot)
+    if [[ "$snap_res" == OK:* ]]; then
+      PRE_SHIFT_SNAPSHOT="${snap_res#OK:}"
+    else
+      log_error "CRITICAL_ROLLBACK_BLOCKED: No valid pre-shift traffic snapshot available for safe restoration."
+      exit 2
+    fi
+  fi
+
+  # Reject automatic rollback to known-unhealthy revision at 100%
+  if is_known_unhealthy_100_target "$PRE_SHIFT_SNAPSHOT"; then
+    log_error "CRITICAL_ROLLBACK_BLOCKED: Pre-shift snapshot ($PRE_SHIFT_SNAPSHOT) would route 100% traffic to known-unhealthy revision ($KNOWN_UNHEALTHY_REVISIONS). Automatic 100% routing to known-unhealthy revisions is strictly forbidden."
+    exit 2
+  fi
+
+  log_warn "TRIGGERING AUTOMATIC RESTORATION TO PRE-SHIFT SNAPSHOT: $PRE_SHIFT_SNAPSHOT..."
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    log "[DRY-RUN] Simulated rollback: Would restore $PROD_REV=100 on $SERVICE (zero mutations)."
+    log "[DRY-RUN] Simulated rollback: Would restore $PRE_SHIFT_SNAPSHOT on $SERVICE (zero mutations)."
     TRAFFIC_SHIFT_ACTIVE=0
     exit 1
   fi
@@ -216,7 +388,7 @@ emergency_rollback() {
   # Attempt rollback command with explicit failure check
   local rollback_cmd_failed=0
   if ! $GCLOUD_CMD run services update-traffic "$SERVICE" \
-    --to-revisions="$PROD_REV=100" \
+    --to-revisions="$PRE_SHIFT_SNAPSHOT" \
     --region="$REGION" \
     --project="$PROJECT" \
     --quiet; then
@@ -224,7 +396,7 @@ emergency_rollback() {
     log_error "CRITICAL: gcloud rollback update-traffic command failed!"
   fi
 
-  # Retrieve actual Cloud Run traffic to verify restoration
+  # Retrieve actual Cloud Run traffic to verify restoration against PRE_SHIFT_SNAPSHOT
   local raw_verify_json
   raw_verify_json=$($GCLOUD_CMD run services describe "$SERVICE" \
     --region="$REGION" \
@@ -232,14 +404,15 @@ emergency_rollback() {
     --format="json" 2>/dev/null || echo "")
 
   local verify_res
-  verify_res=$(parse_traffic_json "$raw_verify_json" "$PROD_REV" "$CANDIDATE_REV" 100 0)
+  verify_res=$(verify_snapshot_match "$raw_verify_json" "$PRE_SHIFT_SNAPSHOT")
 
   if [[ "$rollback_cmd_failed" -eq 0 && "$verify_res" == OK:* ]]; then
     TRAFFIC_SHIFT_ACTIVE=0
-    log_success "Rollback verified successfully: 100% traffic safely restored to $PROD_REV ($verify_res)."
+    log_success "Rollback verified successfully: Pre-shift allocation safely restored ($PRE_SHIFT_SNAPSHOT)."
+    log_warn "NOTE: Traffic allocation restored to pre-shift state. This recovers the previous traffic distribution but does not imply underlying application health recovery on degraded revisions."
     exit 1
   else
-    log_error "CRITICAL_ROLLBACK_UNVERIFIED: Could not confirm 100% traffic restoration to $PROD_REV! Details: $verify_res"
+    log_error "CRITICAL_ROLLBACK_UNVERIFIED: Could not confirm traffic restoration to $PRE_SHIFT_SNAPSHOT! Details: $verify_res"
     exit 2
   fi
 }
@@ -267,13 +440,22 @@ check_status() {
 
   log "Verifying Candidate Revision ($CANDIDATE_REV) health..."
 
-  # A. Readiness Probe (Verifies MongoDB connectivity)
+  # A. Readiness Probe (Verifies MongoDB connectivity, with cold-start allowance)
   local res_readiness
-  res_readiness=$(measure_request "$CANDIDATE_TAG_URL/api/v1/health/readiness" 10)
+  res_readiness=$(measure_request "$CANDIDATE_TAG_URL/api/v1/health/readiness" 30)
   local ready_code
   local ready_body
   ready_code=$(echo "$res_readiness" | cut -d'|' -f1)
   ready_body=$(echo "$res_readiness" | cut -d'|' -f3-)
+
+  # If cold start timed out or returned non-200, retry once with fresh 30s window
+  if [[ "$ready_code" != "200" ]]; then
+    log_warn "Candidate initial probe returned $ready_code (possible Cloud Run cold-start). Retrying in 3s..."
+    $SLEEP_CMD 3
+    res_readiness=$(measure_request "$CANDIDATE_TAG_URL/api/v1/health/readiness" 30)
+    ready_code=$(echo "$res_readiness" | cut -d'|' -f1)
+    ready_body=$(echo "$res_readiness" | cut -d'|' -f3-)
+  fi
 
   local val_ready
   val_ready=$(validate_health_payload "readiness" "$ready_code" "$ready_body")
@@ -383,9 +565,6 @@ verify_traffic_health() {
   fi
 
   # Deep Database Readiness and System Health Probes
-  # On canary stages (<100%), the weighted production endpoint routes the majority of traffic to $PROD_REV
-  # (which lacks Direct VPC static egress to Atlas). Database readiness and system health are therefore
-  # verified directly on $CANDIDATE_TAG_URL for canary stages, and on $target_url when promoted to 100%.
   if [[ "$CURRENT_STAGE_PCT" -eq 100 || "$target_url" == "$CANDIDATE_TAG_URL" ]]; then
     log "Verifying database readiness on $stage_name endpoint ($target_url)..."
     local deep_res
@@ -472,7 +651,72 @@ audit_application_logs() {
   log_success "Cloud Logging audit passed for $stage_name: No database or SSL errors detected."
 }
 
-# 5. Shift Traffic to a Specific Stage (Guarded by confirmation and dry-run)
+# 5. Manual Rollback Action
+manual_rollback() {
+  local explicit_target="${1:-}"
+  log_warn "Manual operator rollback requested."
+
+  local snap_res
+  snap_res=$(capture_traffic_snapshot)
+  if [[ "$snap_res" != OK:* ]]; then
+    log_error "CRITICAL_ROLLBACK_BLOCKED: Unable to inspect current traffic allocation: $snap_res"
+    exit 2
+  fi
+  local current_alloc="${snap_res#OK:}"
+  log "Current traffic allocation: $current_alloc"
+
+  # Determine safe rollback destination
+  local target_dest=""
+  if [[ -n "$explicit_target" ]]; then
+    target_dest="$explicit_target"
+  elif [[ -n "${STABLE_PROD_REV:-}" && "$STABLE_PROD_REV" != "$CANDIDATE_REV" ]]; then
+    target_dest="${STABLE_PROD_REV}=100"
+  fi
+
+  if [[ -n "$target_dest" ]] && is_known_unhealthy_100_target "$target_dest"; then
+    log_error "CRITICAL_SAFETY_REJECTION: Destination $target_dest is in KNOWN_UNHEALTHY_REVISIONS ($KNOWN_UNHEALTHY_REVISIONS)."
+    log_error "CRITICAL_ROLLBACK_BLOCKED: Routing 100% traffic to known-unhealthy revision is strictly forbidden."
+    exit 2
+  fi
+
+  if [[ -z "$target_dest" ]]; then
+    if is_known_unhealthy_100_target "${PROD_REV}=100"; then
+      log_warn "Default target ${PROD_REV}=100 is known-unhealthy ($KNOWN_UNHEALTHY_REVISIONS). Restoring pre-shift baseline ($current_alloc) to protect traffic."
+      target_dest="$current_alloc"
+    else
+      target_dest="${PROD_REV}=100"
+    fi
+  fi
+
+  log_warn "Executing manual rollback to verified safe destination: $target_dest..."
+  if ! $GCLOUD_CMD run services update-traffic "$SERVICE" \
+    --to-revisions="$target_dest" \
+    --region="$REGION" \
+    --project="$PROJECT" \
+    --quiet; then
+    log_error "CRITICAL: gcloud manual rollback command failed!"
+    exit 2
+  fi
+
+  local raw_verify_json
+  raw_verify_json=$($GCLOUD_CMD run services describe "$SERVICE" \
+    --region="$REGION" \
+    --project="$PROJECT" \
+    --format="json" 2>/dev/null || echo "")
+
+  local verify_res
+  verify_res=$(verify_snapshot_match "$raw_verify_json" "$target_dest")
+
+  if [[ "$verify_res" == OK:* ]]; then
+    log_success "Manual rollback verified: Traffic safely restored to $target_dest."
+    exit 0
+  else
+    log_error "CRITICAL_ROLLBACK_UNVERIFIED: Manual rollback verification failed! Details: $verify_res"
+    exit 2
+  fi
+}
+
+# 6. Shift Traffic to a Specific Stage (Guarded by confirmation and dry-run)
 apply_stage() {
   local candidate_pct="$1"
   shift
@@ -501,18 +745,39 @@ apply_stage() {
 
   local prod_pct=$(( 100 - candidate_pct ))
   local stage_label="${candidate_pct}% Canary (${PROD_REV}=${prod_pct}%, ${CANDIDATE_REV}=${candidate_pct}%)"
+  local stage_alloc=""
+  if [[ "$candidate_pct" -eq 100 ]]; then
+    stage_alloc="${CANDIDATE_REV}=100"
+  else
+    stage_alloc="${PROD_REV}=${prod_pct},${CANDIDATE_REV}=${candidate_pct}"
+  fi
 
   log "=================================================================="
   log "PREPARING TRAFFIC SHIFT TO: $stage_label"
   log "=================================================================="
 
+  # Step 1: Pre-shift snapshot capture and validation BEFORE any mutations
+  log "Capturing pre-shift Cloud Run traffic snapshot..."
+  local snapshot_res
+  snapshot_res=$(capture_traffic_snapshot)
+
+  if [[ "$snapshot_res" != OK:* ]]; then
+    log_error "CRITICAL SAFETY GATE: Failed to capture valid pre-shift traffic snapshot: $snapshot_res"
+    log_error "Cannot proceed with traffic mutation without verified pre-shift state. Aborting."
+    exit 1
+  fi
+
+  PRE_SHIFT_SNAPSHOT="${snapshot_res#OK:}"
+  log_success "Pre-shift traffic snapshot captured: $PRE_SHIFT_SNAPSHOT"
+
   if [[ "$DRY_RUN" -eq 1 ]]; then
     log_warn "[DRY-RUN] Mode active: Zero production mutations will be performed."
-    log "[DRY-RUN] Planned traffic allocation: $SERVICE -> $PROD_REV=${prod_pct}%, $CANDIDATE_REV=${candidate_pct}%"
+    log "[DRY-RUN] Planned traffic allocation: $SERVICE -> $stage_alloc"
+    log "[DRY-RUN] Pre-shift baseline preserved: $PRE_SHIFT_SNAPSHOT"
 
     # Pre-flight candidate health checks in dry-run mode
     check_status
-    log_success "[DRY-RUN] Simulated stage $candidate_pct% validation PASSED. Cloud Run traffic remains 100% on $PROD_REV."
+    log_success "[DRY-RUN] Simulated stage $candidate_pct% validation PASSED. Cloud Run traffic remains intact at $PRE_SHIFT_SNAPSHOT."
     exit 0
   fi
 
@@ -533,24 +798,14 @@ apply_stage() {
   TRAFFIC_SHIFT_ACTIVE=1
 
   # Step C: Execute Cloud Run traffic update with explicit failure handling
-  log "Applying traffic allocation..."
+  log "Applying traffic allocation ($stage_alloc)..."
   local update_cmd_failed=0
-  if [[ "$candidate_pct" -eq 100 ]]; then
-    if ! $GCLOUD_CMD run services update-traffic "$SERVICE" \
-      --to-revisions="$CANDIDATE_REV=100" \
-      --region="$REGION" \
-      --project="$PROJECT" \
-      --quiet; then
-      update_cmd_failed=1
-    fi
-  else
-    if ! $GCLOUD_CMD run services update-traffic "$SERVICE" \
-      --to-revisions="$PROD_REV=$prod_pct,$CANDIDATE_REV=$candidate_pct" \
-      --region="$REGION" \
-      --project="$PROJECT" \
-      --quiet; then
-      update_cmd_failed=1
-    fi
+  if ! $GCLOUD_CMD run services update-traffic "$SERVICE" \
+    --to-revisions="$stage_alloc" \
+    --region="$REGION" \
+    --project="$PROJECT" \
+    --quiet; then
+    update_cmd_failed=1
   fi
 
   if [[ "$update_cmd_failed" -ne 0 ]]; then
@@ -574,6 +829,14 @@ apply_stage() {
   # ONLY disarm rollback trap when all verifications and observation window have passed
   TRAFFIC_SHIFT_ACTIVE=0
   log_success "Stage $candidate_pct% canary rollout VERIFIED AND STABLE."
+
+  # Step H: If successfully promoted to 100%, record new stable baseline
+  if [[ "$candidate_pct" -eq 100 ]]; then
+    log "Recording $CANDIDATE_REV as the new verified stable production baseline..."
+    echo "$CANDIDATE_REV" > "$BASELINE_FILE"
+    STABLE_PROD_REV="$CANDIDATE_REV"
+    log_success "NEW STABLE BASELINE ESTABLISHED: $CANDIDATE_REV (recorded in $BASELINE_FILE)"
+  fi
 }
 
 # Entrypoint dispatch
@@ -597,7 +860,7 @@ case "${1:-status}" in
     fi
     ;;
   rollback|--rollback)
-    emergency_rollback "Manual operator rollback requested."
+    manual_rollback "${2:-}"
     ;;
   *)
     echo "Usage: $0 {status|verify-candidate|stage <1|5|25|50|100> [--confirm] [--dry-run]|rollback}"
