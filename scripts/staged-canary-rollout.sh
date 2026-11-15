@@ -4,7 +4,7 @@
 # ==============================================================================
 # Controlled traffic progression: 1% -> 5% -> 25% -> 50% -> 100%
 # With automated health, latency, 5xx error monitoring, interrupt traps,
-# and automatic emergency rollback.
+# actual traffic allocation verification, and automatic emergency rollback.
 # ==============================================================================
 
 set -euo pipefail
@@ -79,6 +79,62 @@ measure_request() {
   echo "${http_code}|${elapsed_ms}|${body}"
 }
 
+# Strict JSON field validator
+validate_health_payload() {
+  local kind="$1" # readiness | liveness | system
+  local http_code="$2"
+  local raw_json="$3"
+
+  node -e '
+    try {
+      const kind = process.argv[1];
+      const httpCode = parseInt(process.argv[2], 10);
+      const raw = process.argv[3];
+
+      if (httpCode !== 200) {
+        console.log(`ERR: HTTP status ${httpCode} is not 200`);
+        process.exit(0);
+      }
+
+      const data = JSON.parse(raw);
+      if (typeof data !== "object" || data === null) {
+        console.log("ERR: Payload is not a JSON object");
+        process.exit(0);
+      }
+
+      if (kind === "readiness") {
+        if (data.ready !== true) {
+          console.log(`ERR: ready field is ${data.ready}, expected true (generic status cannot bypass ready=false)`);
+          process.exit(0);
+        }
+        const dbStatus = data.dependencies?.mongodb?.status || data.status;
+        if (dbStatus !== "healthy") {
+          console.log(`ERR: MongoDB status is ${dbStatus}, expected healthy`);
+          process.exit(0);
+        }
+      } else if (kind === "liveness") {
+        if (data.status !== "LIVE") {
+          console.log(`ERR: Liveness status is ${data.status}, expected LIVE`);
+          process.exit(0);
+        }
+      } else if (kind === "system") {
+        if (data.status !== "UP") {
+          console.log(`ERR: System status is ${data.status}, expected UP`);
+          process.exit(0);
+        }
+        const compDb = data.components?.database;
+        if (compDb !== "healthy") {
+          console.log(`ERR: Database component is ${compDb}, expected healthy`);
+          process.exit(0);
+        }
+      }
+      console.log("OK");
+    } catch (e) {
+      console.log("ERR: Invalid JSON syntax: " + e.message);
+    }
+  ' "$kind" "$http_code" "$raw_json" 2>/dev/null || echo "ERR: Health validation script execution failure"
+}
+
 emergency_rollback() {
   local reason="${1:-Unknown failure}"
   log_error "CRITICAL FAILURE DETECTED: $reason"
@@ -130,10 +186,12 @@ check_status() {
   ready_code=$(echo "$res_readiness" | cut -d'|' -f1)
   ready_body=$(echo "$res_readiness" | cut -d'|' -f3-)
 
-  if [[ "$ready_code" -eq 200 && ( "$ready_body" == *"\"ready\":true"* || "$ready_body" == *"\"status\":\"healthy\""* ) ]]; then
-    log_success "Candidate readiness probe: HEALTHY (MongoDB status: healthy)"
+  local val_ready
+  val_ready=$(validate_health_payload "readiness" "$ready_code" "$ready_body")
+  if [[ "$val_ready" == "OK" ]]; then
+    log_success "Candidate readiness probe: HEALTHY (MongoDB status: healthy, ready: true)"
   else
-    log_error "Candidate readiness probe FAILED: HTTP $ready_code - $ready_body"
+    log_error "Candidate readiness probe FAILED: $val_ready"
     return 1
   fi
 
@@ -145,10 +203,12 @@ check_status() {
   live_code=$(echo "$res_liveness" | cut -d'|' -f1)
   live_body=$(echo "$res_liveness" | cut -d'|' -f3-)
 
-  if [[ "$live_code" -eq 200 && "$live_body" == *"\"status\":\"LIVE\""* ]]; then
+  local val_live
+  val_live=$(validate_health_payload "liveness" "$live_code" "$live_body")
+  if [[ "$val_live" == "OK" ]]; then
     log_success "Candidate liveness probe: LIVE"
   else
-    log_error "Candidate liveness probe FAILED: HTTP $live_code - $live_body"
+    log_error "Candidate liveness probe FAILED: $val_live"
     return 1
   fi
 
@@ -160,15 +220,89 @@ check_status() {
   health_code=$(echo "$res_health" | cut -d'|' -f1)
   health_body=$(echo "$res_health" | cut -d'|' -f3-)
 
-  if [[ "$health_code" -eq 200 && "$health_body" == *"\"status\":\"UP\""* && "$health_body" == *"\"database\":\"healthy\""* ]]; then
+  local val_health
+  val_health=$(validate_health_payload "system" "$health_code" "$health_body")
+  if [[ "$val_health" == "OK" ]]; then
     log_success "Candidate system health: UP (Database component: healthy)"
   else
-    log_error "Candidate system health FAILED: HTTP $health_code - $health_body"
+    log_error "Candidate system health FAILED: $val_health"
     return 1
   fi
 }
 
-# 2. Probe Validation & Latency Sampling
+# 2. Actual Traffic Allocation Verification
+verify_actual_traffic_allocation() {
+  local expected_prod="$1"
+  local expected_cand="$2"
+  log "Verifying actual Cloud Run traffic distribution (machine-readable JSON)..."
+
+  local raw_traffic_json
+  raw_traffic_json=$($GCLOUD_CMD run services describe "$SERVICE" \
+    --region="$REGION" \
+    --project="$PROJECT" \
+    --format="json(status.traffic)" 2>/dev/null || echo "")
+
+  if [[ -z "$raw_traffic_json" ]]; then
+    emergency_rollback "Failed to retrieve status.traffic from Cloud Run service $SERVICE."
+  fi
+
+  local parse_result
+  parse_result=$(node -e '
+    try {
+      const input = process.argv[1];
+      const prodRev = process.argv[2];
+      const candRev = process.argv[3];
+      const expProd = parseInt(process.argv[4], 10);
+      const expCand = parseInt(process.argv[5], 10);
+
+      const traffic = JSON.parse(input);
+      if (!Array.isArray(traffic)) {
+        console.log("ERR: status.traffic is not an array");
+        process.exit(0);
+      }
+
+      let prodPct = 0;
+      let candPct = 0;
+      let totalPct = 0;
+
+      for (const t of traffic) {
+        const pct = parseInt(t.percent || 0, 10);
+        totalPct += pct;
+        if (t.revisionName === prodRev) {
+          prodPct += pct;
+        }
+        if (t.revisionName === candRev) {
+          candPct += pct;
+        }
+      }
+
+      if (totalPct !== 100) {
+        console.log(`ERR: Total traffic is ${totalPct}%, expected exactly 100%`);
+        process.exit(0);
+      }
+      if (prodPct !== expProd) {
+        console.log(`ERR: Production revision (${prodRev}) percentage is ${prodPct}%, expected ${expProd}%`);
+        process.exit(0);
+      }
+      if (candPct !== expCand) {
+        console.log(`ERR: Candidate revision (${candRev}) percentage is ${candPct}%, expected ${expCand}%`);
+        process.exit(0);
+      }
+
+      console.log(`OK: prod=${prodPct}, cand=${candPct}, total=${totalPct}`);
+    } catch (e) {
+      console.log("ERR: Failed to parse traffic JSON: " + e.message);
+    }
+  ' "$raw_traffic_json" "$PROD_REV" "$CANDIDATE_REV" "$expected_prod" "$expected_cand" 2>/dev/null || echo "ERR: Parser execution failed")
+
+  if [[ "$parse_result" != OK:* ]]; then
+    emergency_rollback "Traffic allocation verification failed: $parse_result"
+  fi
+
+  log_success "Traffic allocation verified: $parse_result"
+}
+
+# 3. Probe Validation & Latency Sampling across Endpoints
 verify_traffic_health() {
   local target_url="$1"
   local stage_name="$2"
@@ -187,11 +321,13 @@ verify_traffic_health() {
     elapsed_ms=$(echo "$probe_res" | cut -d'|' -f2)
     body=$(echo "$probe_res" | cut -d'|' -f3-)
 
-    if [[ "$http_code" -ge 200 && "$http_code" -lt 400 && "$body" == *"\"status\":\"LIVE\""* ]]; then
+    local val_sample
+    val_sample=$(validate_health_payload "liveness" "$http_code" "$body")
+    if [[ "$val_sample" == "OK" ]]; then
       log "Sample $i: HTTP $http_code (${elapsed_ms}ms)"
       total_time_ms=$(( total_time_ms + elapsed_ms ))
     else
-      log_warn "Sample $i FAILED: HTTP $http_code (${elapsed_ms}ms) - $body"
+      log_warn "Sample $i FAILED: $val_sample (HTTP $http_code, ${elapsed_ms}ms)"
       failure_count=$(( failure_count + 1 ))
     fi
   done
@@ -207,8 +343,8 @@ verify_traffic_health() {
     emergency_rollback "Average latency ${avg_latency}ms exceeded maximum allowed threshold ${MAX_ALLOWED_LATENCY_MS}ms."
   fi
 
-  # Deep Database Readiness Probe on Stage URL
-  log "Verifying database readiness on $stage_name endpoint..."
+  # Deep Database Readiness Probe on Stage URL (Weighted production endpoint)
+  log "Verifying database readiness on $stage_name endpoint ($target_url)..."
   local deep_res
   deep_res=$(measure_request "$target_url/api/v1/health/readiness" 10)
   local deep_code
@@ -216,13 +352,49 @@ verify_traffic_health() {
   deep_code=$(echo "$deep_res" | cut -d'|' -f1)
   deep_body=$(echo "$deep_res" | cut -d'|' -f3-)
 
-  if [[ "$deep_code" -ne 200 || ( "$deep_body" != *"\"ready\":true"* && "$deep_body" != *"\"status\":\"healthy\""* ) ]]; then
-    emergency_rollback "Database readiness verification failed on $stage_name (HTTP $deep_code): $deep_body"
+  local val_deep
+  val_deep=$(validate_health_payload "readiness" "$deep_code" "$deep_body")
+  if [[ "$val_deep" != "OK" ]]; then
+    emergency_rollback "Database readiness verification failed on $stage_name: $val_deep"
   fi
-  log_success "Database readiness verified on $stage_name."
+  log_success "Database readiness verified on $stage_name ($target_url)."
+
+  # System Health Probe on Stage URL (Weighted production endpoint)
+  log "Verifying system health on $stage_name endpoint ($target_url)..."
+  local sys_res
+  sys_res=$(measure_request "$target_url/api/v1/health" 5)
+  local sys_code
+  local sys_body
+  sys_code=$(echo "$sys_res" | cut -d'|' -f1)
+  sys_body=$(echo "$sys_res" | cut -d'|' -f3-)
+
+  local val_sys
+  val_sys=$(validate_health_payload "system" "$sys_code" "$sys_body")
+  if [[ "$val_sys" != "OK" ]]; then
+    emergency_rollback "System health verification failed on $stage_name: $val_sys"
+  fi
+  log_success "System health verified on $stage_name ($target_url)."
+
+  # Candidate-tag endpoint verification
+  if [[ "$target_url" != "$CANDIDATE_TAG_URL" ]]; then
+    log "Cross-verifying Candidate-tag direct endpoint ($CANDIDATE_TAG_URL)..."
+    local cand_tag_res
+    cand_tag_res=$(measure_request "$CANDIDATE_TAG_URL/api/v1/health/readiness" 10)
+    local cand_tag_code
+    local cand_tag_body
+    cand_tag_code=$(echo "$cand_tag_res" | cut -d'|' -f1)
+    cand_tag_body=$(echo "$cand_tag_res" | cut -d'|' -f3-)
+
+    local val_cand_tag
+    val_cand_tag=$(validate_health_payload "readiness" "$cand_tag_code" "$cand_tag_body")
+    if [[ "$val_cand_tag" != "OK" ]]; then
+      emergency_rollback "Candidate tag direct endpoint failed readiness during $stage_name: $val_cand_tag"
+    fi
+    log_success "Candidate tag endpoint verified healthy."
+  fi
 }
 
-# 3. Log Audit for 5xx and SSL/Database Errors
+# 4. Log Audit for 5xx and SSL/Database Errors
 audit_application_logs() {
   local stage_name="$1"
   log "Auditing Cloud Logging for $CANDIDATE_REV errors in the last 2 minutes..."
@@ -241,7 +413,7 @@ audit_application_logs() {
   log_success "Cloud Logging audit passed for $stage_name: No database or SSL errors detected."
 }
 
-# 4. Shift Traffic to a Specific Stage (Guarded by confirmation and dry-run)
+# 5. Shift Traffic to a Specific Stage (Guarded by confirmation and dry-run)
 apply_stage() {
   local candidate_pct="$1"
   shift
@@ -318,14 +490,8 @@ apply_stage() {
   fi
   log_success "Traffic update command executed successfully."
 
-  # Step D: Verify post-shift traffic allocation on Cloud Run
-  log "Verifying Cloud Run traffic distribution matches requested allocation..."
-  local actual_traffic
-  actual_traffic=$($GCLOUD_CMD run services describe "$SERVICE" \
-    --region="$REGION" \
-    --project="$PROJECT" \
-    --format="yaml(status.traffic)")
-  log "Actual traffic status:\n$actual_traffic"
+  # Step D: Verify post-shift traffic allocation on Cloud Run (machine-readable JSON)
+  verify_actual_traffic_allocation "$prod_pct" "$candidate_pct"
 
   # Step E: Observation window (TRAFFIC_SHIFT_ACTIVE remains 1 throughout!)
   log "Entering $OBSERVATION_WINDOW_SECS second observation window..."

@@ -609,4 +609,32 @@ Audited all 10 legacy GitHub releases (`ci-apk-*`) created between October 27 an
    - Production traffic remains **100% on `rideos-backend-api-00004-xcj`**.
    - Candidate revision `rideos-backend-api-00009-4gt` remains at **0% traffic** (tag `candidate`).
 
+### 6.3 Task 2 Final Closure — Verification Gaps Closed & Hardening Evidence
+1. **Actual Traffic Allocation Verification in Machine-Readable JSON**:
+   - Post-update verification retrieves `status.traffic` via `$GCLOUD_CMD run services describe "$SERVICE" --format="json(status.traffic)"`.
+   - Strict JSON parsing verifies:
+     - Production revision percentage exactly matches requested stage (`$prod_pct`).
+     - Candidate revision percentage exactly matches requested stage (`$candidate_pct`).
+     - Sum across all targets equals **exactly 100%**.
+   - Fail-safe trigger: Any percentage mismatch or unparseable JSON immediately triggers emergency rollback to `$PROD_REV=100`.
+2. **Stateful Mock Testing Harness**:
+   - Mock `gcloud` maintains persistent simulated traffic state (`simulated_traffic.json`).
+   - Verifies state transitions upon `update-traffic` commands.
+   - Tested mismatch scenario where Cloud Run returns an incorrect allocation:
+     - Script detects mismatch.
+     - Triggers emergency rollback.
+     - Restores simulated state to `production=100%, candidate=0%`.
+3. **Signal Testing (Independent SIGINT & SIGTERM)**:
+   - Automated tests simulate SIGINT and SIGTERM during the active observation window while `TRAFFIC_SHIFT_ACTIVE=1`.
+   - Verified both signals trigger safe restoration of `rideos-backend-api-00004-xcj=100` before exit.
+4. **Post-Shift Health & Strict JSON Validation**:
+   - Implemented `validate_health_payload` using strict JSON field inspection.
+   - Verified that `ready=false` is rejected even if a generic `"status":"healthy"` is present.
+   - Cross-verifies weighted production endpoint (`$PROD_URL`) and candidate-tag direct endpoint (`$CANDIDATE_TAG_URL`) across liveness, readiness, and system health.
+5. **Comprehensive Test Suite Execution Results**:
+   - Test script: [scripts/test-staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-staged-canary-rollout.sh)
+   - Results: **16 test scenarios, 43 passed, 0 failed**.
+   - Zero production traffic changes executed during tests.
+
+
 

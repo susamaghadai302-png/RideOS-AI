@@ -2,7 +2,7 @@
 # ==============================================================================
 # RideOS AI — Comprehensive Automated Safety & Rollback Test Suite
 # ==============================================================================
-# Tests staged-canary-rollout.sh using completely mocked commands:
+# Tests staged-canary-rollout.sh using stateful mocked gcloud/curl/sleep:
 # zero live gcloud mutations, zero production traffic shifting, portable timing.
 # ==============================================================================
 
@@ -95,25 +95,64 @@ assert_eq "Exits safely with code 0 on blocked execution" "0" "$exit_code"
 assert_contains "Safety Gate warning displayed" "$output" "Safety Gate: Production traffic change requires explicit confirmation"
 
 # ------------------------------------------------------------------------------
-# Setup Mock Harness for Safe Unit Testing
+# Setup Stateful Mock Harness
 # ------------------------------------------------------------------------------
 
-# Mock gcloud
+# Stateful Mock gcloud
 cat <<'EOF' > "$MOCK_BIN/gcloud"
 #!/usr/bin/env bash
 echo "$*" >> "$MOCK_LOG_DIR/gcloud_calls.log"
 
+STATE_FILE="$MOCK_LOG_DIR/simulated_traffic.json"
+if [[ ! -f "$STATE_FILE" ]]; then
+  echo '[{"percent":100,"revisionName":"rideos-backend-api-00004-xcj"},{"percent":0,"revisionName":"rideos-backend-api-00009-4gt","tag":"candidate"}]' > "$STATE_FILE"
+fi
+
 case "$*" in
   *"run services update-traffic"*)
     echo "$*" >> "$MOCK_LOG_DIR/gcloud_mutations.log"
+    # Parse allocations from args: e.g. --to-revisions=prod=95,cand=5 or cand=100
+    rev_arg=$(echo "$*" | grep -o '\-\-to-revisions=[^ ]*' | cut -d'=' -f2-)
+    node -e '
+      const fs = require("fs");
+      const revArg = process.argv[1];
+      const statePath = process.argv[2];
+
+      let prodPct = 0;
+      let candPct = 0;
+
+      const pairs = revArg.split(",");
+      for (const p of pairs) {
+        const [rev, pctStr] = p.split("=");
+        const pct = parseInt(pctStr, 10);
+        if (rev === "rideos-backend-api-00004-xcj") prodPct = pct;
+        if (rev === "rideos-backend-api-00009-4gt") candPct = pct;
+      }
+
+      const state = [
+        { percent: prodPct, revisionName: "rideos-backend-api-00004-xcj" },
+        { percent: candPct, revisionName: "rideos-backend-api-00009-4gt", tag: "candidate" }
+      ];
+      fs.writeFileSync(statePath, JSON.stringify(state));
+    ' "$rev_arg" "$STATE_FILE"
     exit 0
     ;;
   *"run services describe"*)
-    echo "- percent: 100"
-    echo "  revisionName: rideos-backend-api-00004-xcj"
-    echo "- percent: 0"
-    echo "  revisionName: rideos-backend-api-00009-4gt"
-    echo "  tag: candidate"
+    if [[ "$*" == *'--format="json(status.traffic)"'* || "$*" == *"--format=json(status.traffic)"* ]]; then
+      if [[ -f "$MOCK_LOG_DIR/simulate_mismatched_traffic" ]]; then
+        echo '[{"percent":80,"revisionName":"rideos-backend-api-00004-xcj"},{"percent":10,"revisionName":"rideos-backend-api-00009-4gt","tag":"candidate"}]'
+      elif [[ -f "$MOCK_LOG_DIR/simulate_malformed_traffic" ]]; then
+        echo 'INVALID_JSON_PAYLOAD_FROM_API'
+      else
+        cat "$STATE_FILE"
+      fi
+    else
+      echo "- percent: 100"
+      echo "  revisionName: rideos-backend-api-00004-xcj"
+      echo "- percent: 0"
+      echo "  revisionName: rideos-backend-api-00009-4gt"
+      echo "  tag: candidate"
+    fi
     exit 0
     ;;
   *"logging read"*)
@@ -131,20 +170,23 @@ esac
 EOF
 chmod +x "$MOCK_BIN/gcloud"
 
-# Mock sleep (instant execution, records sleep calls)
+# Stateful Mock sleep
 cat <<'EOF' > "$MOCK_BIN/sleep"
 #!/usr/bin/env bash
 echo "SLEEP:$1" >> "$MOCK_LOG_DIR/sleep.log"
 if [[ -f "$MOCK_LOG_DIR/simulate_sigint_in_sleep" ]]; then
   rm -f "$MOCK_LOG_DIR/simulate_sigint_in_sleep"
-  # Send SIGINT to parent process (the rollout script)
   kill -INT "$PPID"
+fi
+if [[ -f "$MOCK_LOG_DIR/simulate_sigterm_in_sleep" ]]; then
+  rm -f "$MOCK_LOG_DIR/simulate_sigterm_in_sleep"
+  kill -TERM "$PPID"
 fi
 exit 0
 EOF
 chmod +x "$MOCK_BIN/sleep"
 
-# Mock curl (handles endpoints and injects scenarios)
+# Stateful Mock curl
 cat <<'EOF' > "$MOCK_BIN/curl"
 #!/usr/bin/env bash
 out_file=""
@@ -173,7 +215,11 @@ done
 
 # 1. Readiness Probe
 if [[ "$url" == *"health/readiness"* ]]; then
-  if [[ -f "$MOCK_LOG_DIR/fail_readiness" ]]; then
+  if [[ -f "$MOCK_LOG_DIR/fail_readiness_ready_false" ]]; then
+    # Injects ready: false with generic status: healthy to test strict field gating
+    [[ -n "$out_file" ]] && echo '{"status":"healthy","ready":false,"dependencies":{"mongodb":{"status":"healthy"}}}' > "$out_file"
+    echo -e "\n200:0.040"
+  elif [[ -f "$MOCK_LOG_DIR/fail_readiness" ]]; then
     [[ -n "$out_file" ]] && echo '{"status":"unhealthy","ready":false,"dependencies":{"mongodb":{"status":"unhealthy"}}}' > "$out_file"
     echo -e "\n503:0.040"
   else
@@ -339,7 +385,7 @@ assert_contains "Rollback command executed to 100% prod" "$mutations" "--to-revi
 assert_contains "Database error detection logged" "$output" "Critical database/SSL error detected in logs"
 
 # ------------------------------------------------------------------------------
-# Test 11: SIGINT interrupt during observation window triggers emergency rollback
+# Test 11: SIGINT interrupt during observation window triggers safe rollback
 # ------------------------------------------------------------------------------
 echo "Test 11: SIGINT interrupt during observation window triggers safe rollback"
 MOCK_LOG_DIR="$TEST_TMP_DIR/sigint_test"
@@ -355,12 +401,76 @@ set -e
 
 mutations=$(cat "$MOCK_LOG_DIR/gcloud_mutations.log")
 assert_contains "Process interrupt logged" "$output" "Process interrupted by signal!"
-assert_contains "Rollback triggered on interrupt" "$mutations" "--to-revisions=rideos-backend-api-00004-xcj=100"
+assert_contains "Rollback triggered on SIGINT" "$mutations" "--to-revisions=rideos-backend-api-00004-xcj=100"
 
 # ------------------------------------------------------------------------------
-# Test 12: Stage 100 preserves rollback protection through observation window
+# Test 12: Independent SIGTERM interrupt during observation window triggers safe rollback
 # ------------------------------------------------------------------------------
-echo "Test 12: Stage 100 retains rollback protection throughout observation window"
+echo "Test 12: Independent SIGTERM interrupt during observation window triggers safe rollback"
+MOCK_LOG_DIR="$TEST_TMP_DIR/sigterm_test"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/simulate_sigterm_in_sleep"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+  "$SCRIPT_UNDER_TEST" stage 25 --confirm 2>&1)
+exit_code=$?
+set -e
+
+mutations=$(cat "$MOCK_LOG_DIR/gcloud_mutations.log")
+assert_contains "Process interrupt logged on SIGTERM" "$output" "Process interrupted by signal!"
+assert_contains "Rollback triggered on SIGTERM" "$mutations" "--to-revisions=rideos-backend-api-00004-xcj=100"
+
+# ------------------------------------------------------------------------------
+# Test 13: Stateful Cloud Run traffic allocation verification and mismatch detection
+# ------------------------------------------------------------------------------
+echo "Test 13: Actual traffic mismatch detection triggers rollback and restores 100% prod state"
+MOCK_LOG_DIR="$TEST_TMP_DIR/mismatch_traffic_test"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/simulate_mismatched_traffic"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code=$?
+set -e
+
+mutations=$(cat "$MOCK_LOG_DIR/gcloud_mutations.log")
+assert_eq "Exits with code 1 on traffic mismatch" "1" "$exit_code"
+assert_contains "Mismatch detection logged" "$output" "Traffic allocation verification failed"
+assert_contains "Emergency rollback command executed" "$mutations" "--to-revisions=rideos-backend-api-00004-xcj=100"
+
+# Verify stateful simulated traffic file was restored to prod=100, cand=0
+simulated_state=$(cat "$MOCK_LOG_DIR/simulated_traffic.json")
+assert_contains "Final simulated state restored to prod=100%" "$simulated_state" '"percent":100,"revisionName":"rideos-backend-api-00004-xcj"'
+assert_contains "Final simulated state restored to cand=0%" "$simulated_state" '"percent":0,"revisionName":"rideos-backend-api-00009-4gt"'
+
+# ------------------------------------------------------------------------------
+# Test 14: Strict JSON readiness validation blocks ready=false despite status=healthy
+# ------------------------------------------------------------------------------
+echo "Test 14: Strict JSON field validation rejects payload when ready=false despite status=healthy"
+MOCK_LOG_DIR="$TEST_TMP_DIR/strict_json_test"
+mkdir -p "$MOCK_LOG_DIR"
+touch "$MOCK_LOG_DIR/fail_readiness_ready_false"
+touch "$MOCK_LOG_DIR/gcloud_mutations.log"
+
+set +e
+output=$(GCLOUD_CMD="$MOCK_BIN/gcloud" CURL_CMD="$MOCK_BIN/curl" SLEEP_CMD="$MOCK_BIN/sleep" MOCK_LOG_DIR="$MOCK_LOG_DIR" \
+  "$SCRIPT_UNDER_TEST" stage 5 --confirm 2>&1)
+exit_code=$?
+set -e
+
+mutation_count=$(wc -l < "$MOCK_LOG_DIR/gcloud_mutations.log" | tr -d ' ')
+assert_eq "Exits with failure code 1 on ready=false" "1" "$exit_code"
+assert_eq "Zero traffic mutations performed on ready=false" "0" "$mutation_count"
+assert_contains "Ready false rejection logged" "$output" "ready field is false, expected true"
+
+# ------------------------------------------------------------------------------
+# Test 15: Stage 100 retains rollback protection throughout observation window
+# ------------------------------------------------------------------------------
+echo "Test 15: Stage 100 retains rollback protection throughout observation window"
 MOCK_LOG_DIR="$TEST_TMP_DIR/stage_100_interrupt"
 mkdir -p "$MOCK_LOG_DIR"
 touch "$MOCK_LOG_DIR/simulate_sigint_in_sleep"
@@ -377,9 +487,9 @@ assert_contains "Stage 100 executed candidate=100" "$mutations" "--to-revisions=
 assert_contains "Stage 100 interrupted during observation rolled back to 100% prod" "$mutations" "--to-revisions=rideos-backend-api-00004-xcj=100"
 
 # ------------------------------------------------------------------------------
-# Test 13: Manual rollback command works directly
+# Test 16: Manual rollback command works directly
 # ------------------------------------------------------------------------------
-echo "Test 13: Manual rollback command restores 100% production revision"
+echo "Test 16: Manual rollback command restores 100% production revision"
 MOCK_LOG_DIR="$TEST_TMP_DIR/manual_rollback"
 mkdir -p "$MOCK_LOG_DIR"
 touch "$MOCK_LOG_DIR/gcloud_mutations.log"
@@ -402,3 +512,7 @@ if [[ "$FAIL_COUNT" -gt 0 ]]; then
   exit 1
 fi
 exit 0
+EOF
+chmod +x "$MOCK_BIN/curl"
+chmod +x "$MOCK_BIN/gcloud"
+chmod +x "$MOCK_BIN/sleep"
