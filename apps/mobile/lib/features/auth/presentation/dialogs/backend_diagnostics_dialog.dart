@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import '../../../../core/design_system/premium_navigation.dart';
 import '../../../../core/design_system/roados_tokens.dart';
@@ -64,6 +65,14 @@ class _BackendDiagnosticsDialogState extends State<BackendDiagnosticsDialog> {
   }
 
   void _onModeChanged(BackendConnectionMode mode) {
+    if (kReleaseMode && (mode == BackendConnectionMode.usb || mode == BackendConnectionMode.lan)) {
+      showLuxSnack(
+        context,
+        '⚠️ USB and Wi-Fi LAN modes are disabled in release builds. Use Auto or Custom HTTPS.',
+        variant: LuxSnackVariant.warning,
+      );
+      return;
+    }
     setState(() {
       _selectedMode = mode;
       switch (mode) {
@@ -76,7 +85,7 @@ class _BackendDiagnosticsDialogState extends State<BackendDiagnosticsDialog> {
         case BackendConnectionMode.custom:
           break;
         case BackendConnectionMode.auto:
-          _urlController.text = ApiConfig.kDefaultUsbBaseUrl;
+          _urlController.text = kReleaseMode ? ApiConfig.kDefaultProdApiBaseUrl : ApiConfig.kDefaultUsbBaseUrl;
           break;
       }
     });
@@ -315,14 +324,28 @@ class _BackendDiagnosticsDialogState extends State<BackendDiagnosticsDialog> {
                     onPressed: () async {
                       final url = _urlController.text.trim();
                       if (url.isNotEmpty) {
-                        if (_selectedMode == BackendConnectionMode.custom) {
-                          await ApiConfig.setBaseUrl(url);
-                        } else {
-                          await ApiConfig.setMode(_selectedMode, customUrl: url);
+                        if (kReleaseMode && !ApiConfig.isValidProductionEndpoint(url)) {
+                          showLuxSnack(
+                            context,
+                            '❌ Production requires a valid public HTTPS URL (e.g. https://api.rideos.ai/api/v1)',
+                            variant: LuxSnackVariant.error,
+                          );
+                          return;
                         }
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                          showLuxSnack(context, '✅ Backend endpoint saved: $url', variant: LuxSnackVariant.info);
+                        try {
+                          if (_selectedMode == BackendConnectionMode.custom) {
+                            await ApiConfig.setBaseUrl(url);
+                          } else {
+                            await ApiConfig.setMode(_selectedMode, customUrl: url);
+                          }
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            showLuxSnack(context, '✅ Backend endpoint saved: $url', variant: LuxSnackVariant.info);
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            showLuxSnack(context, '❌ Failed to save endpoint: $e', variant: LuxSnackVariant.error);
+                          }
                         }
                       }
                     },
@@ -339,23 +362,28 @@ class _BackendDiagnosticsDialogState extends State<BackendDiagnosticsDialog> {
 
   Widget _buildModeTab({required String label, required BackendConnectionMode mode}) {
     final isSelected = _selectedMode == mode;
+    final isDisabled = kReleaseMode && (mode == BackendConnectionMode.usb || mode == BackendConnectionMode.lan);
     return GestureDetector(
       onTap: () => _onModeChanged(mode),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? RoadOSColors.cyberCyan.withValues(alpha: 0.2) : RoadOSColors.cardSurface,
+          color: isDisabled
+              ? Colors.white10
+              : (isSelected ? RoadOSColors.cyberCyan.withValues(alpha: 0.2) : RoadOSColors.cardSurface),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? RoadOSColors.cyberCyan : RoadOSColors.borderSubtle,
+            color: isDisabled
+                ? Colors.white24
+                : (isSelected ? RoadOSColors.cyberCyan : RoadOSColors.borderSubtle),
             width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Text(
-          label,
+          isDisabled ? '$label (Dev)' : label,
           style: TextStyle(
-            color: isSelected ? RoadOSColors.cyberCyan : Colors.white70,
+            color: isDisabled ? Colors.white38 : (isSelected ? RoadOSColors.cyberCyan : Colors.white70),
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),

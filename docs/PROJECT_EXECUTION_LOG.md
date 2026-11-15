@@ -933,6 +933,75 @@ Executed [scripts/puppeteer-tests/verify_web_preview_e2e.js](file:///Users/hitan
 - Canary Safety Tests: **59 passed, 0 failed** (`scripts/test-staged-canary-rollout.sh`).
 - Live Cloud Run Traffic: Strictly preserved at **99% Production (`00004-xcj`) / 1% Candidate (`00009-4gt`)**. Total: **100%**. Zero traffic shifted. Zero deployments. Zero DNS mutations.
 
+---
+
+## 11. Task 3.3.1: Final Production Client Configuration Safety Review
+
+### 11.1 Problem Statement & Audit Findings
+Following Task 3.3, an architectural audit of `apps/mobile/lib/core/network/api_config.dart` revealed critical edge-case safety vulnerabilities:
+1. **Unsafe SharedPreferences Restorations**: `initialize()` restored `savedBaseUrl` without release-mode sanitization. If an application update replaced a debug build on a physical device, a previously stored localhost (`127.0.0.1:3000`) or private LAN IP (`10.x`, `192.168.x`) would override the compiled production endpoint.
+2. **Unrestricted Mode Switching**: `setMode()` permitted switching to `BackendConnectionMode.usb` or `lan` even when `kReleaseMode` was active.
+3. **Unrestricted Base URL Overrides**: `setBaseUrl()` accepted arbitrary strings, permitting non-HTTPS or private endpoints in release mode.
+4. **Diagnostics UI Leaks**: The diagnostics dialog allowed switching to USB/LAN and applying localhost URLs in release mode.
+
+### 11.2 Architectural Hardening & Release Mode Invariants
+1. **Strict Production Endpoint Validation (`isValidProductionEndpoint`, `isDisallowedProductionHost`)**:
+   - Production endpoints MUST use the `https` scheme. Plain `http` is strictly rejected.
+   - Hostname inspection explicitly rejects:
+     - `localhost`, `127.0.0.1/8`, `::1`, `0.0.0.0/8`.
+     - Reserved local/test domains: `.localhost`, `.local`, `.internal`, `.lan`, `.test`, `.example`, `.invalid`.
+     - RFC 1918 Private IPv4 Ranges: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`.
+     - RFC 3927 Link-Local: `169.254.0.0/16`.
+     - RFC 5737 Documentation Ranges: `192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`.
+     - IPv6 ULA/link-local: `fc00::/7`, `fe80::/10`.
+     - Unqualified single-word hostnames without dot separators.
+2. **Pure, Testable Endpoint Resolution Policy (`resolveEndpointPolicy`)**:
+   - Decoupled resolution logic into a pure function accepting `isReleaseMode` as an explicit parameter, allowing deterministic testing of production rules in any test environment without assuming `flutter test` executes in release mode.
+   - In release mode:
+     - Disallowed stored modes (`usb`, `lan`) are forced to `auto` and flagged for storage sanitization.
+     - Unsafe candidate URLs are rejected and flagged for storage sanitization; endpoint defaults strictly to `kDefaultProdApiBaseUrl` (`https://api.rideos.ai/api/v1`) or verified production `API_BASE_URL`.
+     - Valid custom HTTPS endpoints (e.g. verified Cloud Run candidate/staging URLs) are accepted under `custom` mode.
+   - In debug mode:
+     - Preserves full USB reverse tunnel (`127.0.0.1:3000`), LAN Wi-Fi auto-detection, and local custom endpoints without restriction.
+3. **Fail-Safe Initialization & Session Storage Preservation (`initialize`)**:
+   - When unsafe development settings are detected in release mode, `rideos_api_mode_v2` and `rideos_api_base_url_v2` keys are purged from `SharedPreferences`.
+   - User session tokens (`access_token`, `refresh_token`) and rider profiles are stored under distinct keys and remain completely preserved.
+4. **Guardrails on `setMode()`, `setBaseUrl()`, and Diagnostics UI**:
+   - `setMode()` throws `ArgumentError` if `usb` or `lan` is requested in release mode.
+   - `setBaseUrl()` throws `ArgumentError` if a non-HTTPS or private LAN URL is provided in release mode.
+   - `BackendDiagnosticsDialog` disables USB/LAN tabs in release mode and rejects non-HTTPS URLs in `Save & Apply`.
+   - `autoDetectWorkingEndpoint()` restricts probing in release mode to verified HTTPS candidate endpoints.
+
+### 11.3 Test & Verification Summary
+- **Flutter Analyze**: `apps/mobile` analyzed in 4.8s &rarr; **No issues found!**
+- **Flutter Connectivity Tests ([apps/mobile/test/unit/api_config_connectivity_test.dart](file:///Users/hitanshughadai/RideOS-AI/apps/mobile/test/unit/api_config_connectivity_test.dart))**: **19/19 PASSED**
+  - Stored localhost URL rejection in release mode: PASSED
+  - Stored private LAN URL rejection in release mode: PASSED
+  - Stored USB mode purging in release mode: PASSED
+  - Stored LAN mode purging in release mode: PASSED
+  - Valid production API endpoint validation: PASSED
+  - Invalid production URL rejection: PASSED
+  - Debug USB mode: PASSED
+  - Debug LAN mode: PASSED
+  - Debug custom endpoint: PASSED
+  - Session token preservation during sanitization: PASSED
+  - Valid custom HTTPS preservation: PASSED
+- **Flutter Health Tests ([apps/mobile/test/unit/api_config_health_test.dart](file:///Users/hitanshughadai/RideOS-AI/apps/mobile/test/unit/api_config_health_test.dart))**: **8/8 PASSED**
+- **Full Flutter Unit Test Suite**: **225/225 tests PASSED** (`00:18 +225: All tests passed!`)
+- **Backend Unit Tests**: **24/24 suites, 136/136 tests PASSED**
+- **Deployment Safety Test Suite ([scripts/test-cloud-run-deploy.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-cloud-run-deploy.sh))**: **54/54 PASSED**
+- **Canary Rollout Test Suite ([scripts/test-staged-canary-rollout.sh](file:///Users/hitanshughadai/RideOS-AI/scripts/test-staged-canary-rollout.sh))**: **59/59 PASSED**
+- **Production APK Compilation**:
+  - `./scripts/build-apk.sh --prod` successfully compiled release APK (107MB, `ai.rideos.app`).
+  - Target: `https://api.rideos.ai/api/v1` (Profile: `PROD`).
+  - Fail-safe validation verified: `--prod` immediately rejects localhost and LAN IP overrides.
+- **Production Safety Verification**:
+  - Live Cloud Run Traffic: Strictly maintained at **99% Production (`00004-xcj`) / 1% Candidate (`00009-4gt`)**.
+  - Cloud Run Revisions: **0 new revisions deployed**.
+  - Traffic Shifts: **0% shifted**.
+  - DNS / Secret Manager: **Zero mutations performed**.
+
+
 
 
 
