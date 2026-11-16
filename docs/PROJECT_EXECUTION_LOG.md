@@ -1452,6 +1452,120 @@ Added Test 34 with 10 comprehensive scenarios to `scripts/test-staged-canary-rol
 - DNS / Secret Manager Modifications: **ZERO**.
 - Revisions Created: **ZERO**.
 
+---
+
+## 17. Task 3.5: Final Production Recovery & Cutover Readiness
+
+- **Execution Date**: November 16, 2026
+- **Feature Branch**: `feat/cloudrun-direct-vpc-static-egress`
+- **Lead Verification**: Principal Cloud Reliability Engineer & System Architect
+- **Scope**: Comprehensive non-destructive audit of live production state, domain/DNS resolution, backend recovery verification, real client connectivity, canary observability exposure audit, and staged promotion safety validation.
+
+### 17.1 Domain & DNS Audit
+1. **Public DNS Resolution**:
+   - Executed `dig api.rideos.ai ANY`, `CNAME`, and `A` against public resolvers and authoritative nameservers.
+   - Result: Returned `status: NXDOMAIN`. No `A` or `CNAME` records exist for `api.rideos.ai`.
+2. **Azure DNS Authority**:
+   - `rideos.ai` NS records point to Azure DNS (`ns1-03.azure-dns.com`, `ns2-03.azure-dns.net`, `ns3-03.azure-dns.org`, `ns4-03.azure-dns.info`).
+   - Apex domain `rideos.ai` resolves to `20.51.217.51` (Microsoft Azure IP).
+   - Authoritative query `dig @ns1-03.azure-dns.com api.rideos.ai` strictly returned `NXDOMAIN` with SOA `rideos.ai. IN SOA ns1-03.azure-dns.com. azuredns-hostmaster.microsoft.com.`.
+3. **Cloud Run Domain Mapping**:
+   - Queried Cloud Run domain mappings via REST API (`/apis/domains.cloudrun.com/v1/namespaces/rideos-ai/domainmappings`).
+   - Result: `DomainMappingList` contains zero mappings.
+4. **External Prerequisite Status**:
+   - `BLOCKED_BY_EXTERNAL_DEPENDENCY`: Configuring the `api.rideos.ai` CNAME (`api.rideos.ai` &rarr; `ghs.googlehosted.com`) requires administrative access to the Azure DNS portal or Azure CLI with DNS Zone Contributor role. No Azure credentials, tools, or service principals are configured in the current environment.
+   - **DNS Invariant**: DNS is definitively classified as **UNRESOLVED / BLOCKED** and is NOT claimed to be fixed.
+
+### 17.2 Production Backend Recovery & Revision Comparison
+1. **Unhealthy Baseline (`rideos-backend-api-00004-xcj`)**:
+   - **Network Path**: Dynamic ephemeral egress without VPC connector or Direct VPC static egress.
+   - **Database Connectivity**: Fails due to MongoDB Atlas IP access list restrictions. Cloud Logging confirms `[MongoDB] Connection warning (database unavailable): SSL alert number 80` and `ServerSelectionError: Operation buffering timed out after 10000ms`.
+   - **Availability**: Unhealthy for database-backed operations.
+2. **Candidate Recovery Target (`rideos-backend-api-00009-4gt`)**:
+   - **Network Path**: Direct VPC Egress enabled (`rideos-vpc`, subnet `rideos-cloudrun-subnet`, `all-traffic`) routed through Cloud Router `rideos-router-us-central1` and Cloud NAT `rideos-nat-us-central1` with reserved static IP `34.172.212.158`.
+   - **Database Connectivity**: Static IP `34.172.212.158/32` is allowlisted in MongoDB Atlas (`ap-south-1` replica set). Cloud Logging confirms: `[MongoDB] Connected successfully to database`.
+   - **Live Probes Verified**:
+     - `GET /api/v1/health/readiness`: `HTTP 200 OK` (`ready: true`, `mongodb: healthy`).
+     - `GET /api/v1/health/liveness`: `HTTP 200 OK` (`status: LIVE`).
+     - `GET /api/v1/health`: `HTTP 200 OK` (`status: UP`, `components.database: healthy`).
+   - **API Route Functionality**:
+     - `POST /api/v1/auth/login`: Validated database lookup and auth rejection (`HTTP 401 Unauthorized`, `Invalid email or password`).
+     - `POST /api/v1/auth/refresh`: Validated refresh token validation (`HTTP 401 Unauthorized`, `Invalid or expired refresh token`).
+     - `GET /api/v1/vehicles`: Validated protected route auth guard (`HTTP 401 Unauthorized`, `Authentication token missing or invalid`).
+     - `GET /api/v1/catalog`: Validated catalog auth guard (`HTTP 401 Unauthorized`).
+   - **Verdict**: `rideos-backend-api-00009-4gt` is **FULLY VERIFIED AND CONFIRMED** as the recovery target.
+
+### 17.3 Real Client Connectivity & CORS Audit
+1. **CORS Preflight Verification**:
+   - `OPTIONS` request with `Origin: https://rideos-ai.web.app` returned `HTTP/2 204` with:
+     - `Access-Control-Allow-Origin: https://rideos-ai.web.app`
+     - `Access-Control-Allow-Credentials: true`
+     - `Access-Control-Allow-Methods: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS`
+     - `Access-Control-Allow-Headers: Content-Type,Accept,Authorization,X-Client-Platform,X-Client-Version`
+   - `OPTIONS` request with `Origin: https://rideos.ai` returned `HTTP/2 204` with identical allow headers.
+2. **Client Endpoint Configuration**:
+   - Flutter web release build and Android release APK default to `https://api.rideos.ai/api/v1`.
+   - Because `api.rideos.ai` returns `NXDOMAIN`, client traffic targeting the custom domain cannot reach the backend.
+   - Clients configured with `--api-base-url=https://rideos-backend-api-aeoxwaaccq-uc.a.run.app/api/v1` or `https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app/api/v1` connect cleanly.
+   - `ApiConfig` release mode invariants (19/19 passing tests) ensure no development, localhost, or private LAN endpoints can leak into production builds.
+
+### 17.4 Canary Observability & Traffic Exposure Audit
+1. **Cloud Logging Analysis Since 1% Canary Shift (`2026-11-15T10:56:29Z`)**:
+   - **Total Request Logs**: 66 requests.
+   - **By Revision**:
+     - `rideos-backend-api-00009-4gt`: 51 requests (77.3%).
+     - `rideos-backend-api-00004-xcj`: 15 requests (22.7%).
+   - **By User-Agent**:
+     - `curl/8.9.1`: 63 requests (synthetic operator verification probes).
+     - `Mozilla/5.0 ... HeadlessChrome/157.0.0.0`: 3 requests (automated test harness).
+   - **Organic Customer Traffic**: Exactly **ZERO (0)** requests.
+2. **Classification**:
+   - `INSUFFICIENT_CANARY_EXPOSURE_DUE_TO_DNS_BLOCKER`.
+   - Real mobile and web users cannot route traffic to Cloud Run until the external DNS CNAME is provisioned.
+3. **Safety Directive**:
+   - The canary CANNOT be declared production-validated from synthetic curl traffic alone.
+   - Progression to 5%, 25%, 50%, or 100% must NOT be performed automatically.
+
+### 17.5 Controlled Cutover Safety & Invariants
+1. **Validated Staged Promotion Plan**:
+   - Stage progression: 1% &rarr; 5% &rarr; 25% &rarr; 50% &rarr; 100%.
+   - In dry-run mode, stage 5% was executed and passed with zero Cloud Run mutations:
+     - Pre-shift snapshot captured: `00004-xcj=99,00009-4gt=1`.
+     - Candidate revision identity and tag binding verified: `candidate -> 00009-4gt`.
+     - Container image digest verified: `sha256:14d22fa8eddc19223d1b82cef2819f7aca13cbc3c79970d28511078108e0048b`.
+     - Health probes verified: Readiness, Liveness, and System Health.
+     - Live Cloud Run traffic remained strictly intact at 99/1.
+2. **Rollback & Safety Invariants**:
+   - Refuses automatic restoration to `00004-xcj=100` (`KNOWN_UNHEALTHY_REVISIONS`).
+   - Preserves pre-shift snapshot (`00004-xcj=99,00009-4gt=1`) for emergency rollback during initial rollout.
+   - Persists stable baseline in `.cloud-run-baseline` upon verified 100% candidate cutover.
+   - Fails closed on any candidate mismatch, missing tag, duplicate tag, probe timeout (>3000ms), or 5xx response.
+
+### 17.6 Automated Test Execution Summary
+All automated test suites executed cleanly with zero failures across all components:
+
+| Test Suite | File / Scope | Total Assertions | Status |
+| :--- | :--- | :--- | :--- |
+| **Canary Rollout Safety Suite** | `scripts/test-staged-canary-rollout.sh` | **181 passed (0 failed)** | **PASS** |
+| **Cloud Run Deployment Safety Suite** | `scripts/test-cloud-run-deploy.sh` | **54 passed (0 failed)** | **PASS** |
+| **Backend Unit Test Suite** | `apps/backend` (Jest, 24 suites) | **136 passed (0 failed)** | **PASS** |
+| **Mobile API Config Connectivity** | `apps/mobile/test/unit/api_config_connectivity_test.dart` | **19 passed (0 failed)** | **PASS** |
+| **Rollout Script Syntax Check** | `bash -n scripts/staged-canary-rollout.sh` | Clean exit (code 0) | **PASS** |
+| **Deploy Script Syntax Check** | `bash -n docker/cloud-run-deploy.sh` | Clean exit (code 0) | **PASS** |
+| **Total Automated Assertions** | **Comprehensive Full-Stack** | **390 passed, 0 failed** | **PASS** |
+
+### 17.7 Current Production Invariant Verification
+- Verified Cloud Run service status via read-only command:
+  `gcloud run services describe rideos-backend-api --region=us-central1 --format="json"`
+- Live Traffic Allocation:
+  - `rideos-backend-api-00004-xcj`: **99%**
+  - `rideos-backend-api-00009-4gt`: **1%** (Tagged: `candidate`, URL: `https://candidate---rideos-backend-api-aeoxwaaccq-uc.a.run.app`)
+  - **Total Traffic**: Exactly **100%**.
+- Production Traffic Drift: **ZERO**.
+- Live Cloud Run Mutations: **ZERO**.
+- DNS / Secret Manager Modifications: **ZERO**.
+- Revisions Created: **ZERO**.
+
 
 
 
